@@ -1,0 +1,2 @@
+- `[x]` Implement public clinic and doctor directory on landing page (`src/app/(frontend)/page.tsx`)
+- `[x]` Verify TypeScript typecheck, lint, and build
