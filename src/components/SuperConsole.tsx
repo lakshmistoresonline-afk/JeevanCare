@@ -6,6 +6,7 @@ import { btnPrimary, btnGhost, inputClass, Card, Field, Th, Td, Spinner } from '
 import { AppSelect } from './AppSelect'
 import { TablePager } from './TablePager'
 import { IconPlus, IconBuilding, IconLogout } from './icons'
+import { PasswordField } from './PasswordField'
 
 const TENANTS_PAGE_SIZE = 10
 import { createClinic, setClinicStatus, resolveUpgradeRequest } from '@/app/(frontend)/super/actions'
@@ -150,7 +151,15 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
             </div>
             <Field label="Owner name"><input className={inputClass} value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} /></Field>
             <Field label="Owner email"><input className={inputClass} type="email" value={form.ownerEmail} onChange={(e) => set('ownerEmail', e.target.value)} /></Field>
-            <Field label="Temporary password"><input className={inputClass} value={form.ownerPassword} onChange={(e) => set('ownerPassword', e.target.value)} /></Field>
+            <PasswordField
+              label="Temporary password"
+              id="ownerPassword"
+              name="ownerPassword"
+              required
+              autoComplete="new-password"
+              value={form.ownerPassword}
+              onChange={(e) => set('ownerPassword', e.target.value)}
+            />
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border bg-canvas/60 px-6 py-4">
             {error ? <p className="text-sm text-red">{error}</p> : <span />}

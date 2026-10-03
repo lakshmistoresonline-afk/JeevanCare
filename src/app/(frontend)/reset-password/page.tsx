@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { resetPasswordAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
+import { PasswordField } from '@/components/PasswordField'
 import { IconCheck } from '@/components/icons'
 
 export default function ResetPasswordPage() {
@@ -63,30 +64,22 @@ function ResetForm() {
 
             <form action={formAction} className="mt-8 flex flex-col gap-4">
               <input type="hidden" name="token" value={token} />
-              <Field label="New password" htmlFor="password">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  placeholder="••••••••"
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Confirm password" htmlFor="confirm">
-                <input
-                  id="confirm"
-                  name="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  placeholder="••••••••"
-                  className={inputClass}
-                />
-              </Field>
+              <PasswordField
+                label="New password"
+                id="password"
+                name="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+              />
+              <PasswordField
+                label="Confirm password"
+                id="confirm"
+                name="confirm"
+                autoComplete="new-password"
+                required
+                minLength={8}
+              />
 
               {state && !state.ok && (
                 <p className="rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-sm text-red" role="alert">

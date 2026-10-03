@@ -6,13 +6,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { loginAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
+import { PasswordField } from '@/components/PasswordField'
 import { IconCheck } from '@/components/icons'
 
 const DEMO_ACCOUNTS = [
-  { label: 'Owner', email: 'owner@city.app' },
-  { label: 'Receptionist', email: 'reception@city.app' },
-  { label: 'Doctor', email: 'doctor1@city.app' },
-  { label: 'Super admin', email: 'super@clinic.app' },
+  { label: 'Owner', email: 'owner1@test.com' },
+  { label: 'Receptionist', email: 'staff1@test.com' },
+  { label: 'Doctor', email: 'dr.sabitha@jeevancare.test' },
+  { label: 'Super admin', email: 'admin@test.com' },
 ]
 
 const PROMISES = ['Live day view per doctor', 'Walk-in queue tokens', 'Zero double-bookings']
@@ -40,7 +41,7 @@ function LoginForm() {
 
   const quickFill = (demoEmail: string) => {
     setEmail(demoEmail)
-    setPassword('password123')
+    setPassword('Test@123')
   }
 
   return (
@@ -123,19 +124,13 @@ function LoginForm() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Password" htmlFor="password">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={inputClass}
-              />
-            </Field>
+            <PasswordField
+              label="Password"
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              required
+            />
             <div className="-mt-2 text-right">
               <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
                 Forgot password?

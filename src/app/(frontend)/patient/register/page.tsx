@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { patientRegisterAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
+import { PasswordField } from '@/components/PasswordField'
 
 export default function PatientRegisterPage() {
   const router = useRouter()
@@ -80,9 +81,13 @@ export default function PatientRegisterPage() {
             <input id="email" name="email" type="email" placeholder="you@example.com" className={inputClass} />
           </Field>
 
-          <Field label="Password" htmlFor="password">
-            <input id="password" name="password" type="password" required placeholder="••••••••" className={inputClass} />
-          </Field>
+          <PasswordField
+            label="Password"
+            id="password"
+            name="password"
+            autoComplete="new-password"
+            required
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date of Birth" htmlFor="dob">

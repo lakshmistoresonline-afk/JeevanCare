@@ -3,12 +3,12 @@
  *
  *   npm run seed:test
  *
- * Creates all 10 Thrissur City clinics and specialist doctors including:
- *   - Dr. Sabitha Krishnamoorthy (Internal Medicine)
- *   - Dr. Bins M John (General Medicine)
- *   - Dr. Vinaya Thekkethil (Family Medicine)
- *   - Dr. Iqbal (General Practice)
- *   - Dr. Varghees Chakola (General Medicine)
+ * Creates all 10 Thrissur City clinics and explicit test accounts:
+ *   - Admin: admin@test.com
+ *   - Owners: owner1@test.com to owner10@test.com
+ *   - Staff: staff1@test.com to staff10@test.com
+ *   - Doctors: doctor1@test.com to doctor5@test.com (plus other specialists)
+ *   - Patients: patient1@test.com to patient10@test.com
  *   Password for all: Test@123
  */
 import 'dotenv/config'
@@ -19,7 +19,7 @@ const PASSWORD = 'Test@123'
 
 export async function seedTestUatData() {
   const payload = await getPayload({ config: await config })
-  console.log('Seeding JeevanCare Test/UAT environment with full Thrissur City dataset & Google-verified doctors...')
+  console.log('Seeding JeevanCare Test/UAT environment with explicit test accounts (owner1@test.com, staff1@test.com, doctor1@test.com)...')
 
   for (const col of ['invoices', 'visits', 'appointments', 'patients', 'users', 'tenants'] as const) {
     await payload.delete({ collection: col, where: {}, overrideAccess: true })
@@ -52,14 +52,14 @@ export async function seedTestUatData() {
   ]
 
   const tenantDocs = []
-  for (const c of clinics) {
+  for (let i = 0; i < clinics.length; i++) {
+    const c = clinics[i]
     const t = await payload.create({
       collection: 'tenants',
       overrideAccess: true,
       data: {
         name: c.name,
         city: c.city,
-        district: 'Thrissur',
         state: c.state,
         country: 'India',
         phone: c.phone,
@@ -76,13 +76,13 @@ export async function seedTestUatData() {
     })
     tenantDocs.push(t)
 
-    // Owner for each clinic
+    // Explicit Owner (owner1@test.com to owner10@test.com)
     await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
         name: `Owner — ${c.name}`,
-        email: `owner.${c.name.toLowerCase().replace(/[^a-z]/g, '')}@test.com`,
+        email: `owner${i + 1}@test.com`,
         password: PASSWORD,
         role: 'owner',
         tenant: t.id,
@@ -90,13 +90,13 @@ export async function seedTestUatData() {
       },
     })
 
-    // Receptionist for each clinic
+    // Explicit Receptionist (staff1@test.com to staff10@test.com)
     await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
         name: `Reception — ${c.name}`,
-        email: `staff.${c.name.toLowerCase().replace(/[^a-z]/g, '')}@test.com`,
+        email: `staff${i + 1}@test.com`,
         password: PASSWORD,
         role: 'receptionist',
         tenant: t.id,
@@ -105,13 +105,13 @@ export async function seedTestUatData() {
     })
   }
 
-  // 3. Specialist Doctors (Including Google-Verified Thrissur Doctors)
+  // 3. Specialist Doctors (Explicit doctor1@test.com to doctor5@test.com and others)
   const doctorsData = [
-    { name: 'Dr. Sabitha Krishnamoorthy', email: 'dr.sabitha@jeevancare.test', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223' },
-    { name: 'Dr. Bins M John', email: 'dr.bins@jeevancare.test', specialty: 'General Medicine', fee: 600, regno: 'KMC-11224' },
-    { name: 'Dr. Vinaya Thekkethil', email: 'dr.vinaya@jeevancare.test', specialty: 'Family Medicine', fee: 500, regno: 'KMC-11225' },
-    { name: 'Dr. Iqbal', email: 'dr.iqbal@jeevancare.test', specialty: 'General Practice', fee: 500, regno: 'KMC-11226' },
-    { name: 'Dr. Varghees Chakola', email: 'dr.varghees@jeevancare.test', specialty: 'General Medicine', fee: 600, regno: 'KMC-11227' },
+    { name: 'Dr. Sabitha Krishnamoorthy', email: 'doctor1@test.com', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223' },
+    { name: 'Dr. Bins M John', email: 'doctor2@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11224' },
+    { name: 'Dr. Vinaya Thekkethil', email: 'doctor3@test.com', specialty: 'Family Medicine', fee: 500, regno: 'KMC-11225' },
+    { name: 'Dr. Iqbal', email: 'doctor4@test.com', specialty: 'General Practice', fee: 500, regno: 'KMC-11226' },
+    { name: 'Dr. Varghees Chakola', email: 'doctor5@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11227' },
     { name: 'Dr. Unni Krishnan', email: 'dr.unni@test.com', specialty: 'General Medicine', fee: 500, regno: 'KMC-2026-101' },
     { name: 'Dr. Anitha Warrier', email: 'dr.anitha@test.com', specialty: 'Pediatrics', fee: 600, regno: 'KMC-2026-102' },
     { name: 'Dr. Suresh Menon', email: 'dr.suresh@test.com', specialty: 'Orthopedics', fee: 700, regno: 'KMC-2026-103' },
@@ -158,7 +158,7 @@ export async function seedTestUatData() {
     })
   }
 
-  // 4. Test Patients & Portal Accounts
+  // 4. Test Patients & Portal Accounts (patient1@test.com to patient10@test.com)
   for (let i = 1; i <= 10; i++) {
     const clinicSpec = clinics[(i - 1) % clinics.length]
     const tenant = tenantDocs[(i - 1) % clinics.length]
@@ -194,7 +194,7 @@ export async function seedTestUatData() {
     })
   }
 
-  console.log('JeevanCare Thrissur City UAT environment seeded successfully with verified doctors.')
+  console.log('JeevanCare Thrissur City UAT environment seeded successfully with owner1@test.com, staff1@test.com, doctor1@test.com, patient1@test.com.')
 }
 
 seedTestUatData().then(() => {

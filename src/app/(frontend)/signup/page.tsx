@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { signupAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
+import { PasswordField } from '@/components/PasswordField'
 import { AppSelect } from '@/components/AppSelect'
 import { IconCheck } from '@/components/icons'
 import { COUNTRY_DEFAULTS, DEFAULT_COUNTRY, CURRENCIES, TIMEZONES } from '@/lib/constants'
@@ -169,9 +170,17 @@ export default function SignupPage() {
                 <Field label="Email" htmlFor="email">
                   <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="you@clinic.com" className={inputClass} />
                 </Field>
-                <Field label="Password" htmlFor="password" hint="At least 8 characters.">
-                  <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="••••••••" className={inputClass} />
-                </Field>
+                <PasswordField
+                  label="Password"
+                  id="password"
+                  name="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={form.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  hint="At least 8 characters."
+                />
               </div>
             </div>
 

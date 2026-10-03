@@ -7,6 +7,7 @@ import { AppSelect } from './AppSelect'
 import { TimePicker } from './TimePicker'
 import { TablePager } from './TablePager'
 import { IconPlus } from './icons'
+import { PasswordField } from './PasswordField'
 
 const STAFF_PAGE_SIZE = 10
 import { createStaff, updateStaff, toggleStaffActive } from '@/app/(frontend)/dashboard/staff/actions'
@@ -153,11 +154,15 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
           <div className="grid gap-4 p-6 sm:grid-cols-2">
             <Field label="Full name"><input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} /></Field>
             <Field label="Email"><input className={inputClass} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
-            <Field
+            <PasswordField
               label={editingId ? 'New password (leave blank to keep)' : 'Temporary password'}
-            >
-              <input className={inputClass} value={form.password} onChange={(e) => set('password', e.target.value)} />
-            </Field>
+              id="password"
+              name="password"
+              required={!editingId}
+              autoComplete="new-password"
+              value={form.password}
+              onChange={(e) => set('password', e.target.value)}
+            />
             <Field label="Role">
               <AppSelect
                 value={form.role}
