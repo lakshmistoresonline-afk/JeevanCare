@@ -1,2 +1,4 @@
-- `[x]` Implement public clinic and doctor directory on landing page (`src/app/(frontend)/page.tsx`)
+- `[x]` Update Tenant schema and seed data with Thrissur Kerala location metadata (`Tenants.ts`, `seedTest.ts`)
+- `[x]` Create interactive cascading location & doctor finder component (`ClinicDoctorFinder.tsx`)
+- `[x]` Integrate finder component into landing page (`src/app/(frontend)/page.tsx`)
 - `[x]` Verify TypeScript typecheck, lint, and build

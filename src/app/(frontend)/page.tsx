@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { btnPrimary, btnGhost } from '@/components/primitives'
 import { JeevanCareHeader } from '@/components/JeevanCareHeader'
+import { ClinicDoctorFinder } from '@/components/ClinicDoctorFinder'
 import { getPayloadClient } from '@/lib/auth'
 import {
   IconCalendar,
@@ -213,67 +214,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------- Clinics & Doctors Directory ---------------- */}
-      <section id="directory" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20">
-        <div className="mx-auto max-w-xl text-center">
-          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Verified Network</span>
-          <h2 className="mt-3 font-display text-3xl font-semibold">
-            Explore our clinics &amp; specialist doctors
-          </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            Browse registered healthcare facilities across India, check doctor availability, and book your appointment instantly.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {clinics.map((clinic: any) => {
-            const clinicDoctors = doctors.filter((d: any) => String(d.tenant?.id ?? d.tenant) === String(clinic.id))
-            return (
-              <div key={clinic.id} className="card-flat flex flex-col justify-between p-6">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-md bg-secondary px-2.5 py-1 text-[11px] font-semibold text-primary">
-                      {clinic.city || 'India'}
-                    </span>
-                    <span className="tabular text-xs text-muted-foreground">{clinic.phone}</span>
-                  </div>
-                  <h3 className="mt-3 font-display text-lg font-semibold">{clinic.name}</h3>
-                  {clinic.state && <p className="text-xs text-muted-foreground">{clinic.state} · PIN: {clinic.pinCode || '—'}</p>}
-
-                  <div className="mt-5 border-t border-border pt-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available Doctors</div>
-                    {clinicDoctors.length === 0 ? (
-                      <p className="mt-2 text-xs text-faint">No doctors listed yet.</p>
-                    ) : (
-                      <ul className="mt-3 space-y-3">
-                        {clinicDoctors.map((doc: any) => (
-                          <li key={doc.id} className="flex items-center justify-between rounded-lg border border-border bg-canvas p-3 text-xs">
-                            <div>
-                              <div className="font-semibold text-ink">Dr. {doc.name}</div>
-                              <div className="text-muted-foreground">{doc.specialty || 'General Practitioner'}</div>
-                              {doc.consultationFee && (
-                                <div className="tabular mt-0.5 font-medium text-primary">Fee: ₹{doc.consultationFee}</div>
-                              )}
-                            </div>
-                            <Link href="/patient/appointments/book" className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-primary/90">
-                              Book
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 border-t border-border pt-4 text-center">
-                  <Link href="/patient/login" className="text-xs font-medium text-primary hover:underline">
-                    Sign in as patient to book &rarr;
-                  </Link>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      <ClinicDoctorFinder clinics={clinics} doctors={doctors} />
 
       {/* ---------------- How it works ---------------- */}
       <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20">

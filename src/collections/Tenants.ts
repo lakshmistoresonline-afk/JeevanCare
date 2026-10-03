@@ -76,6 +76,8 @@ export const Tenants: CollectionConfig = {
     },
     { name: 'address', type: 'textarea' },
     { name: 'city', type: 'text' },
+    { name: 'district', type: 'text', defaultValue: 'Thrissur' },
+    { name: 'state', type: 'text', defaultValue: 'Kerala' },
     {
       name: 'photoUrl',
       type: 'text',

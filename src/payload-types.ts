@@ -143,6 +143,8 @@ export interface Tenant {
   phone: string;
   address?: string | null;
   city?: string | null;
+  district?: string | null;
+  state?: string | null;
   /**
    * Clinic photo URL from Google Places or listing.
    */
@@ -578,6 +580,8 @@ export interface TenantsSelect<T extends boolean = true> {
   phone?: T;
   address?: T;
   city?: T;
+  district?: T;
+  state?: T;
   photoUrl?: T;
   country?: T;
   status?: T;

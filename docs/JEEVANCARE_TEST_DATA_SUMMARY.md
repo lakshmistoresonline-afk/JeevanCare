@@ -1,10 +1,10 @@
-# JeevanCare Test Data Summary
+# JeevanCare Test Data Summary (Thrissur City, Kerala)
 
-- **Clinics (Tenants)**: 3 (Chennai Central Clinic, Kochi Health Centre, Bengaluru Medical Centre)
-- **Owners**: 3
-- **Receptionists**: 3
-- **Doctors**: 6 (2 per clinic with valid test registration numbers and state medical councils)
-- **Patients**: 10 (Fictional Indian names, mobile numbers with +91 format, states, PIN codes)
-- **Patient Portal Accounts**: 10 (Linked to respective patient profiles)
+- **Clinics (Tenants)**: 10 active healthcare facilities across Thrissur City (Swaraj Medical Centre, Mission Quarters Health Clinic, Ayyanthole Family Practice, Chembukkavu Specialist Chambers, East Fort Outpatient Centre, West Fort Multispeciality Clinic, Punkunnam Medical Centre, Ollur Urban Health Hub, Mannuthy Care Clinic, Koorkanchery Outpatient Unit).
+- **Platform Super Admin**: 1 (`admin@test.com`)
+- **Clinic Owners**: 10 (One per clinic)
+- **Receptionists**: 10 (One per clinic)
+- **Specialist Doctors**: 25 (Comprehensive coverage across General Medicine, Pediatrics, Orthopedics, Gynecology, Cardiology, Dermatology, ENT, Ophthalmology, Neurology, Gastroenterology, Pulmonology, Nephrology, Urology, Psychiatry, Ayurveda, Dentistry, Surgery, Diabetology, and Physiotherapy).
+- **Test Patients**: 10 (With linked patient portal accounts).
 - **Currency**: INR (₹)
 - **Timezone**: Asia/Kolkata
