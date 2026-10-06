@@ -7,10 +7,8 @@ import { IconCheck } from '@/components/icons'
 import { VisitForm } from '@/components/VisitForm'
 import { PostVisitActions } from '@/components/PostVisitActions'
 import { VISIT_ALLOWED_APPOINTMENT_STATUSES } from '@/lib/constants'
+import { relId } from '@/lib/utils'
 import type { Appointment, Patient, User } from '@/payload-types'
-
-const relId = (v: unknown): string =>
-  v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
 
 export default async function NewVisitPage({
   searchParams,
@@ -62,6 +60,22 @@ export default async function NewVisitPage({
     overrideAccess: true,
   })
   const patient = appt.patient as Patient
+
+  // Fetch patient's past visits for EMR split-pane view
+  const pastVisitsRes = await payload.find({
+    collection: 'visits',
+    where: { tenant: { equals: tenantID }, patient: { equals: relId(patient) } },
+    sort: '-visitDate',
+    limit: 5,
+    overrideAccess: true,
+  })
+  const pastVisits = pastVisitsRes.docs.map((v: any) => ({
+    id: String(v.id),
+    date: new Date(v.visitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    diagnosis: v.diagnosis,
+    symptoms: v.symptoms,
+  }))
+
   // A visit already exists (either pre-existing, or we just recorded one and the
   // route re-rendered) — show a "what's next" panel rather than a dead end.
   if (existing.totalDocs > 0) {
@@ -84,13 +98,16 @@ export default async function NewVisitPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       {back}
-      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Record visit</h1>
+      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Clinical Consultation Workspace</h1>
       <VisitForm
         appointmentId={String(appt.id)}
         patientName={patient?.name ?? 'Patient'}
+        patientMrn={patient?.mrn}
+        patientAllergies={patient?.allergies}
         doctorName={(appt.doctor as User)?.name ?? 'Doctor'}
+        pastVisits={pastVisits}
       />
     </div>
   )

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requirePatientSession, getPayloadClient } from '@/lib/auth'
 import { Card, StatusBadge, btnPrimary, btnGhost } from '@/components/primitives'
 import { formatDateTime } from '@/lib/format'
+import { formatDoctorName } from '@/lib/utils'
 import { IconCalendar, IconPlus, IconReceipt, IconStethoscope } from '@/components/icons'
 
 export default async function PatientDashboard() {
@@ -48,6 +49,28 @@ export default async function PatientDashboard() {
   })
   const recentDocs = docsRes.docs as any[]
 
+  // Live Queue Position calculation for today's checked-in appointment
+  const checkedInAppt = upcomingAppts.find((a: any) => a.status === 'checked-in')
+  let queuePosition = 0
+  let estWaitMins = 0
+
+  if (checkedInAppt) {
+    const docId = typeof checkedInAppt.doctor === 'object' ? checkedInAppt.doctor.id : checkedInAppt.doctor
+    const queueAheadRes = await payload.find({
+      collection: 'appointments',
+      where: {
+        tenant: { equals: tenant.id },
+        doctor: { equals: docId },
+        status: { equals: 'checked-in' },
+        start: { less_than: checkedInAppt.start },
+      },
+      overrideAccess: true,
+    })
+    queuePosition = queueAheadRes.totalDocs + 1
+    const duration = tenant.settings?.appointmentDurationMins || 15
+    estWaitMins = queueAheadRes.totalDocs * duration
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -59,6 +82,65 @@ export default async function PatientDashboard() {
           <IconPlus size={15} /> Book Appointment
         </Link>
       </div>
+
+      {/* Live Queue Position & Stepper Progress Tracker */}
+      {checkedInAppt && (
+        <Card className="border-primary/30 bg-secondary/30 p-6 shadow-xs">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center border-b border-primary/15 pb-4">
+            <div>
+              <span className="rounded-md bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                Live OPD Queue Tracker
+              </span>
+              <h2 className="mt-2 text-lg font-semibold text-ink">
+                Token: {(checkedInAppt as any).tokenNumber || 'Checked In'} · Doctor: {formatDoctorName((checkedInAppt as any).doctor?.name)}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {queuePosition === 1
+                  ? "🎉 You're next in line! Please be ready near consultation room."
+                  : `There are ${queuePosition - 1} patient(s) ahead of you in line.`}
+              </p>
+            </div>
+            <div className="rounded-xl border border-primary/20 bg-card p-3.5 text-center sm:text-end">
+              <div className="text-2xl font-extrabold text-primary">~{estWaitMins} mins</div>
+              <div className="text-[11px] font-medium text-muted-foreground">Estimated Wait Time</div>
+            </div>
+          </div>
+
+          {/* Stepper Progress Bar */}
+          <div className="mt-5 grid grid-cols-4 gap-2 text-center text-xs">
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex size-7 items-center justify-center rounded-full bg-primary text-white font-bold text-xs">
+                ✓
+              </div>
+              <span className="font-semibold text-ink">Checked-In</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`flex size-7 items-center justify-center rounded-full font-bold text-xs ${
+                queuePosition > 1 ? 'bg-primary text-white ring-4 ring-primary/20 animate-pulse' : 'bg-primary text-white'
+              }`}>
+                #{queuePosition}
+              </div>
+              <span className="font-semibold text-ink">In Queue</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`flex size-7 items-center justify-center rounded-full font-bold text-xs ${
+                queuePosition === 1 ? 'bg-amber text-white ring-4 ring-amber/20 animate-pulse' : 'bg-muted text-muted-foreground'
+              }`}>
+                {queuePosition === 1 ? '!' : '3'}
+              </div>
+              <span className={`font-semibold ${queuePosition === 1 ? 'text-amber font-bold' : 'text-muted-foreground'}`}>
+                {queuePosition === 1 ? 'Next Up!' : 'Next Up'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground font-bold text-xs">
+                4
+              </div>
+              <span className="font-semibold text-muted-foreground">Doctor Room</span>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -97,7 +179,7 @@ export default async function PatientDashboard() {
             {upcomingAppts.map((a: any) => (
               <li key={a.id} className="flex items-center justify-between px-5 py-3.5 text-sm">
                 <div>
-                  <div className="font-medium">Dr. {a.doctor?.name ?? 'Doctor'}</div>
+                  <div className="font-medium">{formatDoctorName(a.doctor?.name)}</div>
                   <div className="tabular text-xs text-muted-foreground">{formatDateTime(a.start, tenant)}</div>
                   {a.reason && <div className="text-xs text-muted-foreground">Reason: {a.reason}</div>}
                 </div>

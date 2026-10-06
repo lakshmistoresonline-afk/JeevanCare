@@ -2,22 +2,13 @@ import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import { tenantScoped, denyAll, visitsWriteAccess, getTenantID, patientTenantScoped } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
+import { relId } from '@/lib/utils'
 import {
   ERROR_CODES,
   PRESCRIPTION_FREQUENCIES,
   VISIT_ALLOWED_APPOINTMENT_STATUSES,
   type AppointmentStatus,
 } from '@/lib/constants'
-
-/** Normalise a relationship value (id | populated doc) to its id string. */
-const relID = (value: unknown): string | null => {
-  if (!value) return null
-  if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
-  }
-  return String(value)
-}
 
 /**
  * Visits — a completed consultation (v2 spec §2.1). One appointment = max one visit.
@@ -41,7 +32,7 @@ export const Visits: CollectionConfig = {
         if (!data) return data
         if (operation !== 'create') return data
 
-        const appointmentID = relID(data.appointment)
+        const appointmentID = relId(data.appointment)
         if (!appointmentID) {
           throw new APIError('A visit must be linked to an appointment.', 400, {
             code: ERROR_CODES.VALIDATION,
@@ -58,8 +49,8 @@ export const Visits: CollectionConfig = {
         }
 
         // Same-tenant guard — a visit can never attach to another clinic's appointment.
-        const intendedTenant = relID(data.tenant) ?? getTenantID(req.user)
-        if (intendedTenant && String(relID(appt.tenant)) !== String(intendedTenant)) {
+        const intendedTenant = relId(data.tenant) || getTenantID(req.user)
+        if (intendedTenant && String(relId(appt.tenant)) !== String(intendedTenant)) {
           throw new APIError('That appointment belongs to another clinic.', 403, {
             code: ERROR_CODES.FORBIDDEN,
           })
@@ -86,8 +77,8 @@ export const Visits: CollectionConfig = {
         }
 
         // Denormalise from the appointment; default the visit date to now.
-        data.patient = relID(appt.patient)
-        data.doctor = relID(appt.doctor)
+        data.patient = relId(appt.patient)
+        data.doctor = relId(appt.doctor)
         if (!data.visitDate) data.visitDate = new Date().toISOString()
 
         return data
@@ -105,7 +96,7 @@ export const Visits: CollectionConfig = {
       // the moment its visit is recorded (saves the front desk a manual step).
       async ({ doc, req, operation }) => {
         if (operation !== 'create') return
-        const appointmentID = relID(doc.appointment)
+        const appointmentID = relId(doc.appointment)
         if (!appointmentID) return
         const appt = await req.payload
           .findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true })

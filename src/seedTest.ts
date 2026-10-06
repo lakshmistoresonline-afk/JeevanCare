@@ -108,6 +108,7 @@ export async function seedTestUatData() {
   // 3. Specialist Doctors (Explicit doctor1@test.com to doctor5@test.com and others)
   const doctorsData = [
     { name: 'Dr. Sabitha Krishnamoorthy', email: 'doctor1@test.com', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223' },
+    { name: 'Dr. Sabitha Krishnamoorthy', email: 'dr.sabitha@jeevancare.test', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223-A' },
     { name: 'Dr. Bins M John', email: 'doctor2@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11224' },
     { name: 'Dr. Vinaya Thekkethil', email: 'doctor3@test.com', specialty: 'Family Medicine', fee: 500, regno: 'KMC-11225' },
     { name: 'Dr. Iqbal', email: 'doctor4@test.com', specialty: 'General Practice', fee: 500, regno: 'KMC-11226' },

@@ -6,10 +6,8 @@ import { Card, StatusBadge, Avatar, Th, Td, btnGhost } from '@/components/primit
 import { IconChevronLeft, IconPrinter } from '@/components/icons'
 import { InvoiceActions } from '@/components/InvoiceActions'
 import { formatMoney, formatDateTime } from '@/lib/format'
+import { relId } from '@/lib/utils'
 import type { Invoice, Patient, User } from '@/payload-types'
-
-const relId = (v: unknown): string =>
-  v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = await requireDashboardSession()

@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { startOfDayInTz } from '@/lib/reports'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import { formatDoctorName } from '@/lib/utils'
+import { QueueAudioAnnouncer } from '@/components/QueueAudioAnnouncer'
+import { UpiQrCode } from '@/components/UpiQrCode'
 
 export default async function QueueDisplayPage() {
   const { tenant } = await requireDashboardSession()
@@ -37,8 +40,15 @@ export default async function QueueDisplayPage() {
           <h1 className="font-display text-3xl font-bold tracking-tight">{tenant.name}</h1>
           <p className="text-sm text-sidebar-foreground">Live OPD Waiting Room Queue · JeevanCare</p>
         </div>
-        <div className="text-right">
-          <div className="tabular text-lg font-semibold">{new Date().toLocaleDateString('en-IN', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' })}</div>
+        <div className="flex items-center gap-6">
+          <QueueAudioAnnouncer
+            tokenNumber={(current as any)?.tokenNumber}
+            patientName={(current as any)?.patient?.name}
+            doctorName={formatDoctorName((current as any)?.doctor?.name)}
+          />
+          <div className="text-right">
+            <div className="tabular text-lg font-semibold">{new Date().toLocaleDateString('en-IN', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' })}</div>
+          </div>
         </div>
       </header>
 
@@ -55,7 +65,7 @@ export default async function QueueDisplayPage() {
                 {(current as any).patient?.name || 'Patient'}
               </div>
               <div className="mt-1 text-sm text-sidebar-foreground">
-                Dr. {(current as any).doctor?.name || 'Doctor'}
+                {formatDoctorName((current as any).doctor?.name)}
               </div>
             </div>
           ) : (
@@ -80,7 +90,7 @@ export default async function QueueDisplayPage() {
                     </span>
                     <div>
                       <div className="font-semibold">{u.patient?.name || 'Patient'}</div>
-                      <div className="text-xs text-sidebar-foreground">Dr. {u.doctor?.name || 'Doctor'}</div>
+                      <div className="text-xs text-sidebar-foreground">{formatDoctorName(u.doctor?.name)}</div>
                     </div>
                   </div>
                   <span className="rounded-full bg-blue-soft/20 px-3 py-1 text-xs font-semibold text-sidebar-accent">

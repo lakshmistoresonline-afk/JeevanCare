@@ -12,7 +12,7 @@ import { IconCheck } from '@/components/icons'
 const DEMO_ACCOUNTS = [
   { label: 'Owner', email: 'owner1@test.com' },
   { label: 'Receptionist', email: 'staff1@test.com' },
-  { label: 'Doctor', email: 'dr.sabitha@jeevancare.test' },
+  { label: 'Doctor', email: 'doctor1@test.com' },
   { label: 'Super admin', email: 'admin@test.com' },
 ]
 

@@ -4,6 +4,7 @@
 
 import type { Payload, Where } from 'payload'
 import type { Appointment, Invoice, Patient, Tenant, User, Visit } from '@/payload-types'
+import { relId } from '@/lib/utils'
 import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE } from './constants'
 
 /** Offset (tz - UTC) in ms at a given instant. */
@@ -368,10 +369,6 @@ export async function getMonthlyReport(
   for (const d of doctorsRes.docs as User[]) {
     byDoctor.set(String(d.id), { total: 0, completed: 0, noShows: 0, revenue: 0 })
   }
-  const relId = (v: unknown): string =>
-    v && typeof v === 'object' && 'id' in (v as Record<string, unknown>)
-      ? String((v as { id: unknown }).id)
-      : String(v)
 
   for (const a of apptsRes.docs as Appointment[]) {
     summary.total += 1

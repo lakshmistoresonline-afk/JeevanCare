@@ -6,15 +6,7 @@
 import type { CollectionAfterChangeHook, PayloadRequest } from 'payload'
 import { logAudit } from '@/lib/audit'
 import { asPlan, planLabel } from '@/lib/plans'
-
-const relID = (value: unknown): string | null => {
-  if (value == null) return null
-  if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
-  }
-  return String(value)
-}
+import { relId } from '@/lib/utils'
 
 /** Best-effort display name for a related doc (falls back to a generic label). */
 async function nameOf(
@@ -23,7 +15,7 @@ async function nameOf(
   id: unknown,
   fallback: string,
 ): Promise<string> {
-  const rid = relID(id)
+  const rid = relId(id)
   if (!rid) return fallback
   try {
     const doc = await req.payload.findByID({ collection, id: rid, depth: 0, overrideAccess: true })
@@ -35,7 +27,7 @@ async function nameOf(
 
 // ---- Appointments ----
 export const auditAppointments: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
-  const tenantID = relID(doc.tenant)
+  const tenantID = relId(doc.tenant)
   const targetId = String(doc.id)
   const base = { targetCollection: 'appointments', targetId, tenantID }
 
@@ -60,7 +52,7 @@ export const auditAppointments: CollectionAfterChangeHook = async ({ doc, previo
 
 // ---- Invoices ----
 export const auditInvoices: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
-  const tenantID = relID(doc.tenant)
+  const tenantID = relId(doc.tenant)
   const targetId = String(doc.id)
   const base = { targetCollection: 'invoices', targetId, tenantID }
   const number = doc.invoiceNumber || `#${targetId}`
@@ -86,7 +78,7 @@ export const auditInvoices: CollectionAfterChangeHook = async ({ doc, previousDo
 export const auditUsers: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
   // Super admins have no tenant; their own record isn't a clinic audit subject.
   if (doc.role === 'superAdmin') return doc
-  const tenantID = relID(doc.tenant)
+  const tenantID = relId(doc.tenant)
   const base = { targetCollection: 'users', targetId: String(doc.id), tenantID }
 
   if (operation === 'create') {

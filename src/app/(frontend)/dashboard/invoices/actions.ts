@@ -3,10 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import { relId } from '@/lib/utils'
 import type { Invoice, User, Visit } from '@/payload-types'
-
-const relId = (v: unknown): string =>
-  v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
 
 async function ctx() {
   const user = await getCurrentUser()

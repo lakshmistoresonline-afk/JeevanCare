@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { btnPrimary, Card, EmptyState, PageTitle, Avatar, Th, Td, inputClass } from '@/components/primitives'
+import { PatientSlideOver } from '@/components/PatientSlideOver'
 import {
   Pagination,
   PaginationContent,
@@ -115,10 +116,21 @@ export default async function PatientsPage({
               {patients.map((p) => (
                 <tr key={p.id} className="group transition-colors hover:bg-canvas/60">
                   <Td>
-                    <Link href={`/dashboard/patients/${p.id}`} className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <Avatar name={p.name} size="sm" />
-                      <span className="font-medium group-hover:text-primary">{p.name}</span>
-                    </Link>
+                      <PatientSlideOver
+                        patient={{
+                          id: String(p.id),
+                          name: p.name,
+                          mrn: p.mrn,
+                          phone: p.phone,
+                          ageYears: age(p),
+                          gender: p.gender,
+                          allergies: p.allergies,
+                          city: (p as any).city,
+                        }}
+                      />
+                    </div>
                   </Td>
                   <Td>
                     <span className="tabular rounded bg-canvas px-1.5 py-0.5 text-xs font-medium text-muted-foreground">

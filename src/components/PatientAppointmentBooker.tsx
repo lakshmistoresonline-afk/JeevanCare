@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { btnPrimary, inputClass, Spinner } from '@/components/primitives'
+import { formatDoctorName } from '@/lib/utils'
 import { getAvailableSlots, bookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
 
 export function PatientAppointmentBooker({
   doctors,
   patientId,
 }: {
-  doctors: { id: string; name: string; specialty?: string | null }[]
+  doctors: { id: string; name: string; specialty?: string | null; clinicName?: string | null }[]
   patientId: string
 }) {
   const router = useRouter()
@@ -83,7 +84,7 @@ export function PatientAppointmentBooker({
           <option value="" disabled>Choose doctor</option>
           {doctors.map((d) => (
             <option key={d.id} value={d.id}>
-              Dr. {d.name} {d.specialty ? `— ${d.specialty}` : ''}
+              {formatDoctorName(d.name)} {d.specialty ? `— ${d.specialty}` : ''} {d.clinicName ? `(${d.clinicName})` : ''}
             </option>
           ))}
         </select>

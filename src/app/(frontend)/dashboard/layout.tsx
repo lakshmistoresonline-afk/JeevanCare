@@ -1,6 +1,8 @@
 import React from 'react'
 import { requireDashboardSession } from '@/lib/auth'
 import { Sidebar } from '@/components/Sidebar'
+import { CommandPalette } from '@/components/CommandPalette'
+import { ReceptionQrModal } from '@/components/ReceptionQrModal'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +29,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
         role={user.role}
       />
       <div className="flex flex-1 flex-col min-w-0">
+        {/* Top App Chrome Header with Command Palette & Reception QR Poster trigger */}
+        <header className="hidden h-14 items-center justify-between border-b border-border bg-card px-6 md:flex">
+          <CommandPalette />
+          <div className="flex items-center gap-3">
+            <ReceptionQrModal
+              clinicName={tenant?.name}
+              city={tenant?.city}
+              phone={tenant?.phone}
+              tenantId={tenant?.id ? String(tenant.id) : null}
+            />
+          </div>
+        </header>
+
         <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6 md:hidden">
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold">JeevanCare</span>

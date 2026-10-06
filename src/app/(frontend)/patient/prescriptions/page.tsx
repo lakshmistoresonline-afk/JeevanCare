@@ -1,6 +1,7 @@
 import { requirePatientSession, getPayloadClient } from '@/lib/auth'
 import { Card, btnGhost } from '@/components/primitives'
 import { formatDateTime } from '@/lib/format'
+import { formatDoctorName } from '@/lib/utils'
 import { IconPrinter } from '@/components/icons'
 
 export default async function PatientPrescriptionsPage() {
@@ -38,7 +39,7 @@ export default async function PatientPrescriptionsPage() {
                   <div>
                     <div className="font-semibold">{v.diagnosis || 'Consultation Prescription'}</div>
                     <div className="tabular text-xs text-muted-foreground">
-                      Dr. {v.doctor?.name ?? 'Doctor'} · {formatDateTime(v.visitDate, tenant)}
+                      {formatDoctorName(v.doctor?.name)} · {formatDateTime(v.visitDate, tenant)}
                     </div>
                   </div>
                   <a href={`/print/prescription/${v.id}`} target="_blank" rel="noreferrer" className={btnGhost}>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requirePatientSession, getPayloadClient } from '@/lib/auth'
 import { Card, StatusBadge, btnPrimary } from '@/components/primitives'
 import { formatDateTime } from '@/lib/format'
+import { formatDoctorName } from '@/lib/utils'
 import { IconPlus } from '@/components/icons'
 
 export default async function PatientAppointmentsPage() {
@@ -48,7 +49,7 @@ export default async function PatientAppointmentsPage() {
             {appts.map((a: any) => (
               <li key={a.id} className="flex items-center justify-between px-5 py-4 text-sm">
                 <div>
-                  <div className="font-medium">Dr. {a.doctor?.name ?? 'Doctor'}</div>
+                  <div className="font-medium">{formatDoctorName(a.doctor?.name)}</div>
                   <div className="tabular text-xs text-muted-foreground">{formatDateTime(a.start, tenant)}</div>
                   {a.reason && <div className="text-xs text-muted-foreground">Reason: {a.reason}</div>}
                   {a.tokenNumber && <div className="text-xs font-semibold text-primary">Token: {a.tokenNumber}</div>}

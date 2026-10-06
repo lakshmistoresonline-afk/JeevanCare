@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { formatDoctorName } from '@/lib/utils'
 
 type Clinic = {
   id: string
@@ -196,7 +197,7 @@ export function ClinicDoctorFinder({
                           {clinicDocs.map((doc) => (
                             <li key={doc.id} className="flex items-center justify-between rounded-lg border border-border bg-canvas p-3 text-xs">
                               <div>
-                                <div className="font-semibold text-ink">Dr. {doc.name}</div>
+                                <div className="font-semibold text-ink">{formatDoctorName(doc.name)}</div>
                                 <div className="text-muted-foreground">{doc.specialty || 'General Practitioner'}</div>
                                 {doc.consultationFee && (
                                   <div className="tabular mt-0.5 font-medium text-primary">Fee: ₹{doc.consultationFee}</div>

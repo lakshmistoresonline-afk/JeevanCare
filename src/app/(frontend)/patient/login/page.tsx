@@ -14,13 +14,11 @@ export default function PatientLoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
+    const formData = new FormData(e.currentTarget)
     startTransition(async () => {
-      const formData = new FormData()
-      formData.set('email', email)
-      formData.set('password', password)
       const res = await patientLoginAction(null, formData)
       if (res.ok) {
         router.push('/patient/dashboard')
@@ -67,6 +65,8 @@ export default function PatientLoginPage() {
             name="password"
             autoComplete="current-password"
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
 
           {error && (

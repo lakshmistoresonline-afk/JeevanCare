@@ -9,18 +9,23 @@ export default async function PatientBookAppointmentPage() {
   const doctorsRes = await payload.find({
     collection: 'users',
     where: {
-      tenant: { equals: tenant.id },
       role: { equals: 'doctor' },
       active: { equals: true },
     },
-    limit: 50,
+    limit: 100,
+    depth: 1,
     overrideAccess: true,
   })
-  const doctors = doctorsRes.docs.map((d: any) => ({
-    id: String(d.id),
-    name: d.name,
-    specialty: d.specialty,
-  }))
+
+  const doctors = doctorsRes.docs.map((d: any) => {
+    const tenantObj = typeof d.tenant === 'object' ? d.tenant : null
+    return {
+      id: String(d.id),
+      name: d.name,
+      specialty: d.specialty,
+      clinicName: tenantObj?.name ?? null,
+    }
+  })
 
   return (
     <div className="flex flex-col gap-6 max-w-xl mx-auto">

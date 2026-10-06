@@ -6,6 +6,7 @@ import { AllergyBanner, Card, StatusBadge, EmptyState, Avatar, btnPrimary, btnGh
 import { IconChevronLeft, IconPhone, IconPlus, IconPrinter } from '@/components/icons'
 import { ageFromDOB, formatDateTime, formatMoney } from '@/lib/format'
 import { getPatientTimeline } from '@/lib/timeline'
+import { VitalsChart } from '@/components/VitalsChart'
 import type { Appointment, Invoice, Patient, User } from '@/payload-types'
 import type { AppointmentStatus } from '@/lib/constants'
 import { MedicalDocumentUpload } from '@/components/MedicalDocumentUpload'
@@ -93,6 +94,24 @@ export default async function PatientProfile({
         })
       : null
   const documents = (documentsRes?.docs ?? []) as any[]
+
+  const visitsForVitals = await payload.find({
+    collection: 'visits',
+    where: { tenant: { equals: tenantID }, patient: { equals: id } },
+    sort: 'visitDate',
+    limit: 15,
+    overrideAccess: true,
+  })
+  const vitalsHistory = visitsForVitals.docs
+    .filter((v: any) => v.vitals && (v.vitals.bpSystolic || v.vitals.weightKg || v.vitals.pulse))
+    .map((v: any) => ({
+      date: new Date(v.visitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      bpSystolic: v.vitals?.bpSystolic,
+      bpDiastolic: v.vitals?.bpDiastolic,
+      weightKg: v.vitals?.weightKg,
+      pulse: v.vitals?.pulse,
+    }))
+
   const tabHref = (key: TabKey) => `/dashboard/patients/${id}?tab=${key}`
 
   const age = patient.ageYears ?? (patient.dateOfBirth ? ageFromDOB(patient.dateOfBirth) : null)
@@ -163,6 +182,12 @@ export default async function PatientProfile({
               Book
             </Link>
           </div>
+        </Card>
+
+        {/* Vitals Trend Analysis Chart */}
+        <Card className="p-5">
+          <h3 className="mb-3 font-display text-sm font-semibold text-ink">Vitals Trend Analysis</h3>
+          <VitalsChart vitalsHistory={vitalsHistory} />
         </Card>
 
         <div className="flex flex-col gap-4">

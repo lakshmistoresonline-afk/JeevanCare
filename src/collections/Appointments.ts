@@ -5,6 +5,7 @@ import { forceTenant } from '@/hooks/tenant'
 import { findConflict, computeEnd } from '@/lib/booking'
 import { auditAppointments } from '@/hooks/audit'
 import { startOfDayInTz } from '@/lib/reports'
+import { relId } from '@/lib/utils'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import {
   APPOINTMENT_STATUSES,
@@ -12,15 +13,6 @@ import {
   ERROR_CODES,
   type AppointmentStatus,
 } from '@/lib/constants'
-
-const relID = (value: unknown): string | null => {
-  if (!value) return null
-  if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
-  }
-  return String(value)
-}
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
@@ -70,9 +62,9 @@ export const Appointments: CollectionConfig = {
         const occupies = status === 'scheduled' || status === 'checked-in'
         const isWalkIn = data.isWalkIn ?? originalDoc?.isWalkIn ?? false
 
-        const doctorID = relID(data.doctor) ?? relID(originalDoc?.doctor)
+        const doctorID = relId(data.doctor) || relId(originalDoc?.doctor)
         const tenantID =
-          relID(data.tenant) ?? relID(originalDoc?.tenant) ?? getTenantID(req.user)
+          relId(data.tenant) || relId(originalDoc?.tenant) || getTenantID(req.user)
         const endDate = data.end ? new Date(data.end) : originalDoc?.end && new Date(originalDoc.end)
 
         if (occupies && !isWalkIn && start && endDate && doctorID && tenantID) {

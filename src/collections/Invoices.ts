@@ -3,6 +3,7 @@ import { APIError } from 'payload'
 import { tenantScoped, denyAll, getTenantID, isSuperAdmin, superAdminOrOwnerField, patientTenantScoped } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { auditInvoices } from '@/hooks/audit'
+import { relId } from '@/lib/utils'
 import {
   ERROR_CODES,
   PAYMENT_METHODS,
@@ -10,15 +11,6 @@ import {
   DEFAULT_CURRENCY,
   type InvoiceStatus,
 } from '@/lib/constants'
-
-const relID = (value: unknown): string | null => {
-  if (!value) return null
-  if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
-  }
-  return String(value)
-}
 
 /** Round to 2 dp to keep money math free of float dust. */
 const money = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100
@@ -93,9 +85,9 @@ export const Invoices: CollectionConfig = {
           // Pull the patient from the linked visit when not supplied directly.
           if (!data.patient && data.visit) {
             const visit = await req.payload
-              .findByID({ collection: 'visits', id: relID(data.visit)!, depth: 0, req, overrideAccess: true })
+              .findByID({ collection: 'visits', id: relId(data.visit), depth: 0, req, overrideAccess: true })
               .catch(() => null)
-            if (visit) data.patient = relID(visit.patient)
+            if (visit) data.patient = relId(visit.patient)
           }
         }
 
