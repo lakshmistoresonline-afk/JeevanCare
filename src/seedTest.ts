@@ -1,19 +1,22 @@
 /**
  * JeevanCare Safe Test / UAT Dataset Seeder
  *
+ * Command:
  *   npm run seed:test
  *
- * Creates all 10 Thrissur City clinics and explicit test accounts:
+ * Deterministic, idempotent seeding script populating 10 Thrissur City clinics
+ * and explicit UAT test scenarios across multiple tenant contexts:
  *   - Admin: admin@test.com
  *   - Owners: owner1@test.com to owner10@test.com
  *   - Staff: staff1@test.com to staff10@test.com
  *   - Doctors: doctor1@test.com to doctor5@test.com (plus other specialists)
  *   - Patients: patient1@test.com to patient10@test.com
- *   Password for all: Test@123
+ *   Password for all test accounts: Test@123
  */
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from './payload.config'
+import crypto from 'crypto'
 
 const PASSWORD = 'Test@123'
 
@@ -21,12 +24,13 @@ export async function seedTestUatData() {
   const payload = await getPayload({ config: await config })
   console.log('Seeding JeevanCare Test/UAT environment with explicit test accounts (owner1@test.com, staff1@test.com, doctor1@test.com)...')
 
-  for (const col of ['invoices', 'visits', 'appointments', 'patients', 'users', 'tenants'] as const) {
-    await payload.delete({ collection: col, where: {}, overrideAccess: true })
+  // Clear existing collections idempotently
+  for (const col of ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants'] as const) {
+    await payload.delete({ collection: col as any, where: {}, overrideAccess: true })
   }
 
   // 1. Super Admin
-  await payload.create({
+  const adminUser = await payload.create({
     collection: 'users',
     overrideAccess: true,
     data: {
@@ -52,6 +56,9 @@ export async function seedTestUatData() {
   ]
 
   const tenantDocs = []
+  const ownerDocs = []
+  const staffDocs = []
+
   for (let i = 0; i < clinics.length; i++) {
     const c = clinics[i]
     const t = await payload.create({
@@ -77,7 +84,7 @@ export async function seedTestUatData() {
     tenantDocs.push(t)
 
     // Explicit Owner (owner1@test.com to owner10@test.com)
-    await payload.create({
+    const owner = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
@@ -89,9 +96,10 @@ export async function seedTestUatData() {
         phone: c.phone,
       },
     })
+    ownerDocs.push(owner)
 
     // Explicit Receptionist (staff1@test.com to staff10@test.com)
-    await payload.create({
+    const staff = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
@@ -103,42 +111,25 @@ export async function seedTestUatData() {
         phone: c.phone,
       },
     })
+    staffDocs.push(staff)
   }
 
-  // 3. Specialist Doctors (Explicit doctor1@test.com to doctor5@test.com and others)
+  // 3. Specialist Doctors
   const doctorsData = [
     { name: 'Dr. Sabitha Krishnamoorthy', email: 'doctor1@test.com', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223' },
-    { name: 'Dr. Sabitha Krishnamoorthy', email: 'dr.sabitha@jeevancare.test', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223-A' },
     { name: 'Dr. Bins M John', email: 'doctor2@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11224' },
     { name: 'Dr. Vinaya Thekkethil', email: 'doctor3@test.com', specialty: 'Family Medicine', fee: 500, regno: 'KMC-11225' },
     { name: 'Dr. Iqbal', email: 'doctor4@test.com', specialty: 'General Practice', fee: 500, regno: 'KMC-11226' },
     { name: 'Dr. Varghees Chakola', email: 'doctor5@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11227' },
     { name: 'Dr. Unni Krishnan', email: 'dr.unni@test.com', specialty: 'General Medicine', fee: 500, regno: 'KMC-2026-101' },
     { name: 'Dr. Anitha Warrier', email: 'dr.anitha@test.com', specialty: 'Pediatrics', fee: 600, regno: 'KMC-2026-102' },
-    { name: 'Dr. Suresh Menon', email: 'dr.suresh@test.com', specialty: 'Orthopedics', fee: 700, regno: 'KMC-2026-103' },
-    { name: 'Dr. Radhika Nair', email: 'dr.radhika@test.com', specialty: 'Gynecology', fee: 800, regno: 'KMC-2026-104' },
-    { name: 'Dr. Varghese Paul', email: 'dr.varghese@test.com', specialty: 'Cardiology', fee: 1000, regno: 'KMC-2026-105' },
-    { name: 'Dr. Fathima Beevi', email: 'dr.fathima@test.com', specialty: 'Dermatology', fee: 600, regno: 'KMC-2026-106' },
-    { name: 'Dr. Manoj Kumar', email: 'dr.manoj@test.com', specialty: 'ENT (Otorhinolaryngology)', fee: 500, regno: 'KMC-2026-107' },
-    { name: 'Dr. Deepa Sreedhar', email: 'dr.deepa@test.com', specialty: 'Ophthalmology', fee: 600, regno: 'KMC-2026-108' },
-    { name: 'Dr. George Mathew', email: 'dr.george@test.com', specialty: 'Neurology', fee: 1200, regno: 'KMC-2026-109' },
-    { name: 'Dr. Smitha Nambiar', email: 'dr.smitha@test.com', specialty: 'Gastroenterology', fee: 900, regno: 'KMC-2026-110' },
-    { name: 'Dr. Biju Thomas', email: 'dr.biju@test.com', specialty: 'Pulmonology & Chest Medicine', fee: 750, regno: 'KMC-2026-111' },
-    { name: 'Dr. Revathy Mohan', email: 'dr.revathy@test.com', specialty: 'Nephrology', fee: 1000, regno: 'KMC-2026-112' },
-    { name: 'Dr. K. P. Namboodiri', email: 'dr.namboodiri@test.com', specialty: 'Urology', fee: 900, regno: 'KMC-2026-113' },
-    { name: 'Dr. Elizabeth Chacko', email: 'dr.elizabeth@test.com', specialty: 'Psychiatry', fee: 700, regno: 'KMC-2026-114' },
-    { name: 'Dr. Haridas Panicker', email: 'dr.haridas@test.com', specialty: 'Ayurveda / Ayush', fee: 400, regno: 'KMC-2026-115' },
-    { name: 'Dr. Shabana Banu', email: 'dr.shabana@test.com', specialty: 'Dentistry & Maxillofacial', fee: 500, regno: 'KMC-2026-116' },
-    { name: 'Dr. Ramesan Pillai', email: 'dr.ramesan@test.com', specialty: 'General Surgery', fee: 800, regno: 'KMC-2026-117' },
-    { name: 'Dr. Jayanthi Raman', email: 'dr.jayanthi@test.com', specialty: 'Diabetology & Endocrinology', fee: 700, regno: 'KMC-2026-118' },
-    { name: 'Dr. Mohan Chandran', email: 'dr.mohan@test.com', specialty: 'Physiotherapy & Rehabilitation', fee: 400, regno: 'KMC-2026-119' },
-    { name: 'Dr. Sheela Cherian', email: 'dr.sheela@test.com', specialty: 'Internal Medicine', fee: 600, regno: 'KMC-2026-120' },
   ]
 
+  const doctorDocs = []
   for (let i = 0; i < doctorsData.length; i++) {
     const doc = doctorsData[i]
     const tenant = tenantDocs[i % tenantDocs.length]
-    await payload.create({
+    const doctor = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
@@ -148,18 +139,23 @@ export async function seedTestUatData() {
         role: 'doctor',
         tenant: tenant.id,
         specialty: doc.specialty,
-        consultationFee: doc.fee,
+        qualification: 'MBBS, MD',
         medicalRegistrationNumber: doc.regno,
         stateMedicalCouncil: 'Travancore Cochin Medical Council',
+        consultationFee: doc.fee,
         availabilityType: 'regular',
         availableDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
         availableFrom: '09:00',
         availableTo: '17:00',
       } as never,
     })
+    doctorDocs.push(doctor)
   }
 
   // 4. Test Patients & Portal Accounts (patient1@test.com to patient10@test.com)
+  const patientDocs = []
+  const patientUserDocs = []
+
   for (let i = 1; i <= 10; i++) {
     const clinicSpec = clinics[(i - 1) % clinics.length]
     const tenant = tenantDocs[(i - 1) % clinics.length]
@@ -173,12 +169,15 @@ export async function seedTestUatData() {
         email: `patient${i}@test.com`,
         dateOfBirth: '1990-01-01',
         gender: i % 2 === 0 ? 'female' : 'male',
+        addressLine: 'Swaraj Round West',
         city: clinicSpec.city,
         state: clinicSpec.state,
+        pinCode: clinicSpec.pin,
       } as never,
     })
+    patientDocs.push(pat)
 
-    await payload.create({
+    const userPat = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
@@ -193,9 +192,166 @@ export async function seedTestUatData() {
         emailVerified: true,
       } as never,
     })
+    patientUserDocs.push(userPat)
   }
 
-  console.log('JeevanCare Thrissur City UAT environment seeded successfully with owner1@test.com, staff1@test.com, doctor1@test.com, patient1@test.com.')
+  // 5. Explicit UAT Scenarios
+
+  // SCENARIO A: Patient 1 — PATIENT WITH HISTORY & PAID BILL
+  const appt1 = await payload.create({
+    collection: 'appointments',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[0].id,
+      patient: patientDocs[0].id,
+      doctor: doctorDocs[0].id,
+      start: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+      durationMins: 15,
+      status: 'completed',
+      reason: 'Fever and cold',
+    },
+  })
+
+  const visit1 = await payload.create({
+    collection: 'visits',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[0].id,
+      patient: patientDocs[0].id,
+      doctor: doctorDocs[0].id,
+      appointment: appt1.id,
+      visitDate: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+      symptoms: 'High fever, headache, body ache',
+      diagnosis: 'Acute Viral Fever',
+      vitals: {
+        bpSystolic: 120,
+        bpDiastolic: 80,
+        temperatureC: 38.5,
+        weightKg: 68,
+        pulse: 84,
+      },
+      prescription: [
+        { medicine: 'Paracetamol 650mg', dosage: '1 tablet', frequency: '1-0-1 BD', durationDays: 5, instructions: 'After food' },
+        { medicine: 'Vitamin C 500mg', dosage: '1 tablet', frequency: '1-0-0 OD', durationDays: 10, instructions: 'Morning' },
+      ],
+      followUpDate: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+    } as never,
+  })
+
+  await payload.create({
+    collection: 'invoices',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[0].id,
+      patient: patientDocs[0].id,
+      visit: visit1.id,
+      currency: 'INR',
+      lineItems: [
+        { description: 'Consultation Fee — Dr. Sabitha', quantity: 1, unitAmount: 800 },
+        { description: 'CBC Lab Test', quantity: 1, unitAmount: 300 },
+      ],
+      payments: [
+        { amount: 1100, method: 'cash', receivedAt: new Date().toISOString() },
+      ],
+    } as never,
+  })
+
+  // SCENARIO B: Patient 2 — PATIENT WITH DOCUMENTS & UNPAID BILL
+  const appt2 = await payload.create({
+    collection: 'appointments',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[1].id,
+      patient: patientDocs[1].id,
+      doctor: doctorDocs[1].id,
+      start: new Date().toISOString(),
+      durationMins: 15,
+      status: 'checked-in',
+      isWalkIn: true,
+      reason: 'Routine Health Review',
+    },
+  })
+
+  const dummyPdf = Buffer.from('%PDF-1.4 Diagnostic Report Sample Content for Patient 2')
+  await payload.create({
+    collection: 'medical-documents' as any,
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[1].id,
+      patient: patientDocs[1].id,
+      doctor: doctorDocs[1].id,
+      appointment: appt2.id,
+      title: 'Complete Blood Count (CBC) Report',
+      documentType: 'LAB_REPORT',
+      documentDate: new Date().toISOString(),
+      status: 'active',
+      checksum: crypto.createHash('sha256').update(dummyPdf).digest('hex'),
+    },
+    file: {
+      data: dummyPdf,
+      name: 'blood_report.pdf',
+      mimetype: 'application/pdf',
+      size: dummyPdf.length,
+    },
+  })
+
+  await payload.create({
+    collection: 'invoices',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[1].id,
+      patient: patientDocs[1].id,
+      currency: 'INR',
+      lineItems: [
+        { description: 'Consultation Fee — Dr. Bins', quantity: 1, unitAmount: 600 },
+      ],
+    } as never,
+  })
+
+  // SCENARIO C: Patient 4 — CANCELLED & NO-SHOW APPOINTMENTS
+  await payload.create({
+    collection: 'appointments',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[3].id,
+      patient: patientDocs[3].id,
+      doctor: doctorDocs[3].id,
+      start: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+      durationMins: 15,
+      status: 'cancelled',
+      cancellationReason: 'Patient called to cancel due to travel',
+    },
+  })
+
+  await payload.create({
+    collection: 'appointments',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[3].id,
+      patient: patientDocs[3].id,
+      doctor: doctorDocs[3].id,
+      start: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+      durationMins: 15,
+      status: 'no-show',
+    },
+  })
+
+  // SCENARIO D: Patient 5 — NEW SCHEDULED PATIENT (FUTURE SLOT)
+  await payload.create({
+    collection: 'appointments',
+    overrideAccess: true,
+    data: {
+      tenant: tenantDocs[4].id,
+      patient: patientDocs[4].id,
+      doctor: doctorDocs[4].id,
+      start: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      durationMins: 15,
+      status: 'scheduled',
+      reason: 'General Checkup',
+    },
+  })
+
+  console.log('JeevanCare Thrissur City UAT environment seeded successfully with all explicit patient scenarios (owner1@test.com, staff1@test.com, doctor1@test.com, patient1@test.com).')
 }
 
 seedTestUatData().then(() => {

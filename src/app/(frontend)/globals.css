@@ -1,5 +1,5 @@
 /* ============================================================
-   Matab — globals.css (drop-in replacement)
+   JeevanCare — globals.css (drop-in replacement)
    Tailwind CSS v4 + shadcn/ui token mapping
    ============================================================ */
 
@@ -199,10 +199,10 @@
   .skeleton {
     background: linear-gradient(90deg, var(--muted) 25%, #e6ebe9 37%, var(--muted) 63%);
     background-size: 400% 100%;
-    animation: matab-shimmer 1.4s ease infinite;
+    animation: jeevancare-shimmer 1.4s ease infinite;
     border-radius: var(--radius-sm);
   }
-  @keyframes matab-shimmer {
+  @keyframes jeevancare-shimmer {
     0% {
       background-position: 100% 50%;
     }

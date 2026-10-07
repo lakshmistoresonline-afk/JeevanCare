@@ -171,11 +171,11 @@ export interface Tenant {
     /**
      * Market-agnostic core — all amounts are formatted from this.
      */
-    currency: 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR' | 'INR';
+    currency: 'INR' | 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR';
     /**
      * All times are displayed in this timezone.
      */
-    timezone: 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Asia/Kolkata' | 'Europe/London' | 'America/New_York';
+    timezone: 'Asia/Kolkata' | 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Europe/London' | 'America/New_York';
   };
   updatedAt: string;
   createdAt: string;
@@ -205,7 +205,10 @@ export interface User {
   emailVerified?: boolean | null;
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
+  qualification?: string | null;
   specialty?: string | null;
+  medicalRegistrationNumber?: string | null;
+  stateMedicalCouncil?: string | null;
   /**
    * In the clinic currency. Used by billing (v2).
    */
@@ -257,6 +260,50 @@ export interface Patient {
    * Shown prominently on the patient profile (safety).
    */
   allergies?: string | null;
+  /**
+   * 6-digit activation code issued to claim portal account.
+   */
+  activationCode?: string | null;
+  addressLine?: string | null;
+  city?: string | null;
+  district?: string | null;
+  state?:
+    | (
+        | 'Andhra Pradesh'
+        | 'Arunachal Pradesh'
+        | 'Assam'
+        | 'Bihar'
+        | 'Chhattisgarh'
+        | 'Goa'
+        | 'Gujarat'
+        | 'Haryana'
+        | 'Himachal Pradesh'
+        | 'Jharkhand'
+        | 'Karnataka'
+        | 'Kerala'
+        | 'Madhya Pradesh'
+        | 'Maharashtra'
+        | 'Manipur'
+        | 'Meghalaya'
+        | 'Mizoram'
+        | 'Nagaland'
+        | 'Odisha'
+        | 'Punjab'
+        | 'Rajasthan'
+        | 'Sikkim'
+        | 'Tamil Nadu'
+        | 'Telangana'
+        | 'Tripura'
+        | 'Uttar Pradesh'
+        | 'Uttarakhand'
+        | 'West Bengal'
+        | 'Delhi'
+        | 'Jammu and Kashmir'
+        | 'Ladakh'
+        | 'Puducherry'
+      )
+    | null;
+  pinCode?: string | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -396,7 +443,9 @@ export interface AuditLog {
     | 'plan.changed'
     | 'export.generated'
     | 'document.uploaded'
-    | 'document.updated';
+    | 'document.updated'
+    | 'visit.created'
+    | 'visit.updated';
   targetCollection: string;
   targetId: string;
   /**
@@ -621,7 +670,10 @@ export interface UsersSelect<T extends boolean = true> {
   emailVerified?: T;
   verifyTokenHash?: T;
   verifyTokenExp?: T;
+  qualification?: T;
   specialty?: T;
+  medicalRegistrationNumber?: T;
+  stateMedicalCouncil?: T;
   consultationFee?: T;
   availabilityType?: T;
   availableDays?: T;
@@ -658,6 +710,12 @@ export interface PatientsSelect<T extends boolean = true> {
   ageYears?: T;
   bloodGroup?: T;
   allergies?: T;
+  activationCode?: T;
+  addressLine?: T;
+  city?: T;
+  district?: T;
+  state?: T;
+  pinCode?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

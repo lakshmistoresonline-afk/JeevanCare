@@ -5,7 +5,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card as ShadCard } from '@/components/ui/card'
 import type { AppointmentStatus } from '@/lib/constants'
 
-// App-level primitives, built on shadcn/ui and the Matab tokens. Screens import
+// App-level primitives, built on shadcn/ui and JeevanCare tokens. Screens import
 // from here so the design language stays in one place.
 //
 // Status colors live ONLY in ui-kit.tsx — re-exported here so legacy imports

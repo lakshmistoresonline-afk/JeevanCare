@@ -89,7 +89,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
   })
 
   const day = (d: Date) => d.toISOString().slice(0, 10)
-  const filename = `matab-${type}-${tenant.slug || tenantID}-${day(from)}-${day(to)}.csv`
+  const filename = `jeevancare-${type}-${tenant.slug || tenantID}-${day(from)}-${day(to)}.csv`
   return new Response(toCsv(headers, rows), {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

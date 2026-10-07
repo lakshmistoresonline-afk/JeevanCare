@@ -147,3 +147,28 @@ export const auditTenants: CollectionAfterChangeHook = async ({ doc, previousDoc
   }
   return doc
 }
+
+// ---- Visits ----
+export const auditVisits: CollectionAfterChangeHook = async ({ doc, operation, req }) => {
+  const tenantID = relId(doc.tenant)
+  const targetId = String(doc.id)
+  const base = { targetCollection: 'visits', targetId, tenantID }
+
+  if (operation === 'create') {
+    const patient = await nameOf(req, 'patients', doc.patient, 'a patient')
+    const diagnosis = doc.diagnosis ? `: ${doc.diagnosis}` : ''
+    await logAudit(req, {
+      ...base,
+      action: 'visit.created',
+      summary: `Recorded clinical visit for ${patient}${diagnosis}`,
+    })
+  } else if (operation === 'update') {
+    const patient = await nameOf(req, 'patients', doc.patient, 'a patient')
+    await logAudit(req, {
+      ...base,
+      action: 'visit.updated',
+      summary: `Updated clinical visit record for ${patient}`,
+    })
+  }
+  return doc
+}

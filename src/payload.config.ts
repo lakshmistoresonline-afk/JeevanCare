@@ -64,8 +64,22 @@ export default buildConfig({
           },
         )
       }
+
+      // Unique partial index: At most ONE active patient portal user account per patient record
+      const usersModel = payload.db.collections?.users
+      if (usersModel) {
+        const nativeUsers = usersModel.collection
+        await nativeUsers.createIndex(
+          { patientProfile: 1 },
+          {
+            unique: true,
+            name: 'uniq_patient_profile_portal',
+            partialFilterExpression: { role: 'patient', patientProfile: { $exists: true } },
+          },
+        )
+      }
     } catch (err) {
-      payload.logger.error({ err }, 'Failed to create uniq_active_slot index')
+      payload.logger.error({ err }, 'Failed to create database indexes')
     }
   },
 })

@@ -1,19 +1,16 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import crypto from 'crypto'
 import { tenantScoped, denyAll, getTenantID, patientTenantScoped } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { logAudit } from '@/lib/audit'
 import { ERROR_CODES } from '@/lib/constants'
-
-const relID = (value: unknown): string | null => {
-  if (!value) return null
-  if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
-  }
-  return String(value)
-}
+import { relId } from '@/lib/utils'
+import {
+  validateFileMagicBytes,
+  computeSha256,
+  generateSafeStorageFilename,
+  MAX_FILE_SIZE_BYTES,
+} from '@/lib/fileSecurity'
 
 const DOCUMENT_TYPES = [
   { label: 'Lab Report', value: 'LAB_REPORT' },
@@ -64,18 +61,40 @@ export const MedicalDocuments: CollectionConfig = {
         if (!data.documentDate) {
           data.documentDate = new Date().toISOString()
         }
-        // File size check (e.g. max 20MB)
-        if (data.filesize && data.filesize > 20 * 1024 * 1024) {
-          throw new APIError('File size exceeds the 20MB limit.', 400, {
+
+        // File size check (max 10MB limit)
+        if (data.filesize && data.filesize > MAX_FILE_SIZE_BYTES) {
+          throw new APIError('File size exceeds the 10MB limit.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
-        // Compute SHA-256 checksum if file buffer/data is present or file stream exists
+
+        // File buffer validation & SHA-256 checksum
         const fileObj = (req as any).file ?? (req.files as any)?.file ?? (data as any).file
         const fileData = fileObj?.data ?? (Buffer.isBuffer(fileObj) ? fileObj : null)
         if (fileData) {
           const buffer = Buffer.isBuffer(fileData) ? fileData : Buffer.from(fileData)
-          data.checksum = crypto.createHash('sha256').update(buffer).digest('hex')
+          if (buffer.length > MAX_FILE_SIZE_BYTES) {
+            throw new APIError('File size exceeds the 10MB limit.', 400, {
+              code: ERROR_CODES.VALIDATION,
+            })
+          }
+
+          // Validate magic bytes against strict allowlist (PDF, JPEG, PNG, WEBP)
+          const magic = validateFileMagicBytes(buffer)
+          if (!magic.valid || !magic.ext) {
+            throw new APIError('Unsupported or corrupt file format. Only PDF, JPEG, PNG, and WEBP documents are permitted.', 400, {
+              code: ERROR_CODES.VALIDATION,
+            })
+          }
+
+          // Compute SHA-256 checksum for data integrity
+          data.checksum = computeSha256(buffer)
+
+          // Sanitize storage filename: generate safe UUID-based storage name
+          if (operation === 'create' && !data.filename) {
+            data.filename = generateSafeStorageFilename(magic.ext)
+          }
         }
 
         const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
@@ -86,11 +105,11 @@ export const MedicalDocuments: CollectionConfig = {
         if (data.patient) {
           const patientDoc = await req.payload.findByID({
             collection: 'patients',
-            id: relID(data.patient)!,
+            id: relId(data.patient),
             depth: 0,
             overrideAccess: true,
           }).catch(() => null)
-          if (!patientDoc || String(relID(patientDoc.tenant)) !== tenantID) {
+          if (!patientDoc || String(relId(patientDoc.tenant)) !== tenantID) {
             throw new APIError('Patient does not belong to this clinic.', 400, { code: ERROR_CODES.VALIDATION })
           }
         }
@@ -98,14 +117,14 @@ export const MedicalDocuments: CollectionConfig = {
         if (data.visit) {
           const visitDoc = await req.payload.findByID({
             collection: 'visits',
-            id: relID(data.visit)!,
+            id: relId(data.visit),
             depth: 0,
             overrideAccess: true,
           }).catch(() => null)
-          if (!visitDoc || String(relID(visitDoc.tenant)) !== tenantID) {
+          if (!visitDoc || String(relId(visitDoc.tenant)) !== tenantID) {
             throw new APIError('Visit does not belong to this clinic.', 400, { code: ERROR_CODES.VALIDATION })
           }
-          if (data.patient && String(relID(visitDoc.patient)) !== String(relID(data.patient))) {
+          if (data.patient && String(relId(visitDoc.patient)) !== String(relId(data.patient))) {
             throw new APIError('Visit does not belong to the specified patient.', 400, { code: ERROR_CODES.VALIDATION })
           }
         }
@@ -113,14 +132,14 @@ export const MedicalDocuments: CollectionConfig = {
         if (data.appointment) {
           const apptDoc = await req.payload.findByID({
             collection: 'appointments',
-            id: relID(data.appointment)!,
+            id: relId(data.appointment),
             depth: 0,
             overrideAccess: true,
           }).catch(() => null)
-          if (!apptDoc || String(relID(apptDoc.tenant)) !== tenantID) {
+          if (!apptDoc || String(relId(apptDoc.tenant)) !== tenantID) {
             throw new APIError('Appointment does not belong to this clinic.', 400, { code: ERROR_CODES.VALIDATION })
           }
-          if (data.patient && String(relID(apptDoc.patient)) !== String(relID(data.patient))) {
+          if (data.patient && String(relId(apptDoc.patient)) !== String(relId(data.patient))) {
             throw new APIError('Appointment does not belong to the specified patient.', 400, { code: ERROR_CODES.VALIDATION })
           }
         }
@@ -130,8 +149,8 @@ export const MedicalDocuments: CollectionConfig = {
     ],
     beforeChange: [forceTenant],
     afterChange: [
-      async ({ doc, operation, req }) => {
-        const tenantID = relID(doc.tenant)
+      async ({ doc, previousDoc, operation, req }) => {
+        const tenantID = relId(doc.tenant)
         const targetId = String(doc.id)
         if (operation === 'create') {
           await logAudit(req, {
@@ -143,13 +162,23 @@ export const MedicalDocuments: CollectionConfig = {
             meta: { documentType: doc.documentType, filename: doc.filename },
           })
         } else if (operation === 'update') {
-          await logAudit(req, {
-            targetCollection: 'medical-documents',
-            targetId,
-            tenantID,
-            action: 'document.updated',
-            summary: `Updated medical document metadata: ${doc.title}`,
-          })
+          if (doc.status === 'archived' && previousDoc?.status !== 'archived') {
+            await logAudit(req, {
+              targetCollection: 'medical-documents',
+              targetId,
+              tenantID,
+              action: 'document.updated',
+              summary: `Archived medical document: ${doc.title}`,
+            })
+          } else {
+            await logAudit(req, {
+              targetCollection: 'medical-documents',
+              targetId,
+              tenantID,
+              action: 'document.updated',
+              summary: `Updated medical document metadata: ${doc.title}`,
+            })
+          }
         }
         return doc
       },

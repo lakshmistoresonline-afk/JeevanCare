@@ -85,9 +85,39 @@ export const Invoices: CollectionConfig = {
           // Pull the patient from the linked visit when not supplied directly.
           if (!data.patient && data.visit) {
             const visit = await req.payload
-              .findByID({ collection: 'visits', id: relId(data.visit), depth: 0, req, overrideAccess: true })
+              .findByID({ collection: 'visits', id: relId(data.visit)!, depth: 0, req, overrideAccess: true })
               .catch(() => null)
             if (visit) data.patient = relId(visit.patient)
+          }
+        }
+
+        const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
+        if (data.patient) {
+          const patientDoc = await req.payload.findByID({
+            collection: 'patients',
+            id: relId(data.patient)!,
+            depth: 0,
+            req,
+            overrideAccess: true,
+          }).catch(() => null)
+          if (!patientDoc || String(relId(patientDoc.tenant)) !== tenantID) {
+            throw new APIError('Patient does not belong to this clinic.', 400, { code: ERROR_CODES.VALIDATION })
+          }
+        }
+
+        if (data.visit) {
+          const visitDoc = await req.payload.findByID({
+            collection: 'visits',
+            id: relId(data.visit)!,
+            depth: 0,
+            req,
+            overrideAccess: true,
+          }).catch(() => null)
+          if (!visitDoc || String(relId(visitDoc.tenant)) !== tenantID) {
+            throw new APIError('Visit does not belong to this clinic.', 400, { code: ERROR_CODES.VALIDATION })
+          }
+          if (data.patient && String(relId(visitDoc.patient)) !== String(relId(data.patient))) {
+            throw new APIError('Visit does not belong to the specified patient.', 400, { code: ERROR_CODES.VALIDATION })
           }
         }
 

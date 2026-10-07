@@ -1,4 +1,3 @@
-import 'server-only'
 import { cache } from 'react'
 import { headers as nextHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'

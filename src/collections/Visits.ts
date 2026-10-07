@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import { tenantScoped, denyAll, visitsWriteAccess, getTenantID, patientTenantScoped } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
+import { auditVisits } from '@/hooks/audit'
 import { relId } from '@/lib/utils'
 import {
   ERROR_CODES,
@@ -113,6 +114,7 @@ export const Visits: CollectionConfig = {
             .catch(() => {})
         }
       },
+      auditVisits,
     ],
   },
   fields: [

@@ -28,8 +28,21 @@ export function getPatientID(user?: User | null): string | null {
   const p = (user as any).patientProfile as unknown
   if (!p) return null
   if (typeof p === 'string') return p
-  if (typeof p === 'object' && 'id' in (p as Record<string, unknown>)) {
-    return String((p as { id: string | number }).id)
+  if (typeof p === 'number') return String(p)
+  if (typeof p === 'object') {
+    if ('id' in (p as Record<string, unknown>)) {
+      return String((p as { id: string | number }).id)
+    }
+    if ('_id' in (p as Record<string, unknown>)) {
+      return String((p as { _id: string | number })._id)
+    }
+    if (typeof (p as any).toHexString === 'function') {
+      return (p as any).toHexString()
+    }
+    if (typeof (p as any).toString === 'function') {
+      const s = (p as any).toString()
+      if (s && s !== '[object Object]') return s
+    }
   }
   return String(p)
 }
@@ -45,7 +58,30 @@ export const tenantScoped: Access = ({ req: { user } }) => {
   return { tenant: { equals: tenantID } }
 }
 
-export const patientTenantScoped = tenantScoped
+/**
+ * Patient Self Access:
+ * SuperAdmins see all. Staff see records within their tenant.
+ * Patient users are strictly restricted to reading ONLY records matching their own patient ID.
+ */
+export const patientSelfAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  if ((user as any).role === 'patient') {
+    const patientID = getPatientID(user)
+    if (!patientID) return false
+    return {
+      and: [
+        { tenant: { equals: tenantID } },
+        { patient: { equals: patientID } },
+      ],
+    } as Where
+  }
+  return { tenant: { equals: tenantID } } as Where
+}
+
+export const patientTenantScoped = patientSelfAccess
 
 /** superAdmin only. */
 export const superAdminOnly: Access = ({ req: { user } }) => isSuperAdmin(user)

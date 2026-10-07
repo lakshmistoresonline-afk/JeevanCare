@@ -197,8 +197,27 @@ export const Users: CollectionConfig = {
       access: { create: superAdminField, read: superAdminField, update: superAdminField },
     },
     {
+      name: 'qualification',
+      type: 'text',
+      label: 'Qualification (e.g. MBBS, MD, MS, DNB)',
+      admin: { condition: (data) => data?.role === 'doctor' },
+    },
+    {
       name: 'specialty',
       type: 'text',
+      admin: { condition: (data) => data?.role === 'doctor' },
+    },
+    {
+      name: 'medicalRegistrationNumber',
+      type: 'text',
+      label: 'Medical Council Reg No',
+      admin: { condition: (data) => data?.role === 'doctor' },
+    },
+    {
+      name: 'stateMedicalCouncil',
+      type: 'text',
+      label: 'State Medical Council / Registration Authority',
+      defaultValue: 'Travancore Cochin Medical Council',
       admin: { condition: (data) => data?.role === 'doctor' },
     },
     {

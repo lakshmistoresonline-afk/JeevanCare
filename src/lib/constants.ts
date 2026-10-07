@@ -80,26 +80,26 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
 
 // Curated currency list (a full ISO list is overkill). `code` feeds Intl.NumberFormat.
 export const CURRENCIES = [
+  { label: 'INR — Indian Rupee', value: 'INR' },
   { label: 'PKR — Pakistani Rupee', value: 'PKR' },
   { label: 'USD — US Dollar', value: 'USD' },
   { label: 'GBP — British Pound', value: 'GBP' },
   { label: 'AED — UAE Dirham', value: 'AED' },
   { label: 'SAR — Saudi Riyal', value: 'SAR' },
-  { label: 'INR — Indian Rupee', value: 'INR' },
 ] as const
 
 // Curated IANA timezone list (a full dropdown is overkill for the launch markets).
 export const TIMEZONES = [
+  { label: 'Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
   { label: 'Asia/Karachi (PKT)', value: 'Asia/Karachi' },
   { label: 'Asia/Dubai (GST)', value: 'Asia/Dubai' },
   { label: 'Asia/Riyadh (AST)', value: 'Asia/Riyadh' },
-  { label: 'Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
   { label: 'Europe/London (GMT/BST)', value: 'Europe/London' },
   { label: 'America/New_York (ET)', value: 'America/New_York' },
 ] as const
 
-export const DEFAULT_CURRENCY = 'PKR'
-export const DEFAULT_TIMEZONE = 'Asia/Karachi'
+export const DEFAULT_CURRENCY = 'INR'
+export const DEFAULT_TIMEZONE = 'Asia/Kolkata'
 export const DEFAULT_APPOINTMENT_DURATION = 15
 export const DEFAULT_OPEN_TIME = '09:00'
 export const DEFAULT_CLOSE_TIME = '21:00'
@@ -201,14 +201,14 @@ export const CHIEF_COMPLAINTS = [
 // currency/timezone defaults (still editable). Keys are the labels shown in the
 // form; values seed the new tenant's settings.
 export const COUNTRY_DEFAULTS = [
+  { label: 'India', currency: 'INR', timezone: 'Asia/Kolkata' },
   { label: 'Pakistan', currency: 'PKR', timezone: 'Asia/Karachi' },
   { label: 'United Arab Emirates', currency: 'AED', timezone: 'Asia/Dubai' },
   { label: 'Saudi Arabia', currency: 'SAR', timezone: 'Asia/Riyadh' },
-  { label: 'India', currency: 'INR', timezone: 'Asia/Kolkata' },
   { label: 'United Kingdom', currency: 'GBP', timezone: 'Europe/London' },
   { label: 'United States', currency: 'USD', timezone: 'America/New_York' },
 ] as const
-export const DEFAULT_COUNTRY = 'Pakistan'
+export const DEFAULT_COUNTRY = 'India'
 
 // v3 — audit log actions (spec §2.2). Append-only record of sensitive actions.
 export const AUDIT_ACTIONS = [
@@ -231,6 +231,8 @@ export const AUDIT_ACTIONS = [
   { value: 'export.generated', label: 'Data exported' },
   { value: 'document.uploaded', label: 'Medical document uploaded' },
   { value: 'document.updated', label: 'Medical document updated' },
+  { value: 'visit.created', label: 'Clinical visit recorded' },
+  { value: 'visit.updated', label: 'Clinical visit updated' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 

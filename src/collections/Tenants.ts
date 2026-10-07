@@ -83,7 +83,7 @@ export const Tenants: CollectionConfig = {
       type: 'text',
       admin: { description: 'Clinic photo URL from Google Places or listing.' },
     },
-    { name: 'country', type: 'text', defaultValue: 'Pakistan' },
+    { name: 'country', type: 'text', defaultValue: 'India' },
     {
       name: 'status',
       type: 'select',

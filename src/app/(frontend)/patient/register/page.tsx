@@ -81,6 +81,10 @@ export default function PatientRegisterPage() {
             <input id="email" name="email" type="email" placeholder="you@example.com" className={inputClass} />
           </Field>
 
+          <Field label="Patient MRN / Activation Code (If claiming an existing clinic record)" htmlFor="activationCode" hint="Check your clinic receipt or prescription for your Patient Number (e.g. P-0001)">
+            <input id="activationCode" name="activationCode" type="text" placeholder="e.g. P-0001" className={inputClass} />
+          </Field>
+
           <PasswordField
             label="Password"
             id="password"

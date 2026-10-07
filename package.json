@@ -1,5 +1,5 @@
 {
-  "name": "clinic-management",
+  "name": "jeevancare",
   "version": "1.0.0",
   "description": "A blank template to get started with Payload 3.0",
   "license": "MIT",
@@ -15,7 +15,7 @@
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed.ts",
     "seed:test": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seedTest.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "test": "pnpm run test:int",
+    "test": "npm run test:int",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {

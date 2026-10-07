@@ -1,4 +1,4 @@
-// src/components/ui-kit.tsx — Matab core UI primitives (drop-in)
+// src/components/ui-kit.tsx — JeevanCare core UI primitives (drop-in)
 // The ONLY place status colors live. Use these everywhere; delete ad-hoc copies.
 // Requires: shadcn's cn() util at '@/lib/utils', lucide-react.
 

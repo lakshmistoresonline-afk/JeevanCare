@@ -149,14 +149,14 @@ export function DayRail({
   const [quickId, setQuickId] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('matab-day-view') : null
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('jeevancare-day-view') : null
     if (saved === 'rail' || saved === 'list') setView(saved)
   }, [])
 
   const switchView = (v: 'list' | 'rail') => {
     setView(v)
     try {
-      localStorage.setItem('matab-day-view', v)
+      localStorage.setItem('jeevancare-day-view', v)
     } catch {
       /* private mode */
     }

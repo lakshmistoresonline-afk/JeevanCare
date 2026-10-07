@@ -3,7 +3,7 @@ import { APIError } from 'payload'
 import { superAdminOnly, tenantScoped, patientTenantScoped, getTenantID } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { enforcePlanLimit } from '@/hooks/planLimit'
-import { GENDERS, BLOOD_GROUPS, ERROR_CODES } from '@/lib/constants'
+import { GENDERS, BLOOD_GROUPS, ERROR_CODES, INDIAN_STATES } from '@/lib/constants'
 
 /** Strip spaces/dashes; keep leading + and digits. Market-agnostic. */
 const normalizePhone = (raw: string): string => {
@@ -100,6 +100,32 @@ export const Patients: CollectionConfig = {
       name: 'allergies',
       type: 'textarea',
       admin: { description: 'Shown prominently on the patient profile (safety).' },
+    },
+    {
+      name: 'activationCode',
+      type: 'text',
+      label: 'Portal Activation Code',
+      admin: { description: '6-digit activation code issued to claim portal account.' },
+    },
+    { name: 'addressLine', type: 'text', label: 'Address / Street' },
+    { name: 'city', type: 'text', defaultValue: 'Thrissur' },
+    { name: 'district', type: 'text', defaultValue: 'Thrissur' },
+    {
+      name: 'state',
+      type: 'select',
+      defaultValue: 'Kerala',
+      options: INDIAN_STATES.map((s) => ({ label: s, value: s })),
+    },
+    {
+      name: 'pinCode',
+      type: 'text',
+      label: 'PIN Code',
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
+        return /^[1-9][0-9]{5}$/.test(value.trim())
+          ? true
+          : 'Enter a valid 6-digit Indian PIN code (e.g. 680001).'
+      },
     },
     { name: 'notes', type: 'textarea' },
   ],

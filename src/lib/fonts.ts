@@ -1,4 +1,4 @@
-// src/lib/fonts.ts — Matab typography (replaces Inter entirely)
+// src/lib/fonts.ts — JeevanCare typography (replaces Inter entirely)
 //
 // Wire-up in src/app/(frontend)/layout.tsx:
 //

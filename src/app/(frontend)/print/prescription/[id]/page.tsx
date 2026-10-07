@@ -69,16 +69,24 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
           <h1 className="font-display text-xl font-semibold tracking-tight">{tenant?.name}</h1>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {tenant?.address && <>{tenant.address}<br /></>}
-            {[tenant?.city, tenant?.country].filter(Boolean).join(', ')}
-            {tenant?.phone && <><br />{tenant.phone}</>}
+            {[tenant?.city, tenant?.state || tenant?.country].filter(Boolean).join(', ')}
+            {tenant?.phone && <><br />Phone: {tenant.phone}</>}
           </p>
         </div>
         <div className="text-end">
-          <div className="font-medium">{doctor?.name}</div>
-          {(doctor as { specialty?: string })?.specialty && (
-            <div className="text-xs text-muted-foreground">{(doctor as { specialty?: string }).specialty}</div>
+          <div className="font-semibold text-sm">{formatDoctorName(doctor?.name)}</div>
+          {(doctor as any)?.qualification && (
+            <div className="text-xs font-medium text-ink">{(doctor as any).qualification}</div>
           )}
-          <div className="tabular mt-1 text-xs text-muted-foreground">{formatDate(visit.visitDate, tenant)}</div>
+          {(doctor as any)?.specialty && (
+            <div className="text-xs text-muted-foreground">{(doctor as any).specialty}</div>
+          )}
+          {(doctor as any)?.medicalRegistrationNumber && (
+            <div className="text-[11px] text-muted-foreground">
+              Reg No: {(doctor as any).medicalRegistrationNumber} ({(doctor as any).stateMedicalCouncil || 'Travancore Cochin Medical Council'})
+            </div>
+          )}
+          <div className="tabular mt-1 text-xs font-medium text-muted-foreground">Date: {formatDate(visit.visitDate, tenant)}</div>
         </div>
       </header>
 
