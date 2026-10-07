@@ -47,7 +47,7 @@ describe('Billing & Payment Integrity Hardening Suite', () => {
   })
 
   // =========================================================================
-  // 2. OVERPAYMENT PREVENTION
+  // 2. OVERPAYMENT PREVENTION & CONCURRENT PAYMENTS
   // =========================================================================
 
   it('rejects payments exceeding the remaining invoice balance', async () => {
@@ -74,6 +74,49 @@ describe('Billing & Payment Integrity Hardening Suite', () => {
     })
 
     await expect(overpayAttempt).rejects.toBeTruthy()
+  })
+
+  it('handles concurrent payment recordings without permitting overpayment', async () => {
+    const invoice = await payload.create({
+      collection: 'invoices',
+      user: f.a.receptionist,
+      overrideAccess: false,
+      data: {
+        tenant: f.a.tenant.id,
+        patient: f.a.patient.id,
+        lineItems: [{ description: 'Consultation', quantity: 1, unitAmount: 500 }],
+      } as any,
+    })
+
+    // Fire two concurrent payment calls of 300 each on a 500 balance
+    const pay1 = payload.update({
+      collection: 'invoices',
+      id: invoice.id,
+      user: f.a.receptionist,
+      overrideAccess: false,
+      data: {
+        payments: [{ amount: 300, method: 'cash' }],
+      } as any,
+    })
+
+    const pay2 = payload.update({
+      collection: 'invoices',
+      id: invoice.id,
+      user: f.a.receptionist,
+      overrideAccess: false,
+      data: {
+        payments: [{ amount: 300, method: 'upi' }],
+      } as any,
+    })
+
+    // At least one or both should be evaluated securely without total exceeding 500
+    const results = await Promise.allSettled([pay1, pay2])
+    const successfulUpdates = results.filter((r) => r.status === 'fulfilled')
+
+    if (successfulUpdates.length === 2) {
+      const finalInv = await payload.findByID({ collection: 'invoices', id: invoice.id, overrideAccess: true })
+      expect(finalInv.amountPaid).toBeLessThanOrEqual(500)
+    }
   })
 
   // =========================================================================

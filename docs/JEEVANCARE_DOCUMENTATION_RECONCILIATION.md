@@ -1,23 +1,24 @@
-# JeevanCare — Documentation & Branding Reconciliation Audit
+# JeevanCare — Documentation & Brand Reconciliation Final Audit
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Target Branch:** `main` (`https://github.com/lakshmistoresonline-afk/JeevanCare.git`)
 
 ---
 
-## 1. Executive Summary & Branding Reconciliation
+## 1. Executive Summary & Brand Reconciliation Audit
 
-Every public and internal documentation file across the repository has been audited and reconciled with the **JeevanCare India-First Platform** identity.
+Every file across public documentation, metadata, titles, seed data, and source code in **JeevanCare** has been audited and reconciled to the official **JeevanCare India-First Platform** identity.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                            DOCUMENTATION RECONCILIATION SUMMARY                          │
+│                            FINAL BRAND RECONCILIATION SUMMARY                            │
 ├─────────────────────┬────────────────────────────────┬───────────────────────────────────┤
-│ Documentation File  │ Legacy Template Branding       │ Reconciled JeevanCare Identity    │
+│ Domain / File       │ Legacy Template String         │ Reconciled JeevanCare Identity    │
 ├─────────────────────┼────────────────────────────────┼───────────────────────────────────┤
 │ `README.md`         │ `# matab — Clinic Management`  │ `# JeevanCare — Healthcare`       │
 │                     │ Pakistan defaults (`PKR`)      │ India-First (`INR` / `₹`)         │
-│ `DEPLOYMENT_GUIDE`  │ Legacy template references     │ Updated in `DEPLOYMENT_HARDENING` │
+│ `package.json`      │ `"clinic-management"`          │ `"jeevancare"`                    │
+│ `public/manifest`   │ Generic name                   │ `JeevanCare — Healthcare`         │
 │ `seedTest.ts`       │ Pakistani seeds                │ Thrissur City, Kerala UAT Dataset │
 │ Test Credentials    │ Unstructured list              │ Categorized UAT Test Matrix       │
 │ Repository URI      │ `abdulrehmankz1/clinic...`     │ `lakshmistoresonline-afk/...`     │
@@ -27,18 +28,25 @@ Every public and internal documentation file across the repository has been audi
 
 ---
 
-## 2. Reconciled Documentation Inventory
+## 2. Re-Audit & Legacy Reference Classification Report
 
-1. **[`README.md`](file:///E:/Jeevan%20Care/README.md)**: Updated title, India target context, 11 core workflows, local dev commands (`npm run seed:test`), test credentials reference, environment variables, and preserved MIT license attribution to original author.
-2. **[`docs/JEEVANCARE_TEST_CREDENTIALS.md`](file:///E:/Jeevan%20Care/docs/JEEVANCARE_TEST_CREDENTIALS.md)**: Reconciled test credentials table for SuperAdmin, 10 Thrissur City owners, 10 staff, 7 specialist doctors, and 10 patient portal accounts with password `Test@123`.
-3. **[`docs/JEEVANCARE_TEST_DATA_SUMMARY.md`](file:///E:/Jeevan%20Care/docs/JEEVANCARE_TEST_DATA_SUMMARY.md)**: Reconciled summary of the Thrissur City Kerala UAT dataset.
-4. **[`docs/JEEVANCARE_THRISSUR_CITY_UAT_DATASET.md`](file:///E:/Jeevan%20Care/docs/JEEVANCARE_THRISSUR_CITY_UAT_DATASET.md)**: Reconciled UAT dataset specification.
-5. **[`docs/JEEVANCARE_DEPLOYMENT_HARDENING.md`](file:///E:/Jeevan%20Care/docs/JEEVANCARE_DEPLOYMENT_HARDENING.md)**: Hardened production configuration guide.
-6. **[`docs/JEEVANCARE_INDIA_READINESS_AUDIT.md`](file:///E:/Jeevan%20Care/docs/JEEVANCARE_INDIA_READINESS_AUDIT.md)**: Comprehensive audit of India-first business and clinical standardizations.
+A repository-wide search for legacy terms (`matab`, `clinic-management`, `abdulrehmankz1/clinic-management`, `PKR`, `Asia/Karachi`, `Pakistan`) yields the following final classification:
 
----
+1. **User-Facing Product Documentation & UI:**
+   - **Status:** **100% Reconciled to JeevanCare**.
+   - **Verification:** All headers, patient portal pages, login forms, A5 print layouts, public landing pages, and documentation files render **JeevanCare**.
 
-## 3. License & Attribution Compliance
+2. **Source Code Comments & CSS Variables:**
+   - **Status:** **100% Reconciled**. All CSS utility comments and component primitives in `src/` use **JeevanCare**.
 
-- **MIT License:** Retained `LICENSE` file under MIT terms.
-- **Author Attribution:** Preserved original credit to Abdul Rehman (`matab`) in `README.md` while documenting the JeevanCare platform enhancements.
+3. **Multi-Country Option Lists (`src/lib/constants.ts`)**:
+   - **Status:** **Retained as Intentional Configurable Options**.
+   - **Rationale:** `PKR` and `Asia/Karachi` are retained inside option dropdown arrays (`CURRENCIES`, `TIMEZONES`, `COUNTRY_DEFAULTS`) to preserve multi-market configurability for international tenants without hardcoding assumptions.
+
+4. **Schema Types (`src/payload-types.ts`)**:
+   - **Status:** **Retained in Generated Type Definitions**.
+   - **Rationale:** Retained in auto-generated Payload union types (`'INR' | 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR'`) for backward schema compatibility.
+
+5. **MIT License Attribution (`LICENSE` & `README.md`)**:
+   - **Status:** **Preserved Intact**.
+   - **Rationale:** Preserves required open-source copyright attribution to original foundation as mandated by the MIT License terms.

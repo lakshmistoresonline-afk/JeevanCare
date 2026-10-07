@@ -10,7 +10,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ---------- 1. Matab palette → shadcn variables ----------
+/* ---------- 1. JeevanCare palette → shadcn variables ----------
    "Clinical calm": deep teal brand on warm paper surfaces. */
 :root {
   /* surfaces & text */
@@ -38,7 +38,7 @@
   --input: #dfddd4;
   --ring: #0d6e60;
 
-  /* status / semantic extras (Matab-specific) */
+  /* status / semantic extras (JeevanCare-specific) */
   --amber: #b45309;
   --amber-soft: #faf3e6;
   --red-soft: #fbeceb;
@@ -140,13 +140,13 @@
   }
 }
 
-/* ---------- 4. Matab utilities ---------- */
+/* ---------- 4. JeevanCare utilities ---------- */
 @layer utilities {
   /* numeric alignment for times, amounts, MRN, KPI numbers */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
-  /* flat card: the Matab surface — hairline + a whisper of depth */
+  /* flat card: the JeevanCare surface — hairline + a whisper of depth */
   .card-flat {
     background: var(--card);
     border: 1px solid var(--border);

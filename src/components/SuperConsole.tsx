@@ -55,7 +55,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
   // Owner "Request upgrade" submissions queue here for a decision (spec §5).
   const upgradeRequests = tenants.filter((t) => t.upgradeRequest)
   const [form, setForm] = useState({
-    name: '', phone: '', city: '', currency: 'PKR', timezone: 'Asia/Karachi',
+    name: '', phone: '', city: '', currency: 'INR', timezone: 'Asia/Kolkata',
     ownerName: '', ownerEmail: '', ownerPassword: '',
   })
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -66,7 +66,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       const res = await createClinic(form)
       if (res.ok) {
         setShowAdd(false)
-        setForm({ name: '', phone: '', city: '', currency: 'PKR', timezone: 'Asia/Karachi', ownerName: '', ownerEmail: '', ownerPassword: '' })
+        setForm({ name: '', phone: '', city: '', currency: 'INR', timezone: 'Asia/Kolkata', ownerName: '', ownerEmail: '', ownerPassword: '' })
         router.refresh()
       } else setError(res.message)
     })

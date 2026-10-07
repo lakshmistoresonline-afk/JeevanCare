@@ -71,33 +71,32 @@ type ClinicSpec = {
 
 const CLINICS: ClinicSpec[] = [
   {
-    name: 'City Care Clinic',
-    slug: 'city-care-clinic',
-    city: 'Rawalpindi',
-    country: 'Pakistan',
-    phone: '+92512345678',
-    currency: 'PKR',
-    timezone: 'Asia/Karachi',
-    plan: 'clinic', // 5 doctors — a paying clinic sitting at its plan ceiling
+    name: 'Swaraj Medical Centre',
+    slug: 'swaraj-medical-centre',
+    city: 'Thrissur',
+    country: 'India',
+    phone: '+919847011111',
+    currency: 'INR',
+    timezone: 'Asia/Kolkata',
+    plan: 'clinic',
     doctors: [
-      // Different availability patterns, mirroring a real clinic:
-      { name: 'Dr. Hira Saleem', specialty: 'General Physician', fee: 1500, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '11:00', to: '13:00' },
-      { name: 'Dr. Asad Mehmood', specialty: 'Pediatrics', fee: 2000, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '14:00', to: '16:00' },
-      { name: 'Dr. Bilal Khan', specialty: 'Dermatology', fee: 1800, type: 'regular', days: ['mon','wed','fri'], from: '16:00', to: '18:00' },
-      { name: 'Dr. Sana Tariq', specialty: 'Cardiology', fee: 2500, type: 'onCall' },
-      { name: 'Dr. Imran Qureshi', specialty: 'Surgery', fee: 5000, type: 'byAppointment' },
+      { name: 'Dr. Kavya Nair', specialty: 'General Physician', fee: 500, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '09:00', to: '13:00' },
+      { name: 'Dr. Ramesh Kumar', specialty: 'Pediatrics', fee: 600, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '14:00', to: '17:00' },
+      { name: 'Dr. Sabitha Krishnamoorthy', specialty: 'Internal Medicine', fee: 800, type: 'regular', days: ['mon','wed','fri'], from: '16:00', to: '18:00' },
+      { name: 'Dr. Suresh Menon', specialty: 'Orthopedics', fee: 700, type: 'onCall' },
+      { name: 'Dr. Radhika Nair', specialty: 'Gynecology', fee: 800, type: 'byAppointment' },
     ],
   },
   {
-    name: 'Shifa Family Clinic',
-    slug: 'shifa-family-clinic',
-    city: 'Lahore',
-    country: 'Pakistan',
-    phone: '+92423456789',
-    currency: 'PKR',
-    timezone: 'Asia/Karachi',
-    plan: 'free', // single doctor on the free tier
-    doctors: [{ name: 'Dr. Nadia Hashmi', specialty: 'Family Medicine', fee: 1200 }],
+    name: 'Mission Quarters Health Clinic',
+    slug: 'mission-quarters-health-clinic',
+    city: 'Thrissur',
+    country: 'India',
+    phone: '+919847022222',
+    currency: 'INR',
+    timezone: 'Asia/Kolkata',
+    plan: 'free',
+    doctors: [{ name: 'Dr. Anitha Warrier', specialty: 'Pediatrics', fee: 600 }],
   },
   {
     // Market-agnostic flex: a Dubai clinic proves currency/timezone are settings.
