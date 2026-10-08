@@ -142,7 +142,7 @@ export const Appointments: CollectionConfig = {
       relationTo: 'patients',
       required: true,
       filterOptions: ({ user }) => {
-        if (!user || isSuperAdmin(user as any) || (user as any).role === 'patient') return true
+        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
         return tenantID ? { tenant: { equals: tenantID } } : true
       },
@@ -153,7 +153,7 @@ export const Appointments: CollectionConfig = {
       relationTo: 'users',
       required: true,
       filterOptions: ({ user }) => {
-        if (!user || isSuperAdmin(user as any) || (user as any).role === 'patient') return true
+        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
         const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
         if (tenantID) base.tenant = { equals: tenantID }

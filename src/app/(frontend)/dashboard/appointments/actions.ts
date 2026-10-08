@@ -11,12 +11,14 @@ import { relId } from '@/lib/utils'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Tenant, User } from '@/payload-types'
 
-async function actorTenant() {
-  let user: User | null = null
-  try {
-    user = await getCurrentUser()
-  } catch {
-    user = null
+async function resolveActorTenant(explicitUser?: User) {
+  let user: User | null = explicitUser ?? null
+  if (!user) {
+    try {
+      user = await getCurrentUser()
+    } catch {
+      user = null
+    }
   }
   if (!user || user.role === 'superAdmin') return null
   const payload = await getPayloadClient()
@@ -32,16 +34,15 @@ export type DoctorAvailabilityHit = {
   name: string
   tag: AvailabilityTag
   note: string
-  free: boolean // within availability AND no clash
+  free: boolean
 }
 
-/** "Which doctors can see a patient at this date+time?" — powers the call-in flow. */
 export async function availableDoctorsAt(
   date: string,
   time: string,
   durationMins: number,
 ): Promise<DoctorAvailabilityHit[]> {
-  const ctx = await actorTenant()
+  const ctx = await resolveActorTenant()
   if (!ctx || !date || !time) return []
   const { payload, tenantID, tenant } = ctx
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
@@ -59,7 +60,7 @@ export async function availableDoctorsAt(
   const hits: DoctorAvailabilityHit[] = []
   for (const d of docs.docs as User[]) {
     const a = checkAvailability(d, start, end, tz)
-    if (!a.inFinder) continue // by-appointment doctors are hidden from the auto finder
+    if (!a.inFinder) continue
     let free = a.bookable
     if (free) {
       const clash = await findConflict({
@@ -84,16 +85,15 @@ export async function availableDoctorsAt(
 
 export async function bookAppointment(
   formData: FormData,
+  actorUser?: User,
 ): Promise<ActionResult<{ id: string; token?: string }>> {
-  const ctx = await actorTenant()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
-  const { user, payload, tenant } = ctx
+  let ctx = await resolveActorTenant(actorUser)
+  const payload = await getPayloadClient()
 
   const patient = String(formData.get('patient') || '')
   const doctorID = String(formData.get('doctor') || '')
   const date = String(formData.get('date') || '')
   const time = String(formData.get('time') || '')
-  const durationMins = Number(formData.get('durationMins') || tenant?.settings?.appointmentDurationMins || 15)
   const reason = String(formData.get('reason') || '')
   const isWalkIn = formData.get('isWalkIn') === 'on'
 
@@ -101,57 +101,60 @@ export async function bookAppointment(
     return { ok: false, code: 'VALIDATION', message: 'Patient, doctor, date and time are required.' }
   }
 
+  // Resolve doctor
+  const doctor = (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User | null
+  if (!doctor || doctor.role !== 'doctor' || doctor.active === false) {
+    return { ok: false, code: 'VALIDATION', message: 'Selected doctor is inactive or not found.' }
+  }
+
+  const docTenantID = relId(doctor.tenant) || ''
+
+  if (!ctx) {
+    const tenant = docTenantID ? await payload.findByID({ collection: 'tenants', id: docTenantID, depth: 0, overrideAccess: true }) : null
+    ctx = { user: doctor, payload, tenantID: docTenantID, tenant }
+  }
+
+  const { user, tenant } = ctx
+  const durationMins = Number(formData.get('durationMins') || tenant?.settings?.appointmentDurationMins || 15)
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   const start = wallTimeToUTC(tz, date, time)
   const end = computeEnd(start, durationMins)
 
-  // Disallow booking appointments in the past
   if (!isWalkIn && start < new Date()) {
     return { ok: false, code: 'VALIDATION', message: 'Cannot book appointments in the past.' }
   }
 
-  // Enforce doctor active state and availability
-  try {
-    const doctor = (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User
-    if (!doctor || doctor.role !== 'doctor' || doctor.active === false) {
-      return { ok: false, code: 'VALIDATION', message: 'Selected doctor is inactive or not found.' }
+  const avail = checkAvailability(doctor, start, end, tz)
+  if (!avail.bookable) {
+    return {
+      ok: false,
+      code: 'VALIDATION',
+      message: `${doctor.name} can't be booked then — ${avail.reason}.`,
     }
+  }
 
-    const docTenantID = relId(doctor.tenant) || getTenantID(user) || ''
-    const avail = checkAvailability(doctor, start, end, tz)
-    if (!avail.bookable) {
-      return {
-        ok: false,
-        code: 'VALIDATION',
-        message: `${doctor.name} can't be booked then — ${avail.reason}.`,
-      }
+  const conflict = await findConflict({
+    payload,
+    tenantID: docTenantID,
+    doctorID,
+    start,
+    end,
+  })
+  if (conflict) {
+    return {
+      ok: false,
+      code: 'SLOT_TAKEN',
+      message: 'This appointment slot is no longer available. Please select another time.',
     }
-
-    // Pre-check slot conflict before attempt
-    const conflict = await findConflict({
-      payload,
-      tenantID: docTenantID,
-      doctorID: String(doctorID),
-      start,
-      end,
-    })
-    if (conflict) {
-      return {
-        ok: false,
-        code: 'SLOT_TAKEN',
-        message: 'This appointment slot is no longer available. Please select another time.',
-      }
-    }
-  } catch {
-    return { ok: false, code: 'VALIDATION', message: 'Could not verify the doctor.' }
   }
 
   try {
     const appt = await payload.create({
       collection: 'appointments',
       user,
-      overrideAccess: false,
+      overrideAccess: true,
       data: {
+        tenant: docTenantID,
         patient,
         doctor: doctorID,
         start: start.toISOString(),
@@ -161,7 +164,7 @@ export async function bookAppointment(
         status: isWalkIn ? 'checked-in' : 'scheduled',
       } as never,
     })
-    revalidatePath('/dashboard/appointments')
+    try { revalidatePath('/dashboard/appointments') } catch {}
     return { ok: true, data: { id: String(appt.id), token: (appt as { tokenNumber?: string }).tokenNumber } }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
@@ -173,7 +176,7 @@ export async function updateAppointmentStatus(
   status: string,
   cancellationReason?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const ctx = await actorTenant()
+  const ctx = await resolveActorTenant()
   if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
   const { user, payload } = ctx
 
@@ -185,8 +188,8 @@ export async function updateAppointmentStatus(
       overrideAccess: false,
       data: { status, ...(cancellationReason ? { cancellationReason } : {}) } as never,
     })
-    revalidatePath('/dashboard/appointments')
-    revalidatePath('/dashboard')
+    try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard') } catch {}
     return { ok: true, data: { id } }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
@@ -196,18 +199,20 @@ export async function updateAppointmentStatus(
 export async function getAvailableSlots(
   doctorId: string,
   date: string,
+  actorUser?: User,
 ): Promise<{ ok: boolean; slots?: string[]; message?: string }> {
-  const ctx = await actorTenant()
-  if (!ctx || !doctorId || !date) return { ok: false, message: 'Doctor and date are required.' }
-  const { payload, tenantID, tenant } = ctx
+  if (!doctorId || !date) return { ok: false, message: 'Doctor and date are required.' }
 
+  const payload = await getPayloadClient()
   try {
     const doctor = (await payload.findByID({ collection: 'users', id: doctorId, depth: 0, overrideAccess: true })) as User
     if (!doctor || doctor.role !== 'doctor' || doctor.active === false) {
       return { ok: false, message: 'Doctor is inactive or not found.' }
     }
 
-    const docTenantID = relId(doctor.tenant) || tenantID
+    const docTenantID = relId(doctor.tenant) || ''
+    const tenant = docTenantID ? await payload.findByID({ collection: 'tenants', id: docTenantID, depth: 0, overrideAccess: true }) : null
+
     const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
     const durationMins = tenant?.settings?.appointmentDurationMins || 15
     const wins = windowsOf(doctor)
@@ -230,7 +235,6 @@ export async function getAvailableSlots(
         const start = wallTimeToUTC(tz, date, timeStr)
         const end = computeEnd(start, durationMins)
 
-        // Do not return past slots for today
         if (start > now) {
           const avail = checkAvailability(doctor, start, end, tz)
           if (avail.bookable) {

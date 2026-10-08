@@ -61,7 +61,7 @@ describe('Indian Prescription & Doctor Credentials Standardization Suite', () =>
           pulse: 82,
         },
         prescription: [
-          { medicine: 'Paracetamol 650mg', dosage: '1 tablet', frequency: '1-0-1 BD', durationDays: 5, instructions: 'After food' },
+          { medicine: 'Paracetamol 650mg', dosage: '1 tablet', frequency: 'bd', durationDays: 5, instructions: 'After food' },
         ],
         followUpDate: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
       } as any,

@@ -99,16 +99,27 @@ describe('UAT Environment Hardening & Access Control Suite', () => {
   // =========================================================================
 
   it('denies Patient B from accessing or downloading Patient A medical documents', async () => {
+    const VALID_PDF = Buffer.from(
+      '%PDF-1.4\n%âãÏÓ\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\nxref\n0 4\n0000000000 65535 f\n0000000015 00000 n\n0000000068 00000 n\n0000000125 00000 n\ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n190\n%%EOF',
+    )
     const docA = await payload.create({
       collection: 'medical-documents' as any,
+      user: f.a.doctor,
       overrideAccess: true,
       data: {
         tenant: f.a.tenant.id,
         patient: f.a.patient.id,
+        uploadedBy: f.a.doctor.id,
         title: 'Sensitive Blood Test',
         documentType: 'LAB_REPORT',
         documentDate: new Date().toISOString(),
         status: 'active',
+      },
+      file: {
+        data: VALID_PDF,
+        name: 'blood_test.pdf',
+        mimetype: 'application/pdf',
+        size: VALID_PDF.length,
       },
     })
 

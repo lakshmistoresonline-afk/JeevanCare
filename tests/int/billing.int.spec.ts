@@ -209,7 +209,7 @@ describe('v2 — visits & invoices', () => {
 
   it('snapshots the clinic currency and keeps it after a later currency change', async () => {
     const inv = await newInvoice()
-    expect(inv.currency).toBe('PKR')
+    expect(inv.currency).toBe('INR')
 
     await payload.update({
       collection: 'tenants',
@@ -219,7 +219,7 @@ describe('v2 — visits & invoices', () => {
     })
 
     const reread = await payload.findByID({ collection: 'invoices', id: inv.id, overrideAccess: true })
-    expect(reread.currency).toBe('PKR') // historical amount keeps its original currency
+    expect(reread.currency).toBe('INR') // historical amount keeps its original currency
   })
 
   // ---------------- Invoices: tenant isolation ----------------

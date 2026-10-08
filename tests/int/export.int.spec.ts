@@ -55,7 +55,7 @@ describe('v4-A — export route', () => {
     const res = await call('patients', RANGE, token)
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toContain('text/csv')
-    expect(res.headers.get('content-disposition')).toContain('matab-patients-')
+    expect(res.headers.get('content-disposition')).toContain('jeevancare-patients-')
 
     const body = await res.text()
     expect(body).toContain('Patient A')

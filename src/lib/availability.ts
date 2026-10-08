@@ -121,7 +121,8 @@ export function checkAvailability(
     return { bookable: true, inFinder: false, tag: 'byAppointment', reason: 'By appointment' }
   }
 
-  const days = doctor.availableDays?.length ? doctor.availableDays : ALL_DAYS
+  const rawDays = doctor.availableDays?.length ? doctor.availableDays : ALL_DAYS
+  const days = rawDays.map((d: any) => (typeof d === 'object' && d !== null ? d.value || d.id || String(d) : String(d)))
   const day = weekdayInTz(start, tz)
   if (!days.includes(day)) {
     return { bookable: false, inFinder: false, tag: 'regular', reason: `Not available on this day` }

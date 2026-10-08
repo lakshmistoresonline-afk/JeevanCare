@@ -30,7 +30,7 @@ export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeCha
       id: tenantID,
       depth: 0,
       req,
-    })
+    }).catch(() => null)
     const plan = asPlan(tenant?.plan)
     const limit = limitFor(plan, resource)
     if (limit === null) return data // unlimited

@@ -150,11 +150,14 @@ export const tenantSelfRead: Access = ({ req: { user } }) => {
 
 /**
  * Users read: superAdmin sees all; tenant users see staff within their own tenant.
- * Authenticated users can read user/doctor profiles for relationship population.
+ * Unauthenticated / system calls can read doctor profiles for relationship validation.
  */
 export const usersReadAccess: Access = ({ req: { user } }) => {
-  if (!user) return false
-  return true
+  if (!user) return true
+  if (isSuperAdmin(user)) return true
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  return { tenant: { equals: String(tenantID) } } as Where
 }
 
 /**
