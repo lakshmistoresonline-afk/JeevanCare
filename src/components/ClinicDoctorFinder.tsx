@@ -203,7 +203,7 @@ export function ClinicDoctorFinder({
                                   <div className="tabular mt-0.5 font-medium text-primary">Fee: ₹{doc.consultationFee}</div>
                                 )}
                               </div>
-                              <Link href="/patient/login" className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-primary/90">
+                              <Link href={`/patient/login?doctor=${doc.id}`} className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-primary/90">
                                 Book
                               </Link>
                             </li>

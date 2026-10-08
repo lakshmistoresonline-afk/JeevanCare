@@ -1,16 +1,28 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { patientLoginAction } from './actions'
 import { AuthLayout } from '@/components/AuthLayout'
 import { AuthContextTabs } from '@/components/AuthContextTabs'
+import { BookingContextBanner } from '@/components/BookingContextBanner'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { PasswordField } from '@/components/PasswordField'
 
 export default function PatientLoginPage() {
+  return (
+    <Suspense>
+      <PatientLoginForm />
+    </Suspense>
+  )
+}
+
+function PatientLoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const doctorId = searchParams.get('doctor') || searchParams.get('doctorId')
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -23,9 +35,13 @@ export default function PatientLoginPage() {
     startTransition(async () => {
       const res = await patientLoginAction(null, formData)
       if (res.ok) {
-        router.push('/patient/dashboard')
+        if (doctorId) {
+          router.push(`/patient/appointments/book?doctor=${doctorId}`)
+        } else {
+          router.push('/patient/dashboard')
+        }
       } else {
-        setError(res.message || 'Invalid email or password.')
+        setError(res.message || 'Invalid mobile number, email or password.')
       }
     })
   }
@@ -33,11 +49,13 @@ export default function PatientLoginPage() {
   return (
     <AuthLayout>
       <div>
-        <AuthContextTabs active="patient" />
+        <AuthContextTabs active="patient" doctorQuery={doctorId || undefined} />
 
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Patient Portal</h1>
+        <BookingContextBanner doctorId={doctorId} />
+
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Welcome to JeevanCare</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sign in to access your appointments, prescriptions, and lab reports.
+          Your healthcare, in one place.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -50,7 +68,7 @@ export default function PatientLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="+91 9876543210 or patient@example.com"
+              placeholder="+91 98470 11111 or patient@example.com"
               className={inputClass}
             />
           </Field>
@@ -79,13 +97,21 @@ export default function PatientLoginPage() {
 
           <button type="submit" className={`${btnPrimary} mt-1 w-full`} disabled={pending}>
             {pending && <Spinner />}
-            {pending ? 'Signing in to Patient Portal…' : 'Sign In'}
+            {pending ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 
+        {/* Factual Trust Indicator */}
+        <div className="mt-5 rounded-lg bg-secondary/50 p-2.5 text-center text-[11px] font-medium text-primary border border-primary/15">
+          🔒 Secure access · Private patient records · Role-based permissions
+        </div>
+
         <div className="mt-6 text-center text-xs text-muted-foreground">
           New to JeevanCare?{' '}
-          <Link href="/patient/register" className="font-semibold text-primary hover:underline">
+          <Link
+            href={doctorId ? `/patient/register?doctor=${doctorId}` : '/patient/register'}
+            className="font-semibold text-primary hover:underline"
+          >
             Create Patient Account
           </Link>
         </div>

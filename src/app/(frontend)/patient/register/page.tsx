@@ -1,17 +1,29 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useTransition, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { patientRegisterAction } from './actions'
 import { AuthLayout } from '@/components/AuthLayout'
+import { BookingContextBanner } from '@/components/BookingContextBanner'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { PasswordField } from '@/components/PasswordField'
 import { IconCheck } from '@/components/icons'
 import { INDIAN_STATES } from '@/lib/constants'
 
 export default function PatientRegisterPage() {
+  return (
+    <Suspense>
+      <PatientRegisterForm />
+    </Suspense>
+  )
+}
+
+function PatientRegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const doctorId = searchParams.get('doctor') || searchParams.get('doctorId')
+
   const [tenants, setTenants] = useState<{ id: string; name: string; city: string }[]>([])
   const [loadingTenants, setLoadingTenants] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,6 +54,14 @@ export default function PatientRegisterPage() {
     })
   }
 
+  const handleContinue = () => {
+    if (doctorId) {
+      router.push(`/patient/appointments/book?doctor=${doctorId}`)
+    } else {
+      router.push('/patient/dashboard')
+    }
+  }
+
   return (
     <AuthLayout>
       {success ? (
@@ -55,14 +75,16 @@ export default function PatientRegisterPage() {
           </p>
           <button
             type="button"
-            onClick={() => router.push('/patient/dashboard')}
+            onClick={handleContinue}
             className={`${btnPrimary} mt-6 w-full`}
           >
-            Go to Patient Portal
+            {doctorId ? 'Continue to Book Appointment' : 'Go to Patient Portal'}
           </button>
         </div>
       ) : (
         <div>
+          <BookingContextBanner doctorId={doctorId} />
+
           <h1 className="font-display text-2xl font-semibold tracking-tight">Create your JeevanCare account</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage appointments, prescriptions, medical documents, and visit history in one place.
@@ -173,9 +195,17 @@ export default function PatientRegisterPage() {
             </button>
           </form>
 
+          {/* Factual Trust Indicator */}
+          <div className="mt-5 rounded-lg bg-secondary/50 p-2.5 text-center text-[11px] font-medium text-primary border border-primary/15">
+            🔒 Secure access · Private patient records · Role-based permissions
+          </div>
+
           <div className="mt-6 text-center text-xs text-muted-foreground">
             Already have a patient account?{' '}
-            <Link href="/patient/login" className="font-semibold text-primary hover:underline">
+            <Link
+              href={doctorId ? `/patient/login?doctor=${doctorId}` : '/patient/login'}
+              className="font-semibold text-primary hover:underline"
+            >
               Sign in
             </Link>
           </div>
