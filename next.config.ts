@@ -7,14 +7,11 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
   images: {
     localPatterns: [
-      {
-        pathname: '/api/media/file/**',
-      },
-      {
-        pathname: '/images/**',
-      },
+      { pathname: '/api/media/file/**' },
+      { pathname: '/images/**' },
     ],
   },
   webpack: (webpackConfig) => {
@@ -23,7 +20,6 @@ const nextConfig: NextConfig = {
       '.js': ['.ts', '.tsx', '.js', '.jsx'],
       '.mjs': ['.mts', '.mjs'],
     }
-
     return webpackConfig
   },
   turbopack: {
@@ -31,4 +27,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+export default withPayload(nextConfig)
