@@ -12,7 +12,6 @@ const LANGUAGES = [
 ]
 
 export function JeevanCareHeader() {
-  const [loginOpen, setLoginOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [selectedLang, setSelectedLang] = useState('English')
   const [accessibilityMode, setAccessibilityMode] = useState(false)
@@ -67,7 +66,7 @@ export function JeevanCareHeader() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => { setLangOpen((v) => !v); setLoginOpen(false) }}
+              onClick={() => setLangOpen((v) => !v)}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-ink transition-colors hover:border-primary"
             >
               <span>🇮🇳</span>
@@ -90,77 +89,20 @@ export function JeevanCareHeader() {
             )}
           </div>
 
-          {/* Unified Login / Register Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => { setLoginOpen((v) => !v); setLangOpen(false) }}
-              className="flex items-center gap-2 rounded-lg border border-primary bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary/90"
+          {/* Direct Intent-Based Auth Actions */}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/patient/login"
+              className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
             >
-              <span>Sign In / Register</span>
-              <span className="text-[10px]">▲</span>
-            </button>
-
-            {loginOpen && (
-              <div className="absolute end-0 mt-2 w-72 rounded-2xl border border-border bg-card p-2 shadow-2xl animate-fade-up">
-                <div className="px-3 py-2 border-b border-border">
-                  <div className="text-xs font-semibold text-ink">JeevanCare Access Portals</div>
-                  <div className="text-[11px] text-muted-foreground">Select your role to continue</div>
-                </div>
-
-                <div className="py-1">
-                  <Link
-                    href="/patient/login"
-                    onClick={() => setLoginOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-ink transition-colors hover:bg-secondary"
-                  >
-                    <div>
-                      <div className="font-semibold text-primary">Patient Portal</div>
-                      <div className="text-[10px] text-muted-foreground">Book appointments &amp; view history</div>
-                    </div>
-                    <span className="text-primary font-bold">→</span>
-                  </Link>
-
-                  <Link
-                    href="/login"
-                    onClick={() => setLoginOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-ink transition-colors hover:bg-secondary"
-                  >
-                    <div>
-                      <div className="font-semibold text-ink">Clinic Staff &amp; Doctors</div>
-                      <div className="text-[10px] text-muted-foreground">Reception, queue &amp; consultations</div>
-                    </div>
-                    <span className="text-muted-foreground font-bold">→</span>
-                  </Link>
-
-                  <div className="my-1 border-t border-border" />
-
-                  <Link
-                    href="/patient/register"
-                    onClick={() => setLoginOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-ink transition-colors hover:bg-secondary"
-                  >
-                    <div>
-                      <div className="font-semibold text-ink">New Patient Signup</div>
-                      <div className="text-[10px] text-muted-foreground">Create free patient account</div>
-                    </div>
-                    <span className="text-muted-foreground font-bold">→</span>
-                  </Link>
-
-                  <Link
-                    href="/signup"
-                    onClick={() => setLoginOpen(false)}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-ink transition-colors hover:bg-secondary"
-                  >
-                    <div>
-                      <div className="font-semibold text-ink">Register New Clinic</div>
-                      <div className="text-[10px] text-muted-foreground">Setup clinic in 60 seconds</div>
-                    </div>
-                    <span className="text-muted-foreground font-bold">→</span>
-                  </Link>
-                </div>
-              </div>
-            )}
+              Patient Portal
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-primary/90"
+            >
+              Clinic Workspace
+            </Link>
           </div>
         </div>
       </div>
