@@ -1,5 +1,5 @@
-// Shared, market-agnostic option lists. Currency and timezone are tenant-level
-// settings with Pakistan defaults — nothing region-specific is hardcoded.
+// Shared option lists. Currency and timezone are tenant-level settings with
+// India defaults — nothing region-specific is hardcoded beyond defaults.
 
 export const ROLES = ['superAdmin', 'owner', 'doctor', 'receptionist', 'patient'] as const
 export type Role = (typeof ROLES)[number]
@@ -81,7 +81,6 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
 // Curated currency list (a full ISO list is overkill). `code` feeds Intl.NumberFormat.
 export const CURRENCIES = [
   { label: 'INR — Indian Rupee', value: 'INR' },
-  { label: 'PKR — Pakistani Rupee', value: 'PKR' },
   { label: 'USD — US Dollar', value: 'USD' },
   { label: 'GBP — British Pound', value: 'GBP' },
   { label: 'AED — UAE Dirham', value: 'AED' },
@@ -91,7 +90,6 @@ export const CURRENCIES = [
 // Curated IANA timezone list (a full dropdown is overkill for the launch markets).
 export const TIMEZONES = [
   { label: 'Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
-  { label: 'Asia/Karachi (PKT)', value: 'Asia/Karachi' },
   { label: 'Asia/Dubai (GST)', value: 'Asia/Dubai' },
   { label: 'Asia/Riyadh (AST)', value: 'Asia/Riyadh' },
   { label: 'Europe/London (GMT/BST)', value: 'Europe/London' },
@@ -202,7 +200,6 @@ export const CHIEF_COMPLAINTS = [
 // form; values seed the new tenant's settings.
 export const COUNTRY_DEFAULTS = [
   { label: 'India', currency: 'INR', timezone: 'Asia/Kolkata' },
-  { label: 'Pakistan', currency: 'PKR', timezone: 'Asia/Karachi' },
   { label: 'United Arab Emirates', currency: 'AED', timezone: 'Asia/Dubai' },
   { label: 'Saudi Arabia', currency: 'SAR', timezone: 'Asia/Riyadh' },
   { label: 'United Kingdom', currency: 'GBP', timezone: 'Europe/London' },

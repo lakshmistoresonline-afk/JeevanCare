@@ -17,6 +17,7 @@ export default async function PatientBookAppointmentPage({
     where: {
       role: { equals: 'doctor' },
       active: { equals: true },
+      tenant: { equals: tenant.id },
     },
     limit: 100,
     depth: 1,

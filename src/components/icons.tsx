@@ -32,4 +32,8 @@ export {
   MessageCircle as IconWhatsApp,
   ChartColumn as IconChart,
   Download as IconDownload,
+  House as IconHome,
+  Menu as IconMore,
+  FileText as IconFileText,
+  Pill as IconPill,
 } from 'lucide-react'

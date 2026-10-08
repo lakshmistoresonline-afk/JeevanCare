@@ -3,16 +3,18 @@ import Link from 'next/link'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { patientLogoutAction } from './login/actions'
 import { Avatar, btnGhost } from '@/components/primitives'
-import { IconCalendar, IconDashboard, IconPlus, IconReceipt, IconStethoscope, IconUsers } from '@/components/icons'
-import { getTenantID } from '@/access'
+import { IconHome, IconCalendar, IconPlus, IconClock, IconPill, IconFileText, IconReceipt, IconUsers } from '@/components/icons'
+import { getTenantID, getPatientID } from '@/access'
+import { relId } from '@/lib/utils'
+import { PatientBottomNav } from '@/components/PatientBottomNav'
 
 const NAV_ITEMS = [
-  { href: '/patient/dashboard', label: 'Dashboard', icon: IconDashboard },
+  { href: '/patient/dashboard', label: 'Home', icon: IconHome },
   { href: '/patient/appointments', label: 'Appointments', icon: IconCalendar },
-  { href: '/patient/appointments/book', label: 'Book Appointment', icon: IconPlus },
-  { href: '/patient/history', label: 'Medical History', icon: IconStethoscope },
-  { href: '/patient/prescriptions', label: 'Prescriptions', icon: IconReceipt },
-  { href: '/patient/documents', label: 'Documents', icon: IconReceipt },
+  { href: '/patient/appointments/book', label: 'Book', icon: IconPlus },
+  { href: '/patient/history', label: 'History', icon: IconClock },
+  { href: '/patient/prescriptions', label: 'Prescriptions', icon: IconPill },
+  { href: '/patient/documents', label: 'Documents', icon: IconFileText },
   { href: '/patient/billing', label: 'Billing', icon: IconReceipt },
   { href: '/patient/profile', label: 'Profile', icon: IconUsers },
 ]
@@ -33,30 +35,19 @@ export default async function PatientLayout({ children }: { children: React.Reac
   }
 
   let patient: any = null
-  const patientProfile = (user as any).patientProfile
-  if (patientProfile) {
-    const pid = typeof patientProfile === 'object' ? String((patientProfile as any).id) : String(patientProfile)
+  const pid = getPatientID(user)
+  if (pid) {
     patient = await payload.findByID({ collection: 'patients', id: pid, depth: 0, overrideAccess: true }).catch(() => null)
   }
-  if (!patient && tenantID) {
-    const res = await payload.find({
-      collection: 'patients',
-      where: {
-        tenant: { equals: tenantID },
-        or: [
-          ...(user.email ? [{ email: { equals: user.email } }] : []),
-          ...(user.phone ? [{ phone: { equals: user.phone } }] : []),
-        ],
-      },
-      limit: 1,
-      overrideAccess: true,
-    })
-    patient = res.docs[0] ?? null
+  // Fail closed: patient identity must come from the authenticated patientProfile link only.
+  // If the profile is missing or belongs to a different tenant, deny access.
+  if (!patient || String(relId(patient.tenant)) !== String(tenantID)) {
+    patient = null
   }
 
   return (
     <div className="flex min-h-screen bg-canvas">
-      {/* Patient Sidebar */}
+      {/* Patient Sidebar (desktop) */}
       <aside className="hidden w-64 flex-col border-r border-border bg-card md:flex">
         <div className="flex h-16 items-center gap-2.5 px-6 border-b border-border">
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-white">
@@ -83,7 +74,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
           </div>
         )}
 
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-1 p-4" aria-label="Patient navigation">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             return (
@@ -110,22 +101,26 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6 md:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:hidden">
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold">JeevanCare</span>
             <span className="text-xs text-muted-foreground">· Patient</span>
           </div>
-          <form action={patientLogoutAction}>
-            <button type="submit" className="text-xs font-medium text-red">
-              Sign out
-            </button>
-          </form>
+          {patient && (
+            <div className="flex items-center gap-2">
+              <span className="tabular text-xs text-muted-foreground">{patient.mrn}</span>
+              <Avatar name={patient.name} size="sm" />
+            </div>
+          )}
         </header>
 
         <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8">
           <div className="mx-auto max-w-5xl animate-fade-up">{children}</div>
         </main>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <PatientBottomNav />
     </div>
   )
 }
