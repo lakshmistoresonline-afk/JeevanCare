@@ -19,20 +19,52 @@ import config from './payload.config'
 import crypto from 'crypto'
 
 const PASSWORD = 'Test@123'
+const NO_TX = { req: { transactionID: false } as any }
+
+async function safeCreate(payload: any, options: any) {
+  let retries = 5
+  while (retries > 0) {
+    try {
+      return await payload.create(options)
+    } catch (err: any) {
+      if (
+        err?.errorLabelSet?.has('TransientTransactionError') ||
+        err?.codeName === 'WriteConflict' ||
+        err?.code === 112 ||
+        err?.code === 251
+      ) {
+        retries--
+        await new Promise((resolve) => setTimeout(resolve, 150))
+      } else {
+        throw err
+      }
+    }
+  }
+  return await payload.create(options)
+}
 
 export async function seedTestUatData() {
   const payload = await getPayload({ config: await config })
   console.log('Seeding JeevanCare Test/UAT environment with explicit test accounts (owner1@test.com, staff1@test.com, doctor1@test.com)...')
 
-  // Clear existing collections idempotently
-  for (const col of ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants'] as const) {
-    await payload.delete({ collection: col as any, where: {}, overrideAccess: true })
+  // Clear existing collections idempotently via native Mongoose/MongoDB collections
+  const collectionsToWipe = ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants', 'payload-preferences', 'payload-migrations']
+  for (const col of collectionsToWipe) {
+    try {
+      const native = payload.db.collections?.[col]?.collection
+      if (native) {
+        await native.deleteMany({})
+      }
+    } catch {
+      // Fallback
+    }
   }
 
   // 1. Super Admin
-  const adminUser = await payload.create({
+  const adminUser = await safeCreate(payload, {
     collection: 'users',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       name: 'Super Admin JeevanCare',
       email: 'admin@test.com',
@@ -61,9 +93,10 @@ export async function seedTestUatData() {
 
   for (let i = 0; i < clinics.length; i++) {
     const c = clinics[i]
-    const t = await payload.create({
+    const t = await safeCreate(payload, {
       collection: 'tenants',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         name: c.name,
         city: c.city,
@@ -84,9 +117,10 @@ export async function seedTestUatData() {
     tenantDocs.push(t)
 
     // Explicit Owner (owner1@test.com to owner10@test.com)
-    const owner = await payload.create({
+    const owner = await safeCreate(payload, {
       collection: 'users',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         name: `Owner — ${c.name}`,
         email: `owner${i + 1}@test.com`,
@@ -99,9 +133,10 @@ export async function seedTestUatData() {
     ownerDocs.push(owner)
 
     // Explicit Receptionist (staff1@test.com to staff10@test.com)
-    const staff = await payload.create({
+    const staff = await safeCreate(payload, {
       collection: 'users',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         name: `Reception — ${c.name}`,
         email: `staff${i + 1}@test.com`,
@@ -129,9 +164,10 @@ export async function seedTestUatData() {
   for (let i = 0; i < doctorsData.length; i++) {
     const doc = doctorsData[i]
     const tenant = tenantDocs[i % tenantDocs.length]
-    const doctor = await payload.create({
+    const doctor = await safeCreate(payload, {
       collection: 'users',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         name: doc.name,
         email: doc.email,
@@ -159,9 +195,10 @@ export async function seedTestUatData() {
   for (let i = 1; i <= 10; i++) {
     const clinicSpec = clinics[(i - 1) % clinics.length]
     const tenant = tenantDocs[(i - 1) % clinics.length]
-    const pat = await payload.create({
+    const pat = await safeCreate(payload, {
       collection: 'patients',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         tenant: tenant.id,
         name: `Thrissur Patient ${i}`,
@@ -177,9 +214,10 @@ export async function seedTestUatData() {
     })
     patientDocs.push(pat)
 
-    const userPat = await payload.create({
+    const userPat = await safeCreate(payload, {
       collection: 'users',
       overrideAccess: true,
+      ...NO_TX,
       data: {
         name: `Thrissur Patient ${i}`,
         email: `patient${i}@test.com`,
@@ -198,9 +236,10 @@ export async function seedTestUatData() {
   // 5. Explicit UAT Scenarios
 
   // SCENARIO A: Patient 1 — PATIENT WITH HISTORY & PAID BILL
-  const appt1 = await payload.create({
+  const appt1 = await safeCreate(payload, {
     collection: 'appointments',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[0].id,
       patient: patientDocs[0].id,
@@ -212,9 +251,10 @@ export async function seedTestUatData() {
     },
   })
 
-  const visit1 = await payload.create({
+  const visit1 = await safeCreate(payload, {
     collection: 'visits',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[0].id,
       patient: patientDocs[0].id,
@@ -238,9 +278,10 @@ export async function seedTestUatData() {
     } as never,
   })
 
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'invoices',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[0].id,
       patient: patientDocs[0].id,
@@ -257,9 +298,10 @@ export async function seedTestUatData() {
   })
 
   // SCENARIO B: Patient 2 — PATIENT WITH DOCUMENTS & UNPAID BILL
-  const appt2 = await payload.create({
+  const appt2 = await safeCreate(payload, {
     collection: 'appointments',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[1].id,
       patient: patientDocs[1].id,
@@ -273,9 +315,10 @@ export async function seedTestUatData() {
   })
 
   const dummyPdf = Buffer.from('%PDF-1.4 Diagnostic Report Sample Content for Patient 2')
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'medical-documents' as any,
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[1].id,
       patient: patientDocs[1].id,
@@ -295,9 +338,10 @@ export async function seedTestUatData() {
     },
   })
 
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'invoices',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[1].id,
       patient: patientDocs[1].id,
@@ -309,9 +353,10 @@ export async function seedTestUatData() {
   })
 
   // SCENARIO C: Patient 4 — CANCELLED & NO-SHOW APPOINTMENTS
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'appointments',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[3].id,
       patient: patientDocs[3].id,
@@ -323,9 +368,10 @@ export async function seedTestUatData() {
     },
   })
 
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'appointments',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[3].id,
       patient: patientDocs[3].id,
@@ -337,9 +383,10 @@ export async function seedTestUatData() {
   })
 
   // SCENARIO D: Patient 5 — NEW SCHEDULED PATIENT (FUTURE SLOT)
-  await payload.create({
+  await safeCreate(payload, {
     collection: 'appointments',
     overrideAccess: true,
+    ...NO_TX,
     data: {
       tenant: tenantDocs[4].id,
       patient: patientDocs[4].id,
