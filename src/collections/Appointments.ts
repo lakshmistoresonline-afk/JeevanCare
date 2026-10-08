@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, getTenantID, patientTenantScoped } from '@/access'
+import { tenantScoped, denyAll, getTenantID, isSuperAdmin, patientTenantScoped } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { findConflict, computeEnd } from '@/lib/booking'
 import { auditAppointments } from '@/hooks/audit'
@@ -142,7 +142,7 @@ export const Appointments: CollectionConfig = {
       relationTo: 'patients',
       required: true,
       filterOptions: ({ user }) => {
-        if (!user || (user as any).role === 'patient') return true
+        if (!user || isSuperAdmin(user as any) || (user as any).role === 'patient') return true
         const tenantID = getTenantID(user as any)
         return tenantID ? { tenant: { equals: tenantID } } : true
       },
@@ -153,7 +153,7 @@ export const Appointments: CollectionConfig = {
       relationTo: 'users',
       required: true,
       filterOptions: ({ user }) => {
-        if (!user || (user as any).role === 'patient') return { role: { equals: 'doctor' }, active: { equals: true } }
+        if (!user || isSuperAdmin(user as any) || (user as any).role === 'patient') return true
         const tenantID = getTenantID(user as any)
         const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
         if (tenantID) base.tenant = { equals: tenantID }

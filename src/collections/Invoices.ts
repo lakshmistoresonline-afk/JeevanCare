@@ -197,6 +197,7 @@ export const Invoices: CollectionConfig = {
       relationTo: 'visits',
       access: { update: () => false },
       filterOptions: ({ user }) => {
+        if (!user || isSuperAdmin(user as never) || (user as any).role === 'patient') return true
         const tenantID = getTenantID(user as never)
         return tenantID ? ({ tenant: { equals: tenantID } } as never) : true
       },
