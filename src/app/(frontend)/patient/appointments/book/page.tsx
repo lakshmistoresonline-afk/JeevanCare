@@ -2,9 +2,15 @@ import { requirePatientSession, getPayloadClient } from '@/lib/auth'
 import { Card } from '@/components/primitives'
 import { PatientAppointmentBooker } from '@/components/PatientAppointmentBooker'
 
-export default async function PatientBookAppointmentPage() {
+export default async function PatientBookAppointmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ doctor?: string; doctorId?: string }>
+}) {
   const { patient, tenant } = await requirePatientSession()
   const payload = await getPayloadClient()
+  const params = await searchParams
+  const initialDoctorId = params.doctor || params.doctorId || ''
 
   const doctorsRes = await payload.find({
     collection: 'users',
@@ -35,7 +41,11 @@ export default async function PatientBookAppointmentPage() {
       </div>
 
       <Card className="p-6">
-        <PatientAppointmentBooker doctors={doctors} patientId={String(patient.id)} />
+        <PatientAppointmentBooker
+          doctors={doctors}
+          patientId={String(patient.id)}
+          initialDoctorId={initialDoctorId}
+        />
       </Card>
     </div>
   )

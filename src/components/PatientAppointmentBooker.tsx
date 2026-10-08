@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { btnPrimary, inputClass, Spinner } from '@/components/primitives'
 import { formatDoctorName } from '@/lib/utils'
@@ -9,13 +9,18 @@ import { getAvailableSlots, bookAppointment } from '@/app/(frontend)/dashboard/a
 export function PatientAppointmentBooker({
   doctors,
   patientId,
+  initialDoctorId = '',
 }: {
   doctors: { id: string; name: string; specialty?: string | null; clinicName?: string | null }[]
   patientId: string
+  initialDoctorId?: string
 }) {
   const router = useRouter()
-  const [doctorId, setDoctorId] = useState('')
-  const [date, setDate] = useState('')
+  const [doctorId, setDoctorId] = useState(initialDoctorId)
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    return d.toISOString().slice(0, 10)
+  })
   const [slots, setSlots] = useState<string[]>([])
   const [selectedSlot, setSelectedSlot] = useState('')
   const [reason, setReason] = useState('')
@@ -45,6 +50,12 @@ export function PatientAppointmentBooker({
       setLoadingSlots(false)
     }
   }
+
+  useEffect(() => {
+    if (doctorId && date) {
+      handleFetchSlots(doctorId, date)
+    }
+  }, [doctorId, date])
 
   const handleBook = () => {
     if (!doctorId || !date || !selectedSlot) {
@@ -77,7 +88,6 @@ export function PatientAppointmentBooker({
           value={doctorId}
           onChange={(e) => {
             setDoctorId(e.target.value)
-            handleFetchSlots(e.target.value, date)
           }}
           className={inputClass}
         >
@@ -95,9 +105,9 @@ export function PatientAppointmentBooker({
         <input
           type="date"
           value={date}
+          min={new Date().toISOString().slice(0, 10)}
           onChange={(e) => {
             setDate(e.target.value)
-            handleFetchSlots(doctorId, e.target.value)
           }}
           className={inputClass}
         />
@@ -120,7 +130,7 @@ export function PatientAppointmentBooker({
                 onClick={() => setSelectedSlot(slot)}
                 className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                   selectedSlot === slot
-                    ? 'border-primary bg-primary text-white'
+                    ? 'border-primary bg-primary text-white shadow-xs'
                     : 'border-border bg-canvas hover:border-primary/50'
                 }`}
               >
