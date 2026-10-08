@@ -4,6 +4,7 @@ import { startOfDayInTz } from '@/lib/reports'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { formatDoctorName } from '@/lib/utils'
 import { QueueAudioAnnouncer } from '@/components/QueueAudioAnnouncer'
+import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
 import { UpiQrCode } from '@/components/UpiQrCode'
 
 export default async function QueueDisplayPage() {
@@ -107,8 +108,8 @@ export default async function QueueDisplayPage() {
         JeevanCare · Please listen for your token number.
       </footer>
 
-      {/* Auto-refresh script */}
-      <script dangerouslySetInnerHTML={{ __html: `setTimeout(() => window.location.reload(), 5000);` }} />
+      {/* Auto-refresh timer */}
+      <QueueAutoRefresher intervalMs={5000} />
     </div>
   )
 }

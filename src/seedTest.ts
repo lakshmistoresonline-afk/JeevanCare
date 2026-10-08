@@ -164,7 +164,7 @@ export async function seedTestUatData() {
     staffDocs.push(staff)
   }
 
-  // 3. Specialist Doctors
+  // 3. Specialist Doctors for all 10 Thrissur Clinics
   const doctorsData = [
     { name: 'Dr. Sabitha Krishnamoorthy', email: 'doctor1@test.com', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223' },
     { name: 'Dr. Bins M John', email: 'doctor2@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11224' },
@@ -173,6 +173,9 @@ export async function seedTestUatData() {
     { name: 'Dr. Varghees Chakola', email: 'doctor5@test.com', specialty: 'General Medicine', fee: 600, regno: 'KMC-11227' },
     { name: 'Dr. Unni Krishnan', email: 'dr.unni@test.com', specialty: 'General Medicine', fee: 500, regno: 'KMC-2026-101' },
     { name: 'Dr. Anitha Warrier', email: 'dr.anitha@test.com', specialty: 'Pediatrics', fee: 600, regno: 'KMC-2026-102' },
+    { name: 'Dr. Suresh Menon', email: 'dr.suresh@test.com', specialty: 'Orthopedics', fee: 700, regno: 'KMC-2026-103' },
+    { name: 'Dr. Radhika Nair', email: 'dr.radhika@test.com', specialty: 'Gynecology', fee: 800, regno: 'KMC-2026-104' },
+    { name: 'Dr. Varghese Paul', email: 'dr.varghese@test.com', specialty: 'Cardiology', fee: 1000, regno: 'KMC-2026-105' },
   ]
 
   const doctorDocs = []
