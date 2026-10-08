@@ -70,31 +70,18 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
   const patientProfile = (user as any).patientProfile
   if (patientProfile) {
     const pid = relId(patientProfile)
-    patient = await payload.findByID({
-      collection: 'patients',
-      id: pid,
-      depth: 0,
-      overrideAccess: true,
-    }).catch(() => null)
+    if (pid) {
+      patient = await payload.findByID({
+        collection: 'patients',
+        id: pid,
+        depth: 0,
+        overrideAccess: true,
+      }).catch(() => null)
+    }
   }
 
-  if (!patient) {
-    const res = await payload.find({
-      collection: 'patients',
-      where: {
-        tenant: { equals: tenantID },
-        or: [
-          ...(user.email ? [{ email: { equals: user.email } }] : []),
-          ...(user.phone ? [{ phone: { equals: user.phone } }] : []),
-        ],
-      },
-      limit: 1,
-      overrideAccess: true,
-    })
-    patient = res.docs[0] ?? null
-  }
-
-  if (!patient) {
+  // Fail closed if patientProfile is missing, invalid, or does not belong to user's tenant
+  if (!patient || String(relId(patient.tenant)) !== String(tenantID)) {
     redirect('/patient/login?error=no_patient_profile')
   }
 

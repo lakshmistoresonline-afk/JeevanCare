@@ -136,6 +136,7 @@ describe('Security Hardening & Tenant Isolation Suite (OWASP ASVS Aligned)', () 
       collection: 'appointments',
       user: patientUserA,
       overrideAccess: false,
+      depth: 0,
     })
 
     expect(apptsAsPatientA.docs.length).toBe(1)

@@ -14,13 +14,13 @@ export function BookingContextBanner({ doctorId }: { doctorId: string | null }) 
     setLoading(true)
     setInvalid(false)
 
-    fetch(`/api/users/${doctorId}`)
+    fetch(`/api/public/doctors/${doctorId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Invalid doctor')
         return res.json()
       })
       .then((data) => {
-        if (data && data.role === 'doctor' && data.active !== false) {
+        if (data && data.id) {
           setDoctor(data)
         } else {
           setInvalid(true)

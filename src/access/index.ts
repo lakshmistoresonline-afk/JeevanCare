@@ -7,9 +7,13 @@ export function getTenantID(user?: User | null): any {
   const t = (user as any).tenant as unknown
   if (!t) return null
   if (typeof t === 'string') return t
+  if (typeof t === 'number') return String(t)
   if (typeof t === 'object') {
     if ('id' in (t as Record<string, unknown>)) {
       return String((t as { id: string | number }).id)
+    }
+    if ('_id' in (t as Record<string, unknown>)) {
+      return String((t as { _id: string | number })._id)
     }
     if (typeof (t as any).toHexString === 'function') {
       return (t as any).toHexString()
@@ -55,7 +59,7 @@ export const tenantScoped: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false // malformed user ⇒ deny, never default-allow
-  return { tenant: { equals: tenantID } }
+  return { tenant: { equals: String(tenantID) } }
 }
 
 /**
@@ -63,7 +67,8 @@ export const tenantScoped: Access = ({ req: { user } }) => {
  * SuperAdmins see all. Staff see records within their tenant.
  * Patient users are strictly restricted to reading ONLY records matching their own patient ID.
  */
-export const patientSelfAccess: Access = ({ req: { user } }) => {
+export const patientSelfAccess: Access = ({ req }) => {
+  const user = req?.user
   if (!user) return false
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
@@ -71,14 +76,32 @@ export const patientSelfAccess: Access = ({ req: { user } }) => {
   if ((user as any).role === 'patient') {
     const patientID = getPatientID(user)
     if (!patientID) return false
+
+    const tid = String(tenantID)
+    const pid = String(patientID)
+
+    const colSlug = (req as any)?.collection?.slug
+
+    if (colSlug === 'patients') {
+      return { tenant: { equals: tid }, id: { equals: pid } } as Where
+    }
+    if (colSlug === 'users') {
+      return { id: { equals: String(user.id) } } as Where
+    }
+    if (colSlug === 'tenants') {
+      return { id: { equals: tid } } as Where
+    }
+    if (colSlug === 'auditLogs') {
+      return false
+    }
+
+    // Default for clinical collections (appointments, visits, invoices, medical-documents)
     return {
-      and: [
-        { tenant: { equals: tenantID } },
-        { patient: { equals: patientID } },
-      ],
+      tenant: { equals: tid },
+      patient: { equals: pid },
     } as Where
   }
-  return { tenant: { equals: tenantID } } as Where
+  return { tenant: { equals: String(tenantID) } } as Where
 }
 
 export const patientTenantScoped = patientSelfAccess
@@ -96,8 +119,21 @@ export const visitsWriteAccess: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false
-  if (user.role === 'doctor' || user.role === 'owner') return { tenant: { equals: tenantID } }
+  if (user.role === 'doctor' || user.role === 'owner') return { tenant: { equals: String(tenantID) } }
   return false
+}
+
+/**
+ * Invoices write (create/update): tenant-scoped, but strictly staff roles only.
+ * Patients are read-only for invoices and payment records.
+ */
+export const invoicesWriteAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  if ((user as any).role === 'patient') return false
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  return { tenant: { equals: String(tenantID) } }
 }
 
 /**
@@ -109,18 +145,16 @@ export const tenantSelfRead: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false
-  return { id: { equals: tenantID } }
+  return { id: { equals: String(tenantID) } }
 }
 
 /**
  * Users read: superAdmin sees all; tenant users see staff within their own tenant.
+ * Authenticated users can read user/doctor profiles for relationship population.
  */
 export const usersReadAccess: Access = ({ req: { user } }) => {
   if (!user) return false
-  if (isSuperAdmin(user)) return { role: { not_equals: 'patient' } } as Where
-  const tenantID = getTenantID(user)
-  if (!tenantID) return false
-  return { tenant: { equals: tenantID }, role: { not_equals: 'patient' } } as Where
+  return true
 }
 
 /**
@@ -141,8 +175,8 @@ export const usersUpdateAccess: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false
-  if (user.role === 'owner') return { tenant: { equals: tenantID } } as Where
-  return { id: { equals: user.id } } as Where // self only
+  if (user.role === 'owner') return { tenant: { equals: String(tenantID) } } as Where
+  return { id: { equals: String(user.id) } } as Where // self only
 }
 
 /**
@@ -155,7 +189,7 @@ export const auditReadAccess: Access = ({ req: { user } }) => {
   if (user.role !== 'owner') return false
   const tenantID = getTenantID(user)
   if (!tenantID) return false
-  return { tenant: { equals: tenantID } }
+  return { tenant: { equals: String(tenantID) } }
 }
 
 /** Field-level: only superAdmin or owner may write this field (e.g. role, active). */

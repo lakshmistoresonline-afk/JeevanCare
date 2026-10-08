@@ -206,7 +206,7 @@ describe('Billing & Payment Integrity Hardening Suite', () => {
     })
 
     // Receptionist attempts to void
-    const voidAttempt = payload.update({
+    const updatedInvoice = await payload.update({
       collection: 'invoices',
       id: invoice.id,
       user: f.a.receptionist,
@@ -214,7 +214,8 @@ describe('Billing & Payment Integrity Hardening Suite', () => {
       data: { voided: true, voidReason: 'Unauthorized void' } as any,
     })
 
-    await expect(voidAttempt).rejects.toBeTruthy()
+    // Field-level access control prevents receptionist from setting voided = true
+    expect(updatedInvoice.voided).toBe(false)
   })
 
   // =========================================================================

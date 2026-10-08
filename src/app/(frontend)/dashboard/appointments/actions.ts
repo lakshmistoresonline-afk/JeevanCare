@@ -12,7 +12,12 @@ import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Tenant, User } from '@/payload-types'
 
 async function actorTenant() {
-  const user = await getCurrentUser()
+  let user: User | null = null
+  try {
+    user = await getCurrentUser()
+  } catch {
+    user = null
+  }
   if (!user || user.role === 'superAdmin') return null
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)

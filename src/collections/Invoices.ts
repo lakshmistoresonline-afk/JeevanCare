@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, getTenantID, isSuperAdmin, superAdminOrOwnerField, patientTenantScoped } from '@/access'
+import { tenantScoped, denyAll, getTenantID, isSuperAdmin, superAdminOrOwnerField, patientTenantScoped, invoicesWriteAccess } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { auditInvoices } from '@/hooks/audit'
 import { relId } from '@/lib/utils'
@@ -36,8 +36,8 @@ export const Invoices: CollectionConfig = {
   },
   access: {
     read: patientTenantScoped,
-    create: tenantScoped, // reception bills — that's their job
-    update: tenantScoped, // payments by anyone; voiding is owner-only (field-level)
+    create: invoicesWriteAccess, // staff only — patients are read-only
+    update: invoicesWriteAccess, // staff only — voiding is owner-only (field-level)
     delete: denyAll,
   },
   timestamps: true,
