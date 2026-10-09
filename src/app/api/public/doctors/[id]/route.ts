@@ -26,6 +26,11 @@ export async function GET(
 
     const tenantObj = typeof doc.tenant === 'object' ? doc.tenant : null
 
+    // Exclude doctors belonging to suspended or pending clinics from public visibility
+    if (tenantObj && tenantObj.status && tenantObj.status !== 'active') {
+      return NextResponse.json({ error: 'Doctor not found' }, { status: 404 })
+    }
+
     // Expose ONLY safe public fields (no email, phone, passwords, or tenant internals)
     return NextResponse.json({
       id: String(doc.id),

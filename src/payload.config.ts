@@ -79,19 +79,25 @@ export default buildConfig({
         )
 
         // Unique partial index: walk-in tokens must be unique per tenant per day.
-        // This is the DB-level backstop for the atomic counter — if two requests
-        // somehow get the same token, only one insert succeeds.
+        // tokenDay is the clinic-local day key, so tokens restart safely each day.
+        // Drop the old { tenant, tokenNumber } index if it exists before creating the new one.
         const apptsModel = payload.db.collections?.appointments
         if (apptsModel) {
           const apptsNative = apptsModel.collection
+          try {
+            const apptsIndexes = await apptsNative.indexes()
+            if (apptsIndexes.some((i: any) => i.name === 'uniq_walkin_token' && !i.key?.tokenDay)) {
+              await apptsNative.dropIndex('uniq_walkin_token')
+            }
+          } catch {}
           await apptsNative.createIndex(
-            { tenant: 1, tokenNumber: 1 },
+            { tenant: 1, tokenDay: 1, tokenNumber: 1 },
             {
               unique: true,
               name: 'uniq_walkin_token',
               partialFilterExpression: { isWalkIn: true, tokenNumber: { $exists: true } },
             },
-          ).catch(() => {})
+          )
         }
       }
     } catch (err) {

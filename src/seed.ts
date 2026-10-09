@@ -1,5 +1,5 @@
 /**
- * JeevanCare Main Seed Script — Portfolio & UAT Quality Dataset
+ * JeevanCare Main Seed Script -- Portfolio & UAT Quality Dataset
  *
  * Command:
  *   npm run seed
@@ -13,11 +13,11 @@
  *   Password for all test accounts: Test@123
  */
 import 'dotenv/config'
-import { seedTestUatData } from './seedTest'
+import { seedTestUatData, checkSeedSafety } from './seedTest'
 
-const isProd = process.env.NODE_ENV === 'production'
-if (isProd && process.env.FORCE_SEED !== '1') {
-  console.error('Refusing to seed in production without FORCE_SEED=1')
+const safety = checkSeedSafety()
+if (!safety.ok) {
+  console.error(`Seed safety check failed: ${safety.reason}`)
   process.exit(1)
 }
 

@@ -72,13 +72,28 @@ export const Invoices: CollectionConfig = {
             .catch(() => null)
           data.currency = tenant?.settings?.currency || DEFAULT_CURRENCY
 
-          const existing = await req.payload.count({
-            collection: 'invoices',
-            where: { tenant: { equals: tenantID } },
-            req,
-            overrideAccess: true,
-          })
-          data.invoiceNumber = `INV-${String(existing.totalDocs + 1).padStart(4, '0')}`
+          // Atomic per-tenant invoice number allocation to avoid duplicates
+          // from concurrent invoice creation.
+          const model = (req.payload.db as any).collections?.invoices
+          if (model) {
+            const native = model.collection
+            const counterColl = native.db.collection('tenant_sequence_counters')
+            const counterDoc = await counterColl.findOneAndUpdate(
+              { tenant: tenantID, seq: 'invoice_number' },
+              { $inc: { value: 1 } },
+              { upsert: true, returnDocument: 'after' },
+            )
+            const next = counterDoc?.value ?? 1
+            data.invoiceNumber = `INV-${String(next).padStart(4, '0')}`
+          } else {
+            const existing = await req.payload.count({
+              collection: 'invoices',
+              where: { tenant: { equals: tenantID } },
+              req,
+              overrideAccess: true,
+            })
+            data.invoiceNumber = `INV-${String(existing.totalDocs + 1).padStart(4, '0')}`
+          }
 
           if (req.user) data.createdBy = req.user.id
 
@@ -143,6 +158,30 @@ export const Invoices: CollectionConfig = {
         }
         data.lineItems = lines
         data.totalAmount = money(total)
+
+        // --- payments: immutable ledger for existing entries ---
+        // On update, if the client supplies a payments array, verify that all
+        // existing payment entries are unchanged — only new appends are allowed.
+        if (operation === 'update' && data.payments !== undefined) {
+          const origPays = (originalDoc?.payments ?? []) as Payment[]
+          const newPays = data.payments as Payment[]
+          if (newPays.length < origPays.length) {
+            throw new APIError('Existing payments cannot be removed.', 403, {
+              code: ERROR_CODES.INVOICE_LOCKED,
+            })
+          }
+          for (let i = 0; i < origPays.length; i++) {
+            const orig = origPays[i]
+            const neu = newPays[i]
+            if (Number(neu?.amount) !== Number(orig?.amount) ||
+                String(neu?.method ?? '') !== String(orig?.method ?? '') ||
+                String(neu?.receivedAt ?? '') !== String(orig?.receivedAt ?? '')) {
+              throw new APIError('Existing payment entries cannot be modified.', 403, {
+                code: ERROR_CODES.INVOICE_LOCKED,
+              })
+            }
+          }
+        }
 
         // --- payments: default receivedAt/receivedBy, then sum ---
         const pays = (data.payments ?? originalDoc?.payments ?? []) as Payment[]
@@ -304,5 +343,6 @@ export const Invoices: CollectionConfig = {
   indexes: [
     { fields: ['tenant', 'paymentStatus'] },
     { fields: ['tenant', 'createdAt'] },
+    { fields: ['tenant', 'invoiceNumber'], unique: true },
   ],
 }

@@ -4,14 +4,8 @@ import { superAdminOnly, tenantScoped, patientTenantScoped, getTenantID } from '
 import { forceTenant } from '@/hooks/tenant'
 import { enforcePlanLimit } from '@/hooks/planLimit'
 import { GENDERS, BLOOD_GROUPS, ERROR_CODES, INDIAN_STATES } from '@/lib/constants'
-
-/** Strip spaces/dashes; keep leading + and digits. Market-agnostic. */
-const normalizePhone = (raw: string): string => {
-  const trimmed = raw.trim()
-  const hasPlus = trimmed.startsWith('+')
-  const digits = trimmed.replace(/[^0-9]/g, '')
-  return hasPlus ? `+${digits}` : digits
-}
+import { normalizePhone } from '@/lib/phone'
+import { relId } from '@/lib/utils'
 
 export const Patients: CollectionConfig = {
   slug: 'patients',
@@ -43,6 +37,8 @@ export const Patients: CollectionConfig = {
       // forceTenant so the tenant is resolved, before we assign an MRN we'd waste).
       enforcePlanLimit('patients'),
       // Per-clinic human-friendly MRN: P-0001, P-0002, …
+      // Uses an atomic per-tenant counter document to avoid duplicate MRNs
+      // from concurrent patient creation requests.
       async ({ data, req, operation }) => {
         if (operation !== 'create') return data
         const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
@@ -51,13 +47,25 @@ export const Patients: CollectionConfig = {
             code: ERROR_CODES.VALIDATION,
           })
         }
-        const existing = await req.payload.count({
-          collection: 'patients',
-          where: { tenant: { equals: tenantID } },
-          req,
-        })
-        const next = existing.totalDocs + 1
-        data.mrn = `P-${String(next).padStart(4, '0')}`
+        const model = (req.payload.db as any).collections?.patients
+        if (model) {
+          const native = model.collection
+          const counterColl = native.db.collection('tenant_sequence_counters')
+          const counterDoc = await counterColl.findOneAndUpdate(
+            { tenant: tenantID, seq: 'patient_mrn' },
+            { $inc: { value: 1 } },
+            { upsert: true, returnDocument: 'after' },
+          )
+          const next = counterDoc?.value ?? 1
+          data.mrn = `P-${String(next).padStart(4, '0')}`
+        } else {
+          const existing = await req.payload.count({
+            collection: 'patients',
+            where: { tenant: { equals: tenantID } },
+            req,
+          })
+          data.mrn = `P-${String(existing.totalDocs + 1).padStart(4, '0')}`
+        }
         return data
       },
     ],
@@ -106,6 +114,26 @@ export const Patients: CollectionConfig = {
       type: 'text',
       label: 'Portal Activation Code',
       admin: { description: '6-digit activation code issued to claim portal account.' },
+    },
+    {
+      name: 'activationTokenHash',
+      type: 'text',
+      hidden: true,
+      index: true,
+      admin: { description: 'SHA-256 hash of the current activation token.' },
+    },
+    {
+      name: 'activationTokenExp',
+      type: 'date',
+      hidden: true,
+      admin: { description: 'Expiry time for the activation token.' },
+    },
+    {
+      name: 'activationAttempts',
+      type: 'number',
+      defaultValue: 0,
+      hidden: true,
+      admin: { description: 'Failed activation attempts for rate limiting.' },
     },
     { name: 'addressLine', type: 'text', label: 'Address / Street' },
     { name: 'city', type: 'text', defaultValue: 'Thrissur' },

@@ -151,10 +151,10 @@ export const tenantSelfRead: Access = ({ req: { user } }) => {
 /**
  * Users read: superAdmin sees all; patient users see ONLY their own User record;
  * staff users see users within their own tenant.
- * Unauthenticated calls can read doctor profiles for relationship validation.
+ * Unauthenticated calls are denied -- doctor discovery uses the public endpoint.
  */
 export const usersReadAccess: Access = ({ req: { user } }) => {
-  if (!user) return true
+  if (!user) return false
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false
