@@ -94,7 +94,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center justify-between border-t border-white/15 pt-4 text-xs text-white/50">
-            <span>Aapka clinic, organized.</span>
+            <span>Your clinic, organized.</span>
             <span>+91 · ₹ INR · UPI · Asia/Kolkata</span>
           </div>
         </div>
