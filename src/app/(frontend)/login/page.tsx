@@ -94,28 +94,30 @@ function LoginForm() {
         </button>
       </form>
 
-      {/* Demo quick-fill */}
-      <div className="mt-6 rounded-xl border border-border bg-card p-3.5">
-        <p className="text-xs font-medium text-muted-foreground">
-          Demo — click to prefill test credentials:
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {DEMO_ACCOUNTS.map((d) => (
-            <button
-              key={d.email}
-              type="button"
-              onClick={() => quickFill(d.email)}
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                email === d.email
-                  ? 'border-primary/30 bg-secondary text-primary font-semibold'
-                  : 'border-border bg-canvas text-muted-foreground hover:border-primary/30 hover:text-primary'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+      {/* Demo quick-fill — gated for development environment */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6 rounded-xl border border-border/80 bg-card p-3.5">
+          <p className="text-xs font-semibold text-muted-foreground">
+            Development Mode — prefill test credentials:
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {DEMO_ACCOUNTS.map((d) => (
+              <button
+                key={d.email}
+                type="button"
+                onClick={() => quickFill(d.email)}
+                className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  email === d.email
+                    ? 'border-primary/30 bg-secondary text-primary font-bold'
+                    : 'border-border bg-canvas text-muted-foreground hover:border-primary/30 hover:text-primary'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-6 text-center text-xs text-muted-foreground">
         New clinic?{' '}
