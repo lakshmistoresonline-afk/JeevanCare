@@ -123,25 +123,25 @@ export default async function ReportsPage({
               <MetricCard
                 label="Monthly Appointments"
                 value={report.appointments.total}
-                icon={IconCalendar}
+                icon={<IconCalendar size={16} />}
                 subtext={`${report.appointments.completed} completed · ${pct(report.appointments.completionRate)} completion`}
               />
               <MetricCard
                 label="No-Shows / Cancelled"
                 value={report.appointments.noShows}
-                icon={IconUserX}
+                icon={<IconUserX size={16} />}
                 subtext={`${report.appointments.cancelled} cancelled`}
               />
               <MetricCard
                 label="New Patients"
                 value={report.newPatients}
-                icon={IconUserPlus}
+                icon={<IconUserPlus size={16} />}
                 badge="Registered"
               />
               <MetricCard
                 label="Revenue Collected"
                 value={money(report.revenueCollected)}
-                icon={IconWallet}
+                icon={<IconWallet size={16} />}
                 subtext={`${money(report.outstandingAdded)} outstanding added`}
               />
             </div>

@@ -11,7 +11,7 @@ export interface MetricCardProps {
     isPositive?: boolean
     neutral?: boolean
   }
-  icon?: React.ComponentType<{ size?: number; className?: string }>
+  icon?: React.ReactNode
   badge?: string
   className?: string
 }
@@ -21,7 +21,7 @@ export function MetricCard({
   value,
   subtext,
   trend,
-  icon: Icon,
+  icon,
   badge,
   className = '',
 }: MetricCardProps) {
@@ -33,9 +33,9 @@ export function MetricCard({
         <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {label}
         </span>
-        {Icon && (
+        {icon && (
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary ring-1 ring-primary/20">
-            <Icon size={16} />
+            {icon}
           </span>
         )}
       </div>

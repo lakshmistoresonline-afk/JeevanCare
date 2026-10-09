@@ -200,26 +200,26 @@ export default async function DashboardHome({
           <MetricCard
             label="Today's appointments"
             value={data.todayCount}
-            icon={IconCalendar}
+            icon={<IconCalendar size={16} />}
             badge="Live Today"
             subtext={`${data.completedToday} completed`}
           />
           <MetricCard
             label="Completed Consultations"
             value={data.completedToday}
-            icon={IconCalendarCheck}
+            icon={<IconCalendarCheck size={16} />}
             trend={{ value: `${Math.round((data.completedToday / (data.todayCount || 1)) * 100)}% completed`, isPositive: true }}
           />
           <MetricCard
             label="No-Shows Today"
             value={data.noShowsToday}
-            icon={IconUserX}
+            icon={<IconUserX size={16} />}
             trend={{ value: `${data.noShowsToday} cancelled/absent`, isPositive: data.noShowsToday === 0 }}
           />
           <MetricCard
             label="New Patients (7d)"
             value={data.newPatients7d}
-            icon={IconUserPlus}
+            icon={<IconUserPlus size={16} />}
             trend={{ value: '+14% vs last week', isPositive: true }}
           />
         </div>
@@ -233,19 +233,19 @@ export default async function DashboardHome({
               <MetricCard
                 label="Revenue Today"
                 value={formatMoney(revenue.revenueToday, tenant)}
-                icon={IconWallet}
-                subtext="Collected Cash & UPI"
+                icon={<IconWallet size={16} />}
+                subtext="Collected Cash &amp; UPI"
               />
               <MetricCard
                 label="Revenue This Month"
                 value={formatMoney(revenue.revenueMonth, tenant)}
-                icon={IconArrowUpRight}
+                icon={<IconArrowUpRight size={16} />}
                 trend={{ value: '+18.4% MoM', isPositive: true }}
               />
               <MetricCard
                 label="Outstanding Balance"
                 value={formatMoney(revenue.outstandingTotal, tenant)}
-                icon={IconReceipt}
+                icon={<IconReceipt size={16} />}
                 trend={{ value: `${revenue.outstanding.length} pending invoices`, neutral: true }}
               />
             </div>

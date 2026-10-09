@@ -132,25 +132,25 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
           <MetricCard
             label="Active Clinics"
             value={activeClinics}
-            icon={IconBuilding}
+            icon={<IconBuilding size={16} />}
             subtext={`${tenants.length} total onboarded`}
           />
           <MetricCard
             label="Specialist Doctors"
             value={totalDoctors}
-            icon={IconUsers}
+            icon={<IconUsers size={16} />}
             subtext="Across all tenants"
           />
           <MetricCard
             label="Registered Patients"
             value={totalPatients}
-            icon={IconBuilding}
+            icon={<IconBuilding size={16} />}
             subtext="Medical profiles"
           />
           <MetricCard
             label="Total Consultations"
             value={totalAppointments}
-            icon={IconCalendar}
+            icon={<IconCalendar size={16} />}
             subtext="Lifetime appointments"
           />
         </div>
