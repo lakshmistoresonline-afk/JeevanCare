@@ -4,19 +4,18 @@ import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-const JOURNEY_STEPS = [
-  { n: '01', label: 'Book', desc: 'Real slots' },
-  { n: '02', label: 'Check-in', desc: 'Token #T-01' },
-  { n: '03', label: 'Consult', desc: 'Split EMR' },
-  { n: '04', label: 'Prescribe', desc: 'A5 Rx' },
-  { n: '05', label: 'Documents', desc: 'Lab PDF' },
-  { n: '06', label: 'Bill', desc: 'UPI QR' },
+const WORKFLOW_STEPS = [
+  { label: 'Book', desc: 'Real slots' },
+  { label: 'Check-in', desc: 'Token #T-01' },
+  { label: 'Consult', desc: 'Split EMR' },
+  { label: 'Prescribe', desc: 'A5 Rx' },
+  { label: 'Bill', desc: 'UPI QR' },
 ]
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex min-h-screen bg-canvas">
-      {/* Left Brand & Product Showcase Panel (Desktop 44%) */}
+      {/* Left Brand & Product Showcase Panel (Desktop 44%) - Matching Panel 2 in reference image */}
       <aside className="relative hidden w-[44%] overflow-hidden bg-sidebar lg:block">
         <Image
           src="/images/login-doctor.jpg"
@@ -24,71 +23,64 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           fill
           priority
           sizes="44vw"
-          className="object-cover object-[50%_18%] opacity-30 mix-blend-overlay"
+          className="object-cover object-[50%_18%] opacity-25 mix-blend-overlay"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-sidebar via-sidebar/95 to-sidebar" />
 
         <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
           <Link href="/" className="flex w-fit items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/25 backdrop-blur">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="size-4.5 text-sidebar-accent" aria-hidden>
+            <span className="flex size-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/25 backdrop-blur">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="size-5 text-sidebar-accent" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-white">JeevanCare</span>
+            <span className="font-display text-2xl font-bold tracking-tight text-white">JeevanCare</span>
           </Link>
 
-          <div className="my-auto py-6">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sidebar-accent/20 px-3 py-1 text-xs font-semibold text-sidebar-accent ring-1 ring-sidebar-accent/30">
-              <span>🇮🇳</span> Designed for Indian Healthcare
-            </span>
-
-            <h2 className="mt-4 font-display text-3xl font-semibold leading-snug text-white xl:text-4xl">
-              Healthcare, connected.
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/80">
-              Everything your care journey needs, in one place.
-            </p>
-
-            {/* Real Product Showcase UI Card */}
-            <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 shadow-xl backdrop-blur-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-2 rounded-full bg-sidebar-accent animate-ping" />
-                  <span className="text-[11px] font-bold tracking-wider text-sidebar-accent uppercase">
-                    Live OPD Queue Tracker
-                  </span>
-                </div>
-                <span className="rounded bg-sidebar-accent px-2 py-0.5 text-[10px] font-extrabold text-sidebar">
-                  Token #T-01
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-xs">
-                <div>
-                  <div className="font-semibold text-white">Dr. Kavya Nair</div>
-                  <div className="text-[10px] text-white/70">General Medicine · JeevanCare Thrissur Clinic</div>
-                </div>
-                <div className="text-end">
-                  <div className="tabular font-bold text-sidebar-accent">06/10/2026</div>
-                  <div className="tabular text-[10px] text-white/70">Fee: ₹500</div>
-                </div>
-              </div>
+          <div className="my-auto py-6 space-y-6">
+            <div>
+              <span className="text-xs font-semibold text-sidebar-accent uppercase tracking-wider">Welcome back</span>
+              <h2 className="mt-2 font-display text-3xl xl:text-4xl font-bold leading-tight text-white">
+                Care made simple for every clinic.
+              </h2>
             </div>
 
-            {/* Connected 6-Step Visual Journey */}
-            <div className="mt-6 border-t border-white/15 pt-5">
-              <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-3">
-                Complete Outpatient Care Journey
+            {/* Bullet Trust Points */}
+            <ul className="space-y-3 text-sm text-white/85">
+              <li className="flex items-center gap-2.5">
+                <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent text-xs font-bold">🛡️</span>
+                <span className="font-medium">Secure &amp; private — Clinic-level data isolation</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent text-xs font-bold">🇮🇳</span>
+                <span className="font-medium">Built for Indian clinics — ₹ INR, +91 Mobile &amp; UPI</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent text-xs font-bold">⚡</span>
+                <span className="font-medium">Fast and reliable — Instant OPD queue &amp; EMR</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-accent/20 text-sidebar-accent text-xs font-bold">🔒</span>
+                <span className="font-medium">Your data stays yours — Industry best practices</span>
+              </li>
+            </ul>
+
+            {/* 5-Step Workflow Card Stepper */}
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-xl backdrop-blur-md">
+              <div className="text-[11px] font-bold text-sidebar-accent uppercase tracking-wider mb-3">
+                Complete Care Workflow
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {JOURNEY_STEPS.map((s) => (
-                  <div key={s.n} className="rounded-lg border border-white/10 bg-white/5 p-2 text-center">
-                    <span className="text-[10px] font-bold text-sidebar-accent">{s.n}</span>
-                    <div className="text-[11px] font-semibold text-white leading-tight mt-0.5">{s.label}</div>
-                    <div className="text-[9px] text-white/60">{s.desc}</div>
+              <div className="grid grid-cols-5 gap-1.5 text-center">
+                {WORKFLOW_STEPS.map((s, idx) => (
+                  <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-2">
+                    <span className="block text-[10px] font-bold text-sidebar-accent">{idx + 1}</span>
+                    <span className="block text-[11px] font-semibold text-white mt-0.5">{s.label}</span>
+                    <span className="block text-[9px] text-white/60 truncate">{s.desc}</span>
                   </div>
                 ))}
+              </div>
+              <div className="mt-3 text-center text-[10px] text-white/60">
+                Built for doctors, owners, staff, and patients.
               </div>
             </div>
           </div>
@@ -109,7 +101,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-primary">JeevanCare</span>
+            <span className="font-display text-xl font-bold tracking-tight text-primary">JeevanCare</span>
           </Link>
 
           {children}
