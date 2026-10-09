@@ -44,7 +44,40 @@ async function safeCreate(payload: any, options: any) {
   return await payload.create(options)
 }
 
+/**
+ * Safety guard -- refuses to run unless:
+ * 1. NODE_ENV is not 'production' (or FORCE_SEED=1 is set)
+ * 2. The database URL contains an explicit test-designated marker
+ *
+ * Exported for unit testing without a DB connection.
+ */
+export function checkSeedSafety(): { ok: boolean; reason?: string } {
+  const isProd = process.env.NODE_ENV === 'production'
+  const forceSeed = process.env.FORCE_SEED === '1'
+  if (isProd && !forceSeed) {
+    return { ok: false, reason: 'Refusing to seed in production without FORCE_SEED=1' }
+  }
+
+  const dbUrl = process.env.DATABASE_URL || ''
+  const testMarkers = ['test', 'uat', 'sandbox', 'dev']
+  const isTestDb = testMarkers.some((m) => dbUrl.toLowerCase().includes(m))
+  if (!isTestDb) {
+    return {
+      ok: false,
+      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database.`,
+    }
+  }
+
+  return { ok: true }
+}
+
 export async function seedTestUatData() {
+  const safety = checkSeedSafety()
+  if (!safety.ok) {
+    console.error(`Seed safety check failed: ${safety.reason}`)
+    process.exit(1)
+  }
+
   const payload = await getPayload({ config: await config })
   console.log('Seeding JeevanCare Test/UAT environment with explicit test accounts (owner1@test.com, staff1@test.com, doctor1@test.com)...')
 
@@ -61,7 +94,7 @@ export async function seedTestUatData() {
   }
 
   // Clear ALL existing collections natively via MongoDB driver
-  const colsToWipe = ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants', 'payload-preferences', 'payload-migrations']
+  const colsToWipe = ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants']
   for (const col of colsToWipe) {
     try {
       if (db) {
@@ -71,8 +104,9 @@ export async function seedTestUatData() {
       if (model?.collection?.deleteMany) {
         await model.collection.deleteMany({})
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.error(`Failed to clear collection ${col}:`, err)
+      throw err
     }
   }
 

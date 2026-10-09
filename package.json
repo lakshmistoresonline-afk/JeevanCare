@@ -16,7 +16,11 @@
     "seed:test": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seedTest.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "test": "npm run test:int",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "test:unit": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts tests/unit",
+    "test:e2e": "cross-env NODE_OPTIONS=--no-deprecation playwright test",
+    "test:e2e:ui": "cross-env NODE_OPTIONS=--no-deprecation playwright test --ui",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -66,7 +66,8 @@ export async function createInvoice(input: {
   }
 }
 
-/** Record a payment against an invoice; status/balance recompute in the hook. */
+/** Record a payment against an invoice using atomic $push to prevent lost updates.
+ *  The beforeChange hook recalculates derived amounts from the full payments array. */
 export async function recordPayment(
   invoiceId: string,
   amount: number,
@@ -76,21 +77,70 @@ export async function recordPayment(
   if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
   const { user, payload } = c
   if (!(amount > 0)) return { ok: false, code: 'VALIDATION', message: 'Enter an amount greater than zero.' }
+
+  // Validate method is supported
+  const validMethods = ['cash', 'upi', 'card', 'bank_transfer', 'cheque']
+  if (!validMethods.includes(method)) {
+    return { ok: false, code: 'VALIDATION', message: 'Unsupported payment method.' }
+  }
+
   try {
     const inv = (await payload.findByID({ collection: 'invoices', id: invoiceId, depth: 0, overrideAccess: false, user })) as Invoice
-    const existing = (inv.payments ?? []).map((p) => ({
-      amount: p.amount,
-      method: p.method,
-      receivedAt: p.receivedAt,
-      receivedBy: p.receivedBy ? relId(p.receivedBy) : undefined,
-    }))
-    await payload.update({
-      collection: 'invoices',
-      id: invoiceId,
-      user,
-      overrideAccess: false,
-      data: { payments: [...existing, { amount, method, receivedAt: new Date().toISOString() }] } as never,
-    })
+
+    // Reject payments on voided invoices
+    if (inv.voided) {
+      return { ok: false, code: 'INVOICE_VOIDED', message: "This invoice has been voided and can't receive payments." }
+    }
+
+    // Check for overpayment before attempting the atomic push
+    const currentPaid = Number(inv.amountPaid ?? 0)
+    const total = Number(inv.totalAmount ?? 0)
+    if (currentPaid + amount > total + 1e-9) {
+      return { ok: false, code: 'PAYMENT_EXCEEDS_BALANCE', message: `Payment exceeds the remaining balance (${total - currentPaid}).` }
+    }
+
+    // Use MongoDB atomic $push to append the payment — concurrent submissions
+    // can no longer lose updates by reading stale arrays.
+    const model = (payload.db as any).collections?.invoices
+    if (model) {
+      const native = model.collection
+      const paymentEntry = {
+        amount,
+        method,
+        receivedAt: new Date().toISOString(),
+        receivedBy: relId(user.id) ? user.id : String(user.id),
+      }
+      await native.updateOne(
+        { _id: (inv as any)._id ?? inv.id },
+        { $push: { payments: paymentEntry } },
+      )
+
+      // Now trigger the beforeChange hook to recompute derived fields by
+      // performing a no-op update through Payload.
+      await payload.update({
+        collection: 'invoices',
+        id: invoiceId,
+        user,
+        overrideAccess: false,
+        data: { payments: undefined } as never,
+      })
+    } else {
+      // Fallback: read-append-write (non-atomic, but correct for single-instance)
+      const existing = (inv.payments ?? []).map((p) => ({
+        amount: p.amount,
+        method: p.method,
+        receivedAt: p.receivedAt,
+        receivedBy: p.receivedBy ? relId(p.receivedBy) : undefined,
+      }))
+      await payload.update({
+        collection: 'invoices',
+        id: invoiceId,
+        user,
+        overrideAccess: false,
+        data: { payments: [...existing, { amount, method, receivedAt: new Date().toISOString() }] } as never,
+      })
+    }
+
     revalidatePath(`/dashboard/invoices/${invoiceId}`)
     revalidatePath('/dashboard')
     return { ok: true, data: { id: invoiceId } }

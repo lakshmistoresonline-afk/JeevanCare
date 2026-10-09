@@ -130,6 +130,7 @@ export const Appointments: CollectionConfig = {
 
         const seq = counterDoc?.seq ?? 1
         data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
+        data.tokenDay = dayKey
         return data
       },
     ],
@@ -202,6 +203,13 @@ export const Appointments: CollectionConfig = {
       label: 'Walk-in token',
       access: { update: () => false },
       admin: { readOnly: true, description: 'Auto-assigned per clinic per day for walk-ins.' },
+    },
+    {
+      name: 'tokenDay',
+      type: 'text',
+      label: 'Token day',
+      access: { update: () => false },
+      admin: { readOnly: true, hidden: true, description: 'Clinic-local day key for walk-in token uniqueness.' },
     },
     {
       name: 'cancellationReason',

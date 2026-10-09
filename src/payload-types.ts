@@ -264,6 +264,9 @@ export interface Patient {
    * 6-digit activation code issued to claim portal account.
    */
   activationCode?: string | null;
+  activationTokenHash?: string | null;
+  activationTokenExp?: string | null;
+  activationAttempts?: number | null;
   addressLine?: string | null;
   city?: string | null;
   district?: string | null;
@@ -327,6 +330,7 @@ export interface Appointment {
    * Auto-assigned per clinic per day for walk-ins.
    */
   tokenNumber?: string | null;
+  tokenDay?: string | null;
   cancellationReason?: string | null;
   createdBy?: (string | null) | User;
   updatedAt: string;
@@ -711,6 +715,9 @@ export interface PatientsSelect<T extends boolean = true> {
   bloodGroup?: T;
   allergies?: T;
   activationCode?: T;
+  activationTokenHash?: T;
+  activationTokenExp?: T;
+  activationAttempts?: T;
   addressLine?: T;
   city?: T;
   district?: T;
@@ -735,6 +742,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   status?: T;
   isWalkIn?: T;
   tokenNumber?: T;
+  tokenDay?: T;
   cancellationReason?: T;
   createdBy?: T;
   updatedAt?: T;

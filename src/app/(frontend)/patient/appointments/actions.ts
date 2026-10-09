@@ -129,7 +129,7 @@ export async function patientBookAppointment(
     try { revalidatePath('/patient/dashboard') } catch {}
     return { ok: true, data: { id: String(appt.id) } }
   } catch (err: any) {
-    if (err?.code === 11000 || err?.name === 'MongoServerError') {
+    if (err?.code === 11000) {
       return { ok: false, code: 'SLOT_TAKEN', message: 'This appointment slot is no longer available. Please select another time.' }
     }
     return { ok: false, ...toActionError(err) }
