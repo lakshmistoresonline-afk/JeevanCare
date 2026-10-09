@@ -2,15 +2,7 @@
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-
-/.idea/*
-!/.idea/runConfigurations
-
-# testing
-/coverage
+/.pnpm-store
 
 # next.js
 /.next/
@@ -19,10 +11,6 @@
 # production
 /build
 
-# misc
-.DS_Store
-*.pem
-
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -30,6 +18,12 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
+!.env.example
+
+# database data
+/mongo-data/
+/data/
 
 # vercel
 .vercel
@@ -37,23 +31,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.env
-
-/media
-
-# Playwright
-node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-.last-run.json
-/.playwright/
-
-# Claude Code (includes .claude/skills/playwright-skill and its node_modules)
-.claude/
-CLAUDE.md
-
-# Demo media — keep the lightweight mp4 + gif, ignore the heavy source webm
-demo-videos/*.webm
