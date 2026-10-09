@@ -171,11 +171,15 @@ export interface Tenant {
     /**
      * Market-agnostic core — all amounts are formatted from this.
      */
-    currency: 'INR' | 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR';
+    currency: 'INR' | 'USD' | 'GBP' | 'AED' | 'SAR';
     /**
      * All times are displayed in this timezone.
      */
-    timezone: 'Asia/Kolkata' | 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Europe/London' | 'America/New_York';
+    timezone: 'Asia/Kolkata' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Europe/London' | 'America/New_York';
+    /**
+     * Clinic UPI ID (e.g. clinicname@upi). Used in printed receipts and payment QR codes. Leave empty to disable UPI QR.
+     */
+    upiId?: string | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -264,8 +268,17 @@ export interface Patient {
    * 6-digit activation code issued to claim portal account.
    */
   activationCode?: string | null;
+  /**
+   * SHA-256 hash of the current activation token.
+   */
   activationTokenHash?: string | null;
+  /**
+   * Expiry time for the activation token.
+   */
   activationTokenExp?: string | null;
+  /**
+   * Failed activation attempts for rate limiting.
+   */
   activationAttempts?: number | null;
   addressLine?: string | null;
   city?: string | null;
@@ -330,6 +343,9 @@ export interface Appointment {
    * Auto-assigned per clinic per day for walk-ins.
    */
   tokenNumber?: string | null;
+  /**
+   * Clinic-local day key for walk-in token uniqueness.
+   */
   tokenDay?: string | null;
   cancellationReason?: string | null;
   createdBy?: (string | null) | User;
@@ -655,6 +671,7 @@ export interface TenantsSelect<T extends boolean = true> {
         closeTime?: T;
         currency?: T;
         timezone?: T;
+        upiId?: T;
       };
   updatedAt?: T;
   createdAt?: T;

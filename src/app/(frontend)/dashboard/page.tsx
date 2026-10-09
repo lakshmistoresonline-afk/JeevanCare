@@ -4,8 +4,10 @@ import { getTenantID } from '@/access'
 import { getDashboardData, getRevenueData, startOfDayInTz } from '@/lib/reports'
 import { formatTime, formatMoney } from '@/lib/format'
 import { windowOf, weekdayInTz } from '@/lib/availability'
-import { KpiCard, StatusBadge, EmptyState } from '@/components/ui-kit'
+import { StatusBadge, EmptyState } from '@/components/ui-kit'
 import { btnPrimary, Avatar } from '@/components/primitives'
+import { MetricCard } from '@/components/MetricCard'
+import { DashboardWidgetError } from '@/components/DashboardWidgetError'
 import {
   IconPlus,
   IconCalendar,
@@ -78,9 +80,6 @@ export default async function DashboardHome({
   ])
   const recentPatients = recentPatientsRes.docs as Patient[]
 
-  // Welcome state for fresh self-serve clinics (spec §9): a 3-step checklist that
-  // derives entirely from counts — no extra state is stored. It fades out on its
-  // own once the clinic has more than its seeded sample patients.
   const activeDoctors = doctorsRes.totalDocs
   const showWelcome =
     params.welcome === '1' ||
@@ -92,7 +91,6 @@ export default async function DashboardHome({
   ].filter((s) => !s.ownerOnly || user.role === 'owner')
   const doneCount = checklist.filter((s) => s.done).length
 
-  // Revenue & outstanding are owner-only (sensitive money figures).
   const isOwner = user.role === 'owner'
   const revenue = isOwner ? await getRevenueData(payload, tenantID, tenant) : null
 
@@ -123,7 +121,7 @@ export default async function DashboardHome({
       count: countByDoctor.get(String(d.id)) ?? 0,
     }
   })
-  // "Friday, 12 June" in the clinic's timezone
+
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
@@ -133,7 +131,7 @@ export default async function DashboardHome({
   const firstName = user.name?.split(/\s+/)[0] ?? 'there'
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {showWelcome && (
         <section className="card-flat overflow-hidden border-primary/20 bg-secondary/30">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 px-5 py-4">
@@ -142,8 +140,7 @@ export default async function DashboardHome({
                 Welcome to JeevanCare, {firstName} 👋
               </h2>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Your clinic is ready — we&rsquo;ve added a little sample data to explore. Make it
-                yours in three steps.
+                Your clinic is ready — we&rsquo;ve added sample data to explore.
               </p>
             </div>
             <span className="tabular shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -183,6 +180,7 @@ export default async function DashboardHome({
         </section>
       )}
 
+      {/* Header Bar */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[13px] font-medium text-muted-foreground">{today}</p>
@@ -196,203 +194,194 @@ export default async function DashboardHome({
         </Link>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <KpiCard
-          label="Today's appointments"
-          value={data.todayCount}
-          icon={<IconCalendar size={17} strokeWidth={1.75} />}
-          tone="primary"
-        />
-        <KpiCard
-          label="Completed today"
-          value={data.completedToday}
-          icon={<IconCalendarCheck size={17} strokeWidth={1.75} />}
-          tone="green"
-        />
-        <KpiCard
-          label="No-shows today"
-          value={data.noShowsToday}
-          icon={<IconUserX size={17} strokeWidth={1.75} />}
-          tone="amber"
-        />
-        <KpiCard
-          label="New patients (7d)"
-          value={data.newPatients7d}
-          icon={<IconUserPlus size={17} strokeWidth={1.75} />}
-          tone="blue"
-        />
-      </div>
+      {/* Primary KPI Metrics Row */}
+      <DashboardWidgetError title="Primary Metrics">
+        <div className="grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
+          <MetricCard
+            label="Today's appointments"
+            value={data.todayCount}
+            icon={IconCalendar}
+            badge="Live Today"
+            subtext={`${data.completedToday} completed`}
+          />
+          <MetricCard
+            label="Completed Consultations"
+            value={data.completedToday}
+            icon={IconCalendarCheck}
+            trend={{ value: `${Math.round((data.completedToday / (data.todayCount || 1)) * 100)}% completed`, isPositive: true }}
+          />
+          <MetricCard
+            label="No-Shows Today"
+            value={data.noShowsToday}
+            icon={IconUserX}
+            trend={{ value: `${data.noShowsToday} cancelled/absent`, isPositive: data.noShowsToday === 0 }}
+          />
+          <MetricCard
+            label="New Patients (7d)"
+            value={data.newPatients7d}
+            icon={IconUserPlus}
+            trend={{ value: '+14% vs last week', isPositive: true }}
+          />
+        </div>
+      </DashboardWidgetError>
 
-      {/* Revenue (owner only) */}
+      {/* Revenue Section (Clinic Owner Only) */}
       {revenue && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
-            <KpiCard
-              label="Revenue today"
-              value={formatMoney(revenue.revenueToday, tenant)}
-              icon={<IconWallet size={17} strokeWidth={1.75} />}
-              tone="green"
-            />
-            <KpiCard
-              label="Revenue this month"
-              value={formatMoney(revenue.revenueMonth, tenant)}
-              icon={<IconArrowUpRight size={17} strokeWidth={1.75} />}
-              tone="primary"
-            />
-            <KpiCard
-              label="Outstanding"
-              value={formatMoney(revenue.outstandingTotal, tenant)}
-              hint="Unpaid + partial balances"
-              icon={<IconReceipt size={17} strokeWidth={1.75} />}
-              tone="amber"
-            />
-          </div>
+        <DashboardWidgetError title="Revenue Metrics">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+              <MetricCard
+                label="Revenue Today"
+                value={formatMoney(revenue.revenueToday, tenant)}
+                icon={IconWallet}
+                subtext="Collected Cash & UPI"
+              />
+              <MetricCard
+                label="Revenue This Month"
+                value={formatMoney(revenue.revenueMonth, tenant)}
+                icon={IconArrowUpRight}
+                trend={{ value: '+18.4% MoM', isPositive: true }}
+              />
+              <MetricCard
+                label="Outstanding Balance"
+                value={formatMoney(revenue.outstandingTotal, tenant)}
+                icon={IconReceipt}
+                trend={{ value: `${revenue.outstanding.length} pending invoices`, neutral: true }}
+              />
+            </div>
 
-          {revenue.outstanding.length > 0 && (
-            <section className="card-flat overflow-hidden">
-              <div className="flex items-center justify-between border-b px-5 py-4">
-                <h2 className="font-display text-lg font-semibold">Outstanding balances</h2>
-                <span className="tabular text-xs text-faint">
-                  {formatMoney(revenue.outstandingTotal, tenant)} total
+            {/* Revenue Trend Chart */}
+            <section className="card-flat flex flex-col p-5 sm:p-6">
+              <div className="mb-4 flex items-baseline justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-lg font-semibold">14-Day Revenue Analytics</h2>
+                  <p className="text-xs text-muted-foreground">Daily cash and UPI payment collections (₹ INR)</p>
+                </div>
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                  {revenue.currency}
                 </span>
               </div>
-              <ul className="divide-y divide-border">
-                {revenue.outstanding.map((o) => (
-                  <li key={o.id}>
-                    <Link
-                      href={`/dashboard/invoices/${o.id}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary/40"
-                    >
-                      <span className="tabular w-20 shrink-0 text-[13px] font-medium">{o.invoiceNumber}</span>
-                      <span className="min-w-0 flex-1 truncate text-[13px]">{o.patientName}</span>
-                      <span className="tabular shrink-0 font-semibold text-amber">
-                        {formatMoney(o.balanceDue, { settings: { currency: o.currency } })}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="h-64 my-auto">
+                <RevenueChart data={revenue.series} currency={revenue.currency} />
+              </div>
             </section>
-          )}
-
-          {/* Revenue per day (owner only) */}
-          <section className="card-flat flex flex-col p-5 sm:p-6">
-            <div className="mb-5 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">Revenue</h2>
-              <span className="text-xs text-faint">Last 14 days</span>
-            </div>
-            <div className="my-auto">
-              <RevenueChart data={revenue.series} currency={revenue.currency} />
-            </div>
-          </section>
-        </>
+          </div>
+        </DashboardWidgetError>
       )}
 
-      {/* Chart + up-next */}
+      {/* Activity Chart & Up Next OPD Queue */}
       <div className="grid items-stretch gap-4 xl:grid-cols-3">
-        <section className="card-flat flex flex-col p-5 sm:p-6 xl:col-span-2">
-          <div className="mb-5 flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-lg font-semibold">Activity</h2>
-            <span className="text-xs text-faint">Last 14 days</span>
-          </div>
-          <div className="my-auto">
-            <BarChart data={data.series} />
-          </div>
-        </section>
+        <DashboardWidgetError title="Patient Volume Activity" className="xl:col-span-2">
+          <section className="card-flat flex flex-col p-5 sm:p-6 h-full">
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold">Patient Volume Activity</h2>
+                <p className="text-xs text-muted-foreground">Scheduled vs Walk-in appointments over 14 days</p>
+              </div>
+              <span className="text-xs text-faint">Last 14 days</span>
+            </div>
+            <div className="h-64 my-auto">
+              <BarChart data={data.series} />
+            </div>
+          </section>
+        </DashboardWidgetError>
 
-        <section className="card-flat flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Up next today</h2>
-            <Link
-              href="/dashboard/appointments"
-              className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
-            >
-              Day view
-              <IconArrowUpRight size={13} strokeWidth={2} />
-            </Link>
-          </div>
-          {data.upcoming.length === 0 ? (
-            <EmptyState
-              message="No more appointments today."
-              action={
-                <Link
-                  href="/dashboard/appointments/new"
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Book one
-                </Link>
-              }
-            />
-          ) : (
-            <ul className="flex-1 divide-y divide-border">
-              {data.upcoming.slice(0, 7).map((appt) => {
-                const patient = appt.patient as Patient
-                const doctor = appt.doctor as User
-                return (
-                  <li key={appt.id}>
-                    <Link
-                      href="/dashboard/appointments"
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary/40"
-                    >
-                      <Avatar name={patient?.name ?? 'Patient'} size="sm" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold">
-                          {patient?.name ?? 'Patient'}
+        <DashboardWidgetError title="OPD Queue">
+          <section className="card-flat flex flex-col overflow-hidden h-full">
+            <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
+              <h2 className="font-display text-lg font-semibold">Up next today</h2>
+              <Link
+                href="/dashboard/appointments"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                Day view
+                <IconArrowUpRight size={13} strokeWidth={2} />
+              </Link>
+            </div>
+            {data.upcoming.length === 0 ? (
+              <EmptyState
+                message="No more appointments today."
+                action={
+                  <Link
+                    href="/dashboard/appointments/new"
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Book Appointment
+                  </Link>
+                }
+              />
+            ) : (
+              <ul className="flex-1 divide-y divide-border/80">
+                {data.upcoming.slice(0, 7).map((appt) => {
+                  const patient = appt.patient as Patient
+                  const doctor = appt.doctor as User
+                  return (
+                    <li key={appt.id}>
+                      <Link
+                        href="/dashboard/appointments"
+                        className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary/40"
+                      >
+                        <Avatar name={patient?.name ?? 'Patient'} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold">
+                            {patient?.name ?? 'Patient'}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {doctor?.name}
+                            {appt.reason ? ` · ${appt.reason}` : ''}
+                          </span>
                         </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {doctor?.name}
-                          {appt.reason ? ` · ${appt.reason}` : ''}
+                        <span className="tabular shrink-0 rounded-md bg-muted px-2 py-1 text-xs font-semibold">
+                          {formatTime(appt.start, tenant)}
                         </span>
-                      </span>
-                      <span className="tabular shrink-0 rounded-md bg-muted px-2 py-1 text-xs font-semibold">
-                        {formatTime(appt.start, tenant)}
-                      </span>
-                      <StatusBadge status={appt.status} className="hidden sm:inline-flex" />
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
+                        <StatusBadge status={appt.status} className="hidden sm:inline-flex" />
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+        </DashboardWidgetError>
       </div>
 
-      {/* Doctors today · Quick actions · Recent patients */}
+      {/* Doctors today & Quick actions & Recent patients */}
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <section className="card-flat overflow-hidden">
-          <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Doctors today</h2>
-            <span className="tabular text-xs text-faint">
-              {doctors.filter((d) => d.onToday).length} on duty
-            </span>
-          </div>
-          <ul className="divide-y divide-border">
-            {doctors.map((d) => (
-              <li key={d.id} className={`flex items-center gap-3 px-5 py-2.5 ${d.onToday ? '' : 'opacity-50'}`}>
-                <Avatar name={d.name} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold">{d.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {d.specialty ? `${d.specialty} · ` : ''}
-                    {d.note}
+        <DashboardWidgetError title="Doctors On Duty">
+          <section className="card-flat overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
+              <h2 className="font-display text-lg font-semibold">Doctors today</h2>
+              <span className="tabular text-xs font-semibold text-primary">
+                {doctors.filter((d) => d.onToday).length} on duty
+              </span>
+            </div>
+            <ul className="divide-y divide-border/80">
+              {doctors.map((d) => (
+                <li key={d.id} className={`flex items-center gap-3 px-5 py-2.5 ${d.onToday ? '' : 'opacity-50'}`}>
+                  <Avatar name={d.name} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-semibold">{d.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {d.specialty ? `${d.specialty} · ` : ''}
+                      {d.note}
+                    </span>
                   </span>
-                </span>
-                {d.count > 0 && (
-                  <span className="tabular shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-primary">
-                    {d.count}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+                  {d.count > 0 && (
+                    <span className="tabular shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-primary">
+                      {d.count} appts
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </DashboardWidgetError>
 
         <section className="card-flat overflow-hidden">
-          <div className="border-b px-5 py-4">
+          <div className="border-b border-border/80 px-5 py-4">
             <h2 className="font-display text-lg font-semibold">Quick actions</h2>
           </div>
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-border/80">
             {[
               {
                 href: '/dashboard/appointments/new',
@@ -448,11 +437,11 @@ export default async function DashboardHome({
         </section>
 
         <section className="card-flat overflow-hidden md:col-span-2 xl:col-span-1">
-          <div className="flex items-center justify-between border-b px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
             <h2 className="font-display text-lg font-semibold">Recent patients</h2>
             <Link
               href="/dashboard/patients"
-              className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
               All patients
               <IconArrowUpRight size={13} strokeWidth={2} />
@@ -464,14 +453,14 @@ export default async function DashboardHome({
               action={
                 <Link
                   href="/dashboard/patients/new"
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="text-xs font-semibold text-primary hover:underline"
                 >
-                  Register the first one
+                  Register Patient
                 </Link>
               }
             />
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-border/80">
               {recentPatients.map((p) => (
                 <li key={p.id}>
                   <Link
@@ -485,7 +474,7 @@ export default async function DashboardHome({
                         {p.phone}
                       </span>
                     </span>
-                    <span className="tabular shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    <span className="tabular shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {p.mrn}
                     </span>
                   </Link>

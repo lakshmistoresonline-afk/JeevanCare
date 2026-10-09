@@ -74,10 +74,9 @@ export const Invoices: CollectionConfig = {
 
           // Atomic per-tenant invoice number allocation to avoid duplicates
           // from concurrent invoice creation.
-          const model = (req.payload.db as any).collections?.invoices
-          if (model) {
-            const native = model.collection
-            const counterColl = native.db.collection('tenant_sequence_counters')
+          const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.invoices?.collection?.db
+          if (db) {
+            const counterColl = db.collection('tenant_sequence_counters')
             const counterDoc = await counterColl.findOneAndUpdate(
               { tenant: tenantID, seq: 'invoice_number' },
               { $inc: { value: 1 } },
@@ -173,9 +172,11 @@ export const Invoices: CollectionConfig = {
           for (let i = 0; i < origPays.length; i++) {
             const orig = origPays[i]
             const neu = newPays[i]
-            if (Number(neu?.amount) !== Number(orig?.amount) ||
-                String(neu?.method ?? '') !== String(orig?.method ?? '') ||
-                String(neu?.receivedAt ?? '') !== String(orig?.receivedAt ?? '')) {
+            if (
+              Number(neu?.amount) !== Number(orig?.amount) ||
+              String(neu?.method ?? '') !== String(orig?.method ?? '') ||
+              (neu?.receivedAt && orig?.receivedAt && new Date(neu.receivedAt).getTime() !== new Date(orig.receivedAt).getTime())
+            ) {
               throw new APIError('Existing payment entries cannot be modified.', 403, {
                 code: ERROR_CODES.INVOICE_LOCKED,
               })

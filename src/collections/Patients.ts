@@ -47,10 +47,9 @@ export const Patients: CollectionConfig = {
             code: ERROR_CODES.VALIDATION,
           })
         }
-        const model = (req.payload.db as any).collections?.patients
-        if (model) {
-          const native = model.collection
-          const counterColl = native.db.collection('tenant_sequence_counters')
+        const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.patients?.collection?.db
+        if (db) {
+          const counterColl = db.collection('tenant_sequence_counters')
           const counterDoc = await counterColl.findOneAndUpdate(
             { tenant: tenantID, seq: 'patient_mrn' },
             { $inc: { value: 1 } },
