@@ -171,11 +171,11 @@ export interface Tenant {
     /**
      * Market-agnostic core — all amounts are formatted from this.
      */
-    currency: 'INR' | 'USD' | 'GBP' | 'AED' | 'SAR';
+    currency: 'INR' | 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR';
     /**
      * All times are displayed in this timezone.
      */
-    timezone: 'Asia/Kolkata' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Europe/London' | 'America/New_York';
+    timezone: 'Asia/Kolkata' | 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Europe/London' | 'America/New_York';
     /**
      * Clinic UPI ID (e.g. clinicname@upi). Used in printed receipts and payment QR codes. Leave empty to disable UPI QR.
      */

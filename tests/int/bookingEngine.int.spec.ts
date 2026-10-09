@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { Payload } from 'payload'
 import { getTestPayload, seedFixture, type Fixture } from './fixtures'
-import { findConflict, overlaps, computeEnd } from '@/lib/booking'
-import { bookAppointment, getAvailableSlots } from '@/app/(frontend)/dashboard/appointments/actions'
-import { relId } from '@/lib/utils'
+import { getAvailableSlots, bookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
+import { computeEnd, overlaps } from '@/lib/booking'
 
 describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
   let payload: Payload
@@ -17,20 +16,23 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     f = await seedFixture(payload)
   })
 
-  const futureDateStr = (daysAhead = 1) => {
+  const futureDateStr = (daysAhead: number): string => {
     const d = new Date()
     d.setDate(d.getDate() + daysAhead)
     return d.toISOString().slice(0, 10)
   }
 
   // =========================================================================
-  // 1. OVERLAP & COMPUTATION UNIT TESTS
+  // 1. DURATION & OVERLAP MATHEMATICS
   // =========================================================================
 
   it('correctly calculates computeEnd given start and duration', () => {
-    const start = new Date('2026-10-10T10:00:00.000Z')
-    const end = computeEnd(start, 30)
-    expect(end.toISOString()).toBe('2026-10-10T10:30:00.000Z')
+    const start = new Date('2026-10-10T10:00:00Z')
+    const end15 = computeEnd(start, 15)
+    expect(end15.toISOString()).toBe('2026-10-10T10:15:00.000Z')
+
+    const end30 = computeEnd(start, 30)
+    expect(end30.toISOString()).toBe('2026-10-10T10:30:00.000Z')
   })
 
   it('accurately tests range overlaps without flagging adjacent touching slots', () => {
@@ -54,7 +56,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
 
   it('returns valid clickable slots for active doctors within availability windows', async () => {
     const date = futureDateStr(2)
-    const res = await getAvailableSlots(String(f.a.doctor.id), date)
+    const res = await getAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
     expect(res.ok).toBe(true)
     expect(res.slots).toBeDefined()
     expect(res.slots!.length).toBeGreaterThan(0)
@@ -70,7 +72,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     })
 
     const date = futureDateStr(2)
-    const slotsRes = await getAvailableSlots(String(f.a.doctor.id), date)
+    const slotsRes = await getAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
     expect(slotsRes.ok).toBe(false)
     expect(slotsRes.message).toMatch(/inactive/i)
   })
@@ -90,7 +92,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     formData1.set('date', date)
     formData1.set('time', time)
 
-    const res1 = await bookAppointment(formData1)
+    const res1 = await bookAppointment(formData1, f.a.doctor)
     expect(res1.ok).toBe(true)
     if (!res1.ok) return
 
@@ -101,7 +103,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     formData2.set('date', date)
     formData2.set('time', time)
 
-    const res2 = await bookAppointment(formData2)
+    const res2 = await bookAppointment(formData2, f.a.doctor)
     expect(res2.ok).toBe(false)
     if (res2.ok) return
     expect(res2.code).toBe('SLOT_TAKEN')
@@ -115,7 +117,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     })
 
     // Third booking attempt now succeeds because cancelled appointment freed the slot
-    const res3 = await bookAppointment(formData2)
+    const res3 = await bookAppointment(formData2, f.a.doctor)
     expect(res3.ok).toBe(true)
   })
 
@@ -133,7 +135,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
       formData.set('doctor', String(f.a.doctor.id))
       formData.set('date', date)
       formData.set('time', time)
-      return bookAppointment(formData)
+      return bookAppointment(formData, f.a.doctor)
     }
 
     // Fire 2 concurrent simultaneous booking attempts

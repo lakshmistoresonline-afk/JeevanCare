@@ -21,9 +21,14 @@ yarn-error.log*
 .env
 !.env.example
 
-# database data
+# database data and uploads
 /mongo-data/
 /data/
+/media/
+
+# IDE
+.idea/
+.vscode/
 
 # vercel
 .vercel

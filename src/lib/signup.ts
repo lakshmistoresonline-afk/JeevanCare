@@ -11,6 +11,8 @@ import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
+  DEFAULT_CURRENCY,
+  DEFAULT_TIMEZONE,
 } from './constants'
 import { emailEnabled } from './email'
 import { createVerificationToken } from './verification'
@@ -147,8 +149,8 @@ export async function signupClinic(
           appointmentDurationMins: DEFAULT_APPOINTMENT_DURATION,
           openTime: DEFAULT_OPEN_TIME,
           closeTime: DEFAULT_CLOSE_TIME,
-          currency: input.currency,
-          timezone: input.timezone,
+          currency: input.currency || DEFAULT_CURRENCY,
+          timezone: input.timezone || DEFAULT_TIMEZONE,
         },
       } as never,
     })

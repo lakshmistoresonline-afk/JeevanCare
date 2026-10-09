@@ -114,23 +114,23 @@ export const Appointments: CollectionConfig = {
         const dayStart = startOfDayInTz(tz, 0, start)
         const dayKey = dayStart.toISOString().slice(0, 10)
 
-        const counterModel = (req.payload.db as any).collections?.appointments
-        if (!counterModel) return data
-        const native = counterModel.collection
-        const counterColl = native.db.collection('walkin_token_counters')
-        try {
-          await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true })
-        } catch {}
+        const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.appointments?.collection?.db
+        if (db) {
+          const counterColl = db.collection('walkin_token_counters')
+          try {
+            await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true })
+          } catch {}
 
-        const counterDoc = await counterColl.findOneAndUpdate(
-          { tenant: tenantID, day: dayKey },
-          { $inc: { seq: 1 } },
-          { upsert: true, returnDocument: 'after' },
-        )
+          const counterDoc = await counterColl.findOneAndUpdate(
+            { tenant: tenantID, day: dayKey },
+            { $inc: { seq: 1 } },
+            { upsert: true, returnDocument: 'after' },
+          )
 
-        const seq = counterDoc?.seq ?? 1
-        data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
-        data.tokenDay = dayKey
+          const seq = counterDoc?.seq ?? 1
+          data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
+          data.tokenDay = dayKey
+        }
         return data
       },
     ],
@@ -150,8 +150,8 @@ export const Appointments: CollectionConfig = {
       type: 'relationship',
       relationTo: 'patients',
       required: true,
-      filterOptions: ({ user }) => {
-        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+      filterOptions: ({ user, req }) => {
+        if (!user || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
         return tenantID ? { tenant: { equals: tenantID } } : true
       },
@@ -161,8 +161,8 @@ export const Appointments: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
-      filterOptions: ({ user }) => {
-        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+      filterOptions: ({ user, req }) => {
+        if (!user || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
         const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
         if (tenantID) base.tenant = { equals: tenantID }

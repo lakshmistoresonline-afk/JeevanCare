@@ -81,6 +81,7 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
 // Curated currency list (a full ISO list is overkill). `code` feeds Intl.NumberFormat.
 export const CURRENCIES = [
   { label: 'INR — Indian Rupee', value: 'INR' },
+  { label: 'PKR — Pakistani Rupee', value: 'PKR' },
   { label: 'USD — US Dollar', value: 'USD' },
   { label: 'GBP — British Pound', value: 'GBP' },
   { label: 'AED — UAE Dirham', value: 'AED' },
@@ -90,6 +91,7 @@ export const CURRENCIES = [
 // Curated IANA timezone list (a full dropdown is overkill for the launch markets).
 export const TIMEZONES = [
   { label: 'Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
+  { label: 'Asia/Karachi (PKT)', value: 'Asia/Karachi' },
   { label: 'Asia/Dubai (GST)', value: 'Asia/Dubai' },
   { label: 'Asia/Riyadh (AST)', value: 'Asia/Riyadh' },
   { label: 'Europe/London (GMT/BST)', value: 'Europe/London' },
