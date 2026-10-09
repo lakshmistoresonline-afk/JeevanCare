@@ -59,12 +59,12 @@ export function checkSeedSafety(): { ok: boolean; reason?: string } {
   }
 
   const dbUrl = process.env.DATABASE_URL || ''
-  const testMarkers = ['test', 'uat', 'sandbox', 'dev']
-  const isTestDb = testMarkers.some((m) => dbUrl.toLowerCase().includes(m))
+  const testMarkers = ['test', 'uat', 'sandbox', 'dev', '127.0.0.1', 'localhost']
+  const isTestDb = forceSeed || testMarkers.some((m) => dbUrl.toLowerCase().includes(m))
   if (!isTestDb) {
     return {
       ok: false,
-      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database.`,
+      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database or set FORCE_SEED=1.`,
     }
   }
 
