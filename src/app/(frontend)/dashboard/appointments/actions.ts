@@ -192,8 +192,10 @@ export async function bookAppointment(
     try { revalidatePath('/dashboard/appointments') } catch {}
     return { ok: true, data: { id: String(appt.id), token: (appt as { tokenNumber?: string }).tokenNumber } }
   } catch (err: any) {
-    // Normalize MongoDB duplicate-key errors from the unique index backstop
-    if (err?.code === 11000 || err?.name === 'MongoServerError') {
+    // Normalize only MongoDB duplicate-key (code 11000) errors from the unique
+    // index backstop to SLOT_TAKEN. Other MongoServerError values are not booking
+    // conflicts and must not be misclassified.
+    if (err?.code === 11000) {
       return { ok: false, code: 'SLOT_TAKEN', message: 'This appointment slot is no longer available. Please select another time.' }
     }
     return { ok: false, ...toActionError(err) }
@@ -232,6 +234,20 @@ export async function getAvailableSlots(
 ): Promise<{ ok: boolean; slots?: string[]; message?: string }> {
   if (!doctorId || !date) return { ok: false, message: 'Doctor and date are required.' }
 
+  // Authenticate the actual caller — never trust a client-supplied actor object.
+  // actorUser is only accepted from server-side callers that have already verified
+  // identity (e.g. patient booking action). For dashboard calls, getCurrentUser is
+  // the source of truth.
+  let caller: User | null = actorUser ?? null
+  if (!caller) {
+    try {
+      caller = await getCurrentUser()
+    } catch {
+      caller = null
+    }
+  }
+  if (!caller) return { ok: false, message: 'Authentication required.' }
+
   const payload = await getPayloadClient()
   try {
     const doctor = (await payload.findByID({ collection: 'users', id: doctorId, depth: 0, overrideAccess: true })) as User
@@ -240,6 +256,16 @@ export async function getAvailableSlots(
     }
 
     const docTenantID = relId(doctor.tenant) || ''
+
+    // Enforce tenant boundary: the caller must belong to the same clinic as the doctor.
+    // SuperAdmin must have an explicit tenant context (inferred from the doctor's tenant).
+    if (caller.role !== 'superAdmin') {
+      const callerTenantID = getTenantID(caller)
+      if (!callerTenantID || callerTenantID !== docTenantID) {
+        return { ok: false, message: 'Doctor does not belong to your clinic.' }
+      }
+    }
+
     const tenant = docTenantID ? await payload.findByID({ collection: 'tenants', id: docTenantID, depth: 0, overrideAccess: true }) : null
 
     const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE

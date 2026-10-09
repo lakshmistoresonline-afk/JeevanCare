@@ -31,6 +31,14 @@ const MESSAGES: Record<string, string> = {
     'Verify your email first — check your inbox for the confirmation link.',
   [ERROR_CODES.VERIFY_TOKEN_INVALID]:
     'This verification link is invalid or has expired. Request a new one below.',
+  [ERROR_CODES.ACTIVATION_INVALID]:
+    'The activation code you entered is incorrect. Please check and try again.',
+  [ERROR_CODES.ACTIVATION_EXPIRED]:
+    'Your activation code has expired. Please contact your clinic for a new one.',
+  [ERROR_CODES.ACTIVATION_USED]:
+    'This activation code has already been used.',
+  [ERROR_CODES.ACTIVATION_RATE_LIMITED]:
+    'Too many activation attempts. Please try again later or contact your clinic.',
 }
 
 export type ActionResult<T = unknown> =

@@ -1,7 +1,18 @@
-// Tiny in-memory rate limiter for the self-serve signup (v3 spec §3.2). Deliberately
-// simple: a process-local sliding window keyed by IP. At this scale a paranoid
-// distributed limiter is overkill — if the app is ever scaled horizontally this
-// swaps for Vercel KV (documented in BACKLOG.md). Cheap, honest, good enough.
+// In-memory rate limiter for self-serve signup and patient registration.
+//
+// IMPORTANT: This is a process-local sliding window keyed by IP. It provides
+// adequate protection for single-instance deployments. If the app is scaled
+// horizontally (multiple instances/containers), this limiter does NOT provide
+// cross-instance protection — each instance maintains its own counters. In
+// that topology, swap this for a shared durable store (e.g. Vercel KV, Redis,
+// or a database-backed counter). The interface (rateLimit/resetRateLimit)
+// remains the same so callers need no changes.
+//
+// Proxy header trust: x-forwarded-for is trusted as the client IP source. This
+// is correct behind Vercel, Next.js standalone, and standard reverse proxies
+// that set this header. In a deployment where the proxy does not strip
+// client-supplied x-forwarded-for values, an attacker could spoof IPs to
+// bypass the limiter. Ensure your proxy/CDN overwrites this header.
 
 type Hit = { count: number; resetAt: number }
 
