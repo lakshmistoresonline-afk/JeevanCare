@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { btnPrimary, btnGhost } from '@/components/primitives'
 import { JeevanCareHeader } from '@/components/JeevanCareHeader'
 import { ClinicDoctorFinder } from '@/components/ClinicDoctorFinder'
@@ -116,7 +115,7 @@ export default async function HomePage() {
       {/* Navigation Header */}
       <JeevanCareHeader />
 
-      {/* Hero Section (Matching Panel 1 in Reference Image) */}
+      {/* Hero Section (Balanced Two-Column Composition) */}
       <section className="relative overflow-hidden border-b border-border/80 bg-canvas">
         <div
           className="pointer-events-none absolute inset-0"
@@ -126,7 +125,7 @@ export default async function HomePage() {
             backgroundSize: 'auto, 28px 28px',
           }}
         />
-        <div className="relative w-full grid items-center gap-10 px-6 sm:px-12 lg:px-16 xl:px-24 pt-12 pb-16 lg:grid-cols-[1.05fr_0.95fr] lg:pt-16 lg:pb-20">
+        <div className="relative mx-auto max-w-7xl grid items-center gap-10 px-6 sm:px-8 lg:px-12 pt-12 pb-16 lg:grid-cols-[1.05fr_0.95fr] lg:pt-16 lg:pb-20">
           {/* Left Copy Panel */}
           <div className="animate-fade-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-secondary px-3.5 py-1 text-xs font-bold text-primary">
@@ -193,9 +192,9 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Right Product Preview Mockup (Matching Panel 1 Frame) */}
+          {/* Right Product Preview Mockup (Prominent & Balanced) */}
           <div className="relative animate-fade-up [animation-delay:80ms]">
-            <div className="relative w-full overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl p-5 space-y-4">
+            <div className="relative w-full max-w-[540px] mx-auto overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl p-5 space-y-4">
               {/* Mockup Header Bar */}
               <div className="flex items-center justify-between border-b border-border/80 pb-3">
                 <div className="flex items-center gap-2">
@@ -284,9 +283,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Feature Badges Strip (Panel 1) */}
+      {/* Feature Badges Strip */}
       <section className="border-b border-border/80 bg-card py-6">
-        <div className="w-full px-6 sm:px-12 lg:px-16 xl:px-24 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
           {[
             { title: 'Appointment Management', icon: IconCalendar },
             { title: 'OPD Queue & Walk-ins', icon: IconClock },
@@ -308,14 +307,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Doctor & Clinic Finder (Panel 5) */}
+      {/* Doctor & Clinic Finder (Shared Content Width Container) */}
       <section id="clinics" className="py-12">
         <ClinicDoctorFinder clinics={clinics} doctors={doctors} />
       </section>
 
-      {/* How It Works Patient Journey (Panel 3) */}
+      {/* How It Works Patient Journey */}
       <section id="how" className="border-t border-border/80 bg-card/50 py-16">
-        <div className="w-full px-6 sm:px-12 lg:px-16 xl:px-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-xl mx-auto mb-12">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">How It Works</span>
             <h2 className="mt-1.5 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -348,9 +347,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Key Features Grid (Panel 4) */}
+      {/* Substantial Key Features Grid */}
       <section id="features" className="border-t border-border/80 bg-canvas py-16">
-        <div className="w-full px-6 sm:px-12 lg:px-16 xl:px-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-xl mx-auto mb-12">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Key Features Section</span>
             <h2 className="mt-1.5 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -375,9 +374,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trust, Security & Care (Panel 6) */}
+      {/* Trust, Security & Care */}
       <section className="border-t border-border/80 bg-card py-16">
-        <div className="w-full px-6 sm:px-12 lg:px-16 xl:px-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-xl mx-auto mb-12">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Trust, Security &amp; Care</span>
             <h2 className="mt-1.5 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -402,9 +401,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing Section (Panel 7) */}
+      {/* Pricing Section (Simple) */}
       <section id="pricing" className="border-t border-border/80 bg-canvas py-16">
-        <div className="w-full px-6 sm:px-12 lg:px-16 xl:px-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-xl mx-auto mb-10">
             <span className="text-xs font-bold text-primary uppercase tracking-wider">Pricing Section (Simple)</span>
             <h2 className="mt-1.5 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -446,7 +445,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* FAQ Section (Panel 8) */}
+      {/* FAQ Section */}
       <section id="faq" className="border-t border-border/80 bg-card py-16">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-10">
@@ -472,7 +471,7 @@ export default async function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-border/80 bg-card">
-        <div className="w-full flex flex-wrap items-center justify-between gap-4 px-6 sm:px-12 lg:px-16 xl:px-24 py-8 text-xs text-faint">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 sm:px-8 lg:px-12 py-8 text-xs text-faint">
           <span className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-lg bg-primary text-white font-bold text-xs">J</span>
             <span className="font-display text-base font-bold text-primary">JeevanCare</span>

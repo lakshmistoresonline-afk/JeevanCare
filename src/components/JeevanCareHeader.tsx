@@ -29,7 +29,7 @@ export function JeevanCareHeader() {
 
   return (
     <header className={`sticky top-0 z-50 border-b border-border/80 bg-canvas/95 backdrop-blur-md ${accessibilityMode ? 'contrast-125' : ''}`}>
-      <div className="w-full flex h-16 items-center justify-between px-6 sm:px-12 lg:px-16 xl:px-24">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8 lg:px-12">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-white font-bold text-sm shadow-2xs">
@@ -38,7 +38,7 @@ export function JeevanCareHeader() {
           <span className="font-display text-xl font-bold tracking-tight text-primary">JeevanCare</span>
         </Link>
 
-        {/* Center Navigation Links (Matching Panel 1 in Reference Image) */}
+        {/* Center Navigation Links (Matching Reference Specs) */}
         <nav className="hidden items-center gap-1 sm:gap-2 md:flex">
           <a href="#features" className="px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-primary">
             Features

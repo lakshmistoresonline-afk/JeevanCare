@@ -80,7 +80,7 @@ export function ClinicDoctorFinder({
   }, [doctors, filteredClinicIds, selectedSpecialty, searchTerm])
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12 space-y-8">
+    <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 py-12 space-y-8">
       {/* Search Header Banner */}
       <div className="rounded-3xl border border-border/80 bg-card p-6 md:p-8 shadow-xs">
         <div className="text-center max-w-xl mx-auto mb-6">
