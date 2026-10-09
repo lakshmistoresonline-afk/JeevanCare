@@ -1,0 +1,223 @@
+import type { CollectionConfig } from 'payload'
+import { APIError } from 'payload'
+import { denyAll, getTenantID, isSuperAdmin, patientTenantScoped, appointmentsWriteAccess } from '@/access'
+import { forceTenant } from '@/hooks/tenant'
+import { findConflict, computeEnd } from '@/lib/booking'
+import { auditAppointments } from '@/hooks/audit'
+import { startOfDayInTz } from '@/lib/reports'
+import { relId } from '@/lib/utils'
+import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import {
+  APPOINTMENT_STATUSES,
+  STATUS_TRANSITIONS,
+  ERROR_CODES,
+  type AppointmentStatus,
+} from '@/lib/constants'
+
+export const Appointments: CollectionConfig = {
+  slug: 'appointments',
+  admin: { useAsTitle: 'reason', defaultColumns: ['start', 'patient', 'doctor', 'status'] },
+  access: {
+    read: patientTenantScoped,
+    create: appointmentsWriteAccess,
+    update: appointmentsWriteAccess,
+    delete: denyAll, // history is the product — cancel, never delete
+  },
+  timestamps: true,
+  hooks: {
+    beforeValidate: [
+      // Compute end, enforce status transitions, and run the double-booking guard
+      // — all inside the request transaction so the read+write is atomic.
+      async ({ data, req, operation, originalDoc }) => {
+        if (!data) return data
+
+        // --- end = start + durationMins ---
+        const start = data.start ? new Date(data.start) : originalDoc?.start && new Date(originalDoc.start)
+        const duration: number = data.durationMins ?? originalDoc?.durationMins
+        if (start && duration) {
+          data.end = computeEnd(start, duration).toISOString()
+        }
+
+        // --- status transition rules (spec §8.4) ---
+        if (operation === 'update' && originalDoc && data.status && data.status !== originalDoc.status) {
+          const from = originalDoc.status as AppointmentStatus
+          const to = data.status as AppointmentStatus
+          const legal = STATUS_TRANSITIONS[from] ?? []
+          if (!legal.includes(to)) {
+            throw new APIError(`Can't change ${from} to ${to}.`, 400, {
+              code: ERROR_CODES.INVALID_TRANSITION,
+            })
+          }
+          if (to === 'cancelled' && !data.cancellationReason && !originalDoc.cancellationReason) {
+            throw new APIError('A cancellation reason is required.', 400, {
+              code: ERROR_CODES.VALIDATION,
+            })
+          }
+        }
+
+        // --- double-booking guard ---
+        // Only check when the appointment occupies a slot (scheduled/checked-in)
+        // and is not a walk-in (walk-ins are allowed to overlap, spec §8.2).
+        const status: AppointmentStatus = data.status ?? originalDoc?.status ?? 'scheduled'
+        const occupies = status === 'scheduled' || status === 'checked-in'
+        const isWalkIn = data.isWalkIn ?? originalDoc?.isWalkIn ?? false
+
+        const doctorID = relId(data.doctor) || relId(originalDoc?.doctor)
+        const tenantID =
+          relId(data.tenant) || relId(originalDoc?.tenant) || getTenantID(req.user)
+        const endDate = data.end ? new Date(data.end) : originalDoc?.end && new Date(originalDoc.end)
+
+        if (occupies && !isWalkIn && start && endDate && doctorID && tenantID) {
+          const conflict = await findConflict({
+            payload: req.payload,
+            req,
+            tenantID,
+            doctorID,
+            start,
+            end: endDate,
+            excludeID: operation === 'update' ? String(originalDoc?.id) : undefined,
+          })
+          if (conflict) {
+            const time = new Date(conflict.start).toISOString()
+            throw new APIError(
+              `That doctor already has an appointment overlapping this time (${time}). Pick another slot.`,
+              409,
+              { code: ERROR_CODES.SLOT_TAKEN },
+            )
+          }
+        }
+
+        return data
+      },
+    ],
+    beforeChange: [
+      forceTenant,
+      ({ data, req, operation }) => {
+        if (operation === 'create' && req.user) {
+          data.createdBy = req.user.id
+        }
+        return data
+      },
+      // Walk-in token: atomic sequential allocation per clinic per day (T-01, T-02…).
+      // Uses findOneAndUpdate with $inc on a counter document — this is atomic at the
+      // document level, so two concurrent walk-ins can never receive the same token.
+      async ({ data, req, operation }) => {
+        if (operation !== 'create' || !data.isWalkIn) return data
+        const tenantID = data.tenant ? String(data.tenant) : null
+        if (!tenantID) return data
+
+        const tenant = await req.payload
+          .findByID({ collection: 'tenants', id: tenantID, depth: 0, req })
+          .catch(() => null)
+        const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+        const start = data.start ? new Date(data.start) : new Date()
+        const dayStart = startOfDayInTz(tz, 0, start)
+        const dayKey = dayStart.toISOString().slice(0, 10)
+
+        const counterModel = (req.payload.db as any).collections?.appointments
+        if (!counterModel) return data
+        const native = counterModel.collection
+        const counterColl = native.db.collection('walkin_token_counters')
+        try {
+          await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true })
+        } catch {}
+
+        const counterDoc = await counterColl.findOneAndUpdate(
+          { tenant: tenantID, day: dayKey },
+          { $inc: { seq: 1 } },
+          { upsert: true, returnDocument: 'after' },
+        )
+
+        const seq = counterDoc?.seq ?? 1
+        data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
+        return data
+      },
+    ],
+    afterChange: [auditAppointments],
+  },
+  fields: [
+    {
+      name: 'tenant',
+      type: 'relationship',
+      relationTo: 'tenants',
+      required: true,
+      index: true,
+      access: { update: () => false },
+    },
+    {
+      name: 'patient',
+      type: 'relationship',
+      relationTo: 'patients',
+      required: true,
+      filterOptions: ({ user }) => {
+        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+        const tenantID = getTenantID(user as any)
+        return tenantID ? { tenant: { equals: tenantID } } : true
+      },
+    },
+    {
+      name: 'doctor',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      filterOptions: ({ user }) => {
+        if (!user || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+        const tenantID = getTenantID(user as any)
+        const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
+        if (tenantID) base.tenant = { equals: tenantID }
+        return base as any
+      },
+    },
+    {
+      name: 'start',
+      type: 'date',
+      required: true,
+      admin: { date: { pickerAppearance: 'dayAndTime' } },
+    },
+    {
+      name: 'durationMins',
+      type: 'number',
+      required: true,
+      min: 5,
+      max: 120,
+      label: 'Duration (minutes)',
+    },
+    {
+      name: 'end',
+      type: 'date',
+      admin: { readOnly: true, hidden: true },
+    },
+    { name: 'reason', type: 'text' },
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'scheduled',
+      options: APPOINTMENT_STATUSES.map((s) => ({ label: s, value: s })),
+    },
+    { name: 'isWalkIn', type: 'checkbox', defaultValue: false, label: 'Walk-in' },
+    {
+      name: 'tokenNumber',
+      type: 'text',
+      label: 'Walk-in token',
+      access: { update: () => false },
+      admin: { readOnly: true, description: 'Auto-assigned per clinic per day for walk-ins.' },
+    },
+    {
+      name: 'cancellationReason',
+      type: 'text',
+      admin: { condition: (data) => data?.status === 'cancelled' },
+    },
+    {
+      name: 'createdBy',
+      type: 'relationship',
+      relationTo: 'users',
+      access: { update: () => false },
+      admin: { readOnly: true },
+    },
+  ],
+  // The (tenant, doctor, start) lookup is served by the partial UNIQUE index
+  // `uniq_active_slot` created in payload.config onInit (it also backstops the
+  // booking race), so we don't declare a duplicate plain index here.
+  indexes: [{ fields: ['tenant', 'start'] }],
+}
