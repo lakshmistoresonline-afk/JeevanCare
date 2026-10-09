@@ -174,20 +174,20 @@ export default async function HomePage() {
             {/* Stat Counters Row */}
             <div className="mt-10 border-t border-border/80 pt-6 grid grid-cols-4 gap-4 text-start">
               <div>
-                <div className="tabular font-display text-2xl font-bold text-ink">2.5L+</div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Appointments</div>
+                <div className="tabular font-display text-2xl font-bold text-ink">10</div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Active Clinics</div>
               </div>
               <div>
-                <div className="tabular font-display text-2xl font-bold text-ink">100+</div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Clinics</div>
+                <div className="tabular font-display text-2xl font-bold text-ink">40+</div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Doctors</div>
               </div>
               <div>
-                <div className="tabular font-display text-2xl font-bold text-ink">50K+</div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Patients</div>
+                <div className="tabular font-display text-2xl font-bold text-ink">100%</div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Tenant Isolated</div>
               </div>
               <div>
-                <div className="text-xs font-bold text-primary">Made for</div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Indian Healthcare</div>
+                <div className="text-xs font-bold text-primary">₹ INR</div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Dynamic UPI</div>
               </div>
             </div>
           </div>
@@ -412,35 +412,73 @@ export default async function HomePage() {
             <p className="mt-1 text-xs text-muted-foreground">Made for Indian clinics. No hidden fees or lock-ins.</p>
           </div>
 
-          <div className="max-w-md mx-auto card-flat p-8 text-center space-y-6 shadow-md border-primary/30">
-            <div>
-              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary uppercase">
-                Clinic Plan
-              </span>
-              <div className="mt-4 flex items-baseline justify-center gap-1">
-                <span className="tabular font-display text-4xl font-extrabold text-ink">₹2,999</span>
-                <span className="text-xs font-semibold text-muted-foreground">/month</span>
+          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+            {/* Free Plan */}
+            <div className="card-flat p-6 text-center space-y-5">
+              <div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary uppercase">
+                  Free Starter
+                </span>
+                <div className="mt-3 flex items-baseline justify-center gap-1">
+                  <span className="tabular font-display text-3xl font-extrabold text-ink">₹0</span>
+                  <span className="text-xs font-semibold text-muted-foreground">/month</span>
+                </div>
               </div>
+              <ul className="space-y-2.5 text-xs font-medium text-ink text-start space-y-2">
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>1 Doctor &amp; 50 Patients</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Full OPD &amp; EMR Workspace</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Digital Prescriptions</span></li>
+              </ul>
+              <Link href="/signup" className={`${btnGhost} w-full justify-center text-xs font-bold`}>
+                Start Free
+              </Link>
             </div>
 
-            <ul className="space-y-3 text-xs font-medium text-ink text-start max-w-xs mx-auto">
-              {[
-                'Complete OPD & EMR Workspace',
-                'Prescription & Document Library',
-                'Billing & Dynamic UPI QR Payments',
-                'Multi-doctor support & RBAC',
-                'Priority WhatsApp & phone support',
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <IconCheck size={14} className="text-primary shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Clinic Plan */}
+            <div className="card-flat p-6 text-center space-y-5 border-primary/40 ring-2 ring-primary/20 shadow-md relative">
+              <span className="absolute -top-3 start-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[10px] font-bold text-white uppercase">
+                Most Popular
+              </span>
+              <div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary uppercase">
+                  Clinic Plan
+                </span>
+                <div className="mt-3 flex items-baseline justify-center gap-1">
+                  <span className="tabular font-display text-3xl font-extrabold text-ink">₹2,999</span>
+                  <span className="text-xs font-semibold text-muted-foreground">/month</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5 text-xs font-medium text-ink text-start space-y-2">
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Up to 5 Doctors &amp; Unlimited Patients</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Billing &amp; Dynamic UPI QR Payments</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Prescription &amp; Document Library</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Multi-doctor support &amp; RBAC</span></li>
+              </ul>
+              <Link href="/signup" className={`${btnPrimary} w-full justify-center text-xs font-bold`}>
+                Register Your Clinic
+              </Link>
+            </div>
 
-            <Link href="/signup" className={`${btnPrimary} w-full justify-center text-xs font-bold`}>
-              Register Your Clinic
-            </Link>
+            {/* Plus Plan */}
+            <div className="card-flat p-6 text-center space-y-5">
+              <div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary uppercase">
+                  Plus Plan
+                </span>
+                <div className="mt-3 flex items-baseline justify-center gap-1">
+                  <span className="tabular font-display text-3xl font-extrabold text-ink">₹4,999</span>
+                  <span className="text-xs font-semibold text-muted-foreground">/month</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5 text-xs font-medium text-ink text-start space-y-2">
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Unlimited Doctors &amp; Patients</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Full Billing &amp; Audit Trail</span></li>
+                <li className="flex items-center gap-2"><IconCheck size={14} className="text-primary shrink-0" /><span>Priority WhatsApp &amp; Phone Support</span></li>
+              </ul>
+              <Link href="/signup" className={`${btnGhost} w-full justify-center text-xs font-bold`}>
+                Contact Sales
+              </Link>
+            </div>
           </div>
         </div>
       </section>

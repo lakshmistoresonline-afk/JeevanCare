@@ -208,8 +208,8 @@ export function ClinicDoctorFinder({
                           <p className="text-xs text-muted-foreground">{clinic.city || 'Thrissur'}, {clinic.state || 'Kerala'}</p>
                         </div>
                       </div>
-                      <span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        ★ 4.8
+                      <span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary border border-primary/20">
+                        Verified Clinic
                       </span>
                     </div>
 
@@ -233,7 +233,7 @@ export function ClinicDoctorFinder({
                               </div>
                               <div className="flex items-center justify-between pt-1 border-t border-border/40">
                                 <span className="text-[10px] font-medium text-muted-foreground">
-                                  Next available: <span className="font-semibold text-ink">Today, 11:30 AM</span>
+                                  Standard Consultation · <span className="font-semibold text-ink">₹{doc.consultationFee || 500}</span>
                                 </span>
                                 <Link
                                   href={`/patient/login?doctor=${doc.id}`}
