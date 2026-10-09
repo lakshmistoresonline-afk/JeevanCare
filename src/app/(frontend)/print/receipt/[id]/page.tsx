@@ -117,7 +117,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       <div className="mt-6 flex items-start justify-between gap-4">
         {(invoice.balanceDue ?? 0) > 0 ? (
           <UpiQrCode
-            upiId={tenant?.phone ? `${tenant.phone.replace(/[^0-9]/g, '')}@upi` : 'jeevancare@upi'}
+            upiId={(tenant?.settings as any)?.upiId ?? null}
             name={tenant?.name}
             amount={invoice.balanceDue ?? 0}
             transactionNote={`Inv ${invoice.invoiceNumber}`}

@@ -11,6 +11,8 @@ import { relId } from '@/lib/utils'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Tenant, User } from '@/payload-types'
 
+const STAFF_ROLES = ['owner', 'doctor', 'receptionist'] as const
+
 async function resolveActorTenant(explicitUser?: User) {
   let user: User | null = explicitUser ?? null
   if (!user) {
@@ -20,13 +22,15 @@ async function resolveActorTenant(explicitUser?: User) {
       user = null
     }
   }
-  if (!user || user.role === 'superAdmin') return null
+  if (!user) return null
+  if (user.role === 'superAdmin') return null
+  if (user.role === 'patient') return { user, isPatient: true } as any
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)
   const tenant = tenantID
     ? await payload.findByID({ collection: 'tenants', id: tenantID, depth: 0, overrideAccess: true })
     : null
-  return { user, payload, tenantID: tenantID!, tenant: tenant as Tenant | null }
+  return { user, payload, tenantID: tenantID!, tenant: tenant as Tenant | null, isPatient: false }
 }
 
 export type DoctorAvailabilityHit = {
@@ -87,34 +91,55 @@ export async function bookAppointment(
   formData: FormData,
   actorUser?: User,
 ): Promise<ActionResult<{ id: string; token?: string }>> {
-  let ctx = await resolveActorTenant(actorUser)
-  const payload = await getPayloadClient()
+  const ctx = await resolveActorTenant(actorUser)
 
-  const patient = String(formData.get('patient') || '')
+  // Reject patient callers — patients must use the dedicated patient booking action
+  if (ctx && (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: 'Patients must use the patient booking portal.' }
+  }
+  if (!ctx || !ctx.tenantID || !ctx.tenant) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to book appointments." }
+  }
+
+  const { user, payload, tenantID, tenant } = ctx
+
+  // Validate actor has an allowed staff role
+  if (!STAFF_ROLES.includes(user.role as any) && user.role !== 'superAdmin') {
+    return { ok: false, code: 'FORBIDDEN', message: 'Only staff can book appointments.' }
+  }
+
+  const patientID = String(formData.get('patient') || '')
   const doctorID = String(formData.get('doctor') || '')
   const date = String(formData.get('date') || '')
   const time = String(formData.get('time') || '')
   const reason = String(formData.get('reason') || '')
   const isWalkIn = formData.get('isWalkIn') === 'on'
 
-  if (!patient || !doctorID || !date || !time) {
+  if (!patientID || !doctorID || !date || !time) {
     return { ok: false, code: 'VALIDATION', message: 'Patient, doctor, date and time are required.' }
   }
 
-  // Resolve doctor
+  // Resolve doctor and validate: exists, role=doctor, active, tenant matches actor
   const doctor = (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User | null
   if (!doctor || doctor.role !== 'doctor' || doctor.active === false) {
     return { ok: false, code: 'VALIDATION', message: 'Selected doctor is inactive or not found.' }
   }
-
   const docTenantID = relId(doctor.tenant) || ''
-
-  if (!ctx) {
-    const tenant = docTenantID ? await payload.findByID({ collection: 'tenants', id: docTenantID, depth: 0, overrideAccess: true }) : null
-    ctx = { user: doctor, payload, tenantID: docTenantID, tenant }
+  if (!docTenantID || docTenantID !== tenantID) {
+    return { ok: false, code: 'FORBIDDEN', message: 'Doctor does not belong to your clinic.' }
   }
 
-  const { user, tenant } = ctx
+  // Validate patient exists and belongs to the same tenant
+  const patientDoc = await payload.findByID({ collection: 'patients', id: patientID, depth: 0, overrideAccess: true }).catch(() => null)
+  if (!patientDoc) {
+    return { ok: false, code: 'VALIDATION', message: 'Patient not found.' }
+  }
+  const patTenantID = relId(patientDoc.tenant) || ''
+  if (patTenantID !== tenantID) {
+    return { ok: false, code: 'FORBIDDEN', message: 'Patient does not belong to your clinic.' }
+  }
+
+  // Tenant integrity: doctor tenant == patient tenant == actor tenant
   const durationMins = Number(formData.get('durationMins') || tenant?.settings?.appointmentDurationMins || 15)
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   const start = wallTimeToUTC(tz, date, time)
@@ -135,7 +160,7 @@ export async function bookAppointment(
 
   const conflict = await findConflict({
     payload,
-    tenantID: docTenantID,
+    tenantID,
     doctorID,
     start,
     end,
@@ -154,8 +179,8 @@ export async function bookAppointment(
       user,
       overrideAccess: true,
       data: {
-        tenant: docTenantID,
-        patient,
+        tenant: tenantID,
+        patient: patientID,
         doctor: doctorID,
         start: start.toISOString(),
         durationMins,
@@ -166,7 +191,11 @@ export async function bookAppointment(
     })
     try { revalidatePath('/dashboard/appointments') } catch {}
     return { ok: true, data: { id: String(appt.id), token: (appt as { tokenNumber?: string }).tokenNumber } }
-  } catch (err) {
+  } catch (err: any) {
+    // Normalize MongoDB duplicate-key errors from the unique index backstop
+    if (err?.code === 11000 || err?.name === 'MongoServerError') {
+      return { ok: false, code: 'SLOT_TAKEN', message: 'This appointment slot is no longer available. Please select another time.' }
+    }
     return { ok: false, ...toActionError(err) }
   }
 }
@@ -177,7 +206,7 @@ export async function updateAppointmentStatus(
   cancellationReason?: string,
 ): Promise<ActionResult<{ id: string }>> {
   const ctx = await resolveActorTenant()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx || (ctx as any).isPatient) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
   const { user, payload } = ctx
 
   try {

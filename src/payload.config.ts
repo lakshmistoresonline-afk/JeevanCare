@@ -77,6 +77,22 @@ export default buildConfig({
             partialFilterExpression: { role: 'patient', patientProfile: { $exists: true } },
           },
         )
+
+        // Unique partial index: walk-in tokens must be unique per tenant per day.
+        // This is the DB-level backstop for the atomic counter — if two requests
+        // somehow get the same token, only one insert succeeds.
+        const apptsModel = payload.db.collections?.appointments
+        if (apptsModel) {
+          const apptsNative = apptsModel.collection
+          await apptsNative.createIndex(
+            { tenant: 1, tokenNumber: 1 },
+            {
+              unique: true,
+              name: 'uniq_walkin_token',
+              partialFilterExpression: { isWalkIn: true, tokenNumber: { $exists: true } },
+            },
+          ).catch(() => {})
+        }
       }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create database indexes')

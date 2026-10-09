@@ -149,14 +149,18 @@ export const tenantSelfRead: Access = ({ req: { user } }) => {
 }
 
 /**
- * Users read: superAdmin sees all; tenant users see staff within their own tenant.
- * Unauthenticated / system calls can read doctor profiles for relationship validation.
+ * Users read: superAdmin sees all; patient users see ONLY their own User record;
+ * staff users see users within their own tenant.
+ * Unauthenticated calls can read doctor profiles for relationship validation.
  */
 export const usersReadAccess: Access = ({ req: { user } }) => {
   if (!user) return true
   if (isSuperAdmin(user)) return true
   const tenantID = getTenantID(user)
   if (!tenantID) return false
+  if ((user as any).role === 'patient') {
+    return { id: { equals: String(user.id) } } as Where
+  }
   return { tenant: { equals: String(tenantID) } } as Where
 }
 
@@ -201,6 +205,35 @@ export const superAdminOrOwnerField: FieldAccess = ({ req: { user } }) =>
 
 /** Field-level: only superAdmin. */
 export const superAdminField: FieldAccess = ({ req: { user } }) => isSuperAdmin(user)
+
+/**
+ * Staff-only write access for medical documents.
+ * Patients are READ-ONLY — they cannot create, update, or delete documents.
+ * SuperAdmin: full. Staff (owner/doctor/receptionist): tenant-scoped.
+ */
+export const staffWriteAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  if ((user as any).role === 'patient') return false
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  return { tenant: { equals: String(tenantID) } }
+}
+
+/**
+ * Staff-only write access for appointments.
+ * Patients cannot create or update appointments directly through Payload.
+ * Patient booking is only allowed through the dedicated patient booking action.
+ * SuperAdmin: full. Staff (owner/doctor/receptionist): tenant-scoped.
+ */
+export const appointmentsWriteAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  if ((user as any).role === 'patient') return false
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  return { tenant: { equals: String(tenantID) } }
+}
 
 /** Deny for everyone (used for delete policies). */
 export const denyAll: Access = () => false

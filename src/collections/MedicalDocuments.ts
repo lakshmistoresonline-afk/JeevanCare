@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, getTenantID, isSuperAdmin, patientTenantScoped } from '@/access'
+import { denyAll, getTenantID, isSuperAdmin, patientTenantScoped, staffWriteAccess } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { logAudit } from '@/lib/audit'
 import { ERROR_CODES } from '@/lib/constants'
@@ -44,8 +44,8 @@ export const MedicalDocuments: CollectionConfig = {
   },
   access: {
     read: patientTenantScoped,
-    create: tenantScoped,
-    update: tenantScoped,
+    create: staffWriteAccess,
+    update: staffWriteAccess,
     delete: denyAll, // clinical records are archived/soft-deleted rather than hard-deleted
   },
   timestamps: true,

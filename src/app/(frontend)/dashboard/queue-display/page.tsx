@@ -5,7 +5,6 @@ import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { formatDoctorName } from '@/lib/utils'
 import { QueueAudioAnnouncer } from '@/components/QueueAudioAnnouncer'
 import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
-import { UpiQrCode } from '@/components/UpiQrCode'
 
 export default async function QueueDisplayPage() {
   const { tenant } = await requireDashboardSession()

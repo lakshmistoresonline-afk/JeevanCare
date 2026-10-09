@@ -20,6 +20,7 @@ export type SettingsInitial = {
   closeTime: string
   currency: string
   timezone: string
+  upiId: string
 }
 
 /** Stripe-style settings row: description rail on the left, fields card on the right. */
@@ -77,6 +78,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         closeTime: form.closeTime,
         currency: form.currency,
         timezone: form.timezone,
+        upiId: form.upiId,
       })
       if (res.ok) {
         setSaved(true)
@@ -156,6 +158,18 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               />
             </Field>
           </div>
+        </div>
+      </Section>
+
+      <Section
+        icon={<IconBuilding size={15} strokeWidth={1.75} />}
+        title="Payments"
+        description="UPI ID used in printed receipts and payment QR codes. Leave empty to hide UPI QR from receipts."
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="UPI ID" hint="e.g. clinicname@upi">
+            <input className={inputClass} value={form.upiId} onChange={(e) => set('upiId', e.target.value)} placeholder="clinicname@upi" />
+          </Field>
         </div>
       </Section>
 

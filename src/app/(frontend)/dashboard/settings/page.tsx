@@ -29,6 +29,7 @@ export default async function SettingsPage() {
           closeTime: t?.settings?.closeTime ?? DEFAULT_CLOSE_TIME,
           currency: t?.settings?.currency ?? DEFAULT_CURRENCY,
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
+          upiId: (t?.settings as any)?.upiId ?? '',
         }}
       />
     </div>

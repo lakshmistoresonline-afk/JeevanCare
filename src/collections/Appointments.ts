@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, getTenantID, isSuperAdmin, patientTenantScoped } from '@/access'
+import { denyAll, getTenantID, isSuperAdmin, patientTenantScoped, appointmentsWriteAccess } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { findConflict, computeEnd } from '@/lib/booking'
 import { auditAppointments } from '@/hooks/audit'
@@ -19,8 +19,8 @@ export const Appointments: CollectionConfig = {
   admin: { useAsTitle: 'reason', defaultColumns: ['start', 'patient', 'doctor', 'status'] },
   access: {
     read: patientTenantScoped,
-    create: tenantScoped,
-    update: tenantScoped,
+    create: appointmentsWriteAccess,
+    update: appointmentsWriteAccess,
     delete: denyAll, // history is the product — cancel, never delete
   },
   timestamps: true,
@@ -98,7 +98,9 @@ export const Appointments: CollectionConfig = {
         }
         return data
       },
-      // Walk-in token: first-come-first-serve sequence per clinic per day (T-01, T-02…).
+      // Walk-in token: atomic sequential allocation per clinic per day (T-01, T-02…).
+      // Uses findOneAndUpdate with $inc on a counter document — this is atomic at the
+      // document level, so two concurrent walk-ins can never receive the same token.
       async ({ data, req, operation }) => {
         if (operation !== 'create' || !data.isWalkIn) return data
         const tenantID = data.tenant ? String(data.tenant) : null
@@ -110,18 +112,24 @@ export const Appointments: CollectionConfig = {
         const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
         const start = data.start ? new Date(data.start) : new Date()
         const dayStart = startOfDayInTz(tz, 0, start)
-        const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
+        const dayKey = dayStart.toISOString().slice(0, 10)
 
-        const existing = await req.payload.count({
-          collection: 'appointments',
-          where: {
-            tenant: { equals: tenantID },
-            isWalkIn: { equals: true },
-            start: { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() },
-          },
-          req,
-        })
-        data.tokenNumber = `T-${String(existing.totalDocs + 1).padStart(2, '0')}`
+        const counterModel = (req.payload.db as any).collections?.appointments
+        if (!counterModel) return data
+        const native = counterModel.collection
+        const counterColl = native.db.collection('walkin_token_counters')
+        try {
+          await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true })
+        } catch {}
+
+        const counterDoc = await counterColl.findOneAndUpdate(
+          { tenant: tenantID, day: dayKey },
+          { $inc: { seq: 1 } },
+          { upsert: true, returnDocument: 'after' },
+        )
+
+        const seq = counterDoc?.seq ?? 1
+        data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
         return data
       },
     ],

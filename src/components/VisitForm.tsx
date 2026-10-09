@@ -56,11 +56,30 @@ export function VisitForm({
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('')
   const [rows, setRows] = useState<PrescriptionRowInput[]>([blankRow()])
+  const [kitConfirm, setKitConfirm] = useState<{ label: string; items: PrescriptionRowInput[] } | null>(null)
 
   const setRow = (i: number, patch: Partial<PrescriptionRowInput>) =>
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
   const addRow = () => setRows((r) => [...r, blankRow()])
   const removeRow = (i: number) => setRows((r) => (r.length === 1 ? r : r.filter((_, idx) => idx !== i)))
+
+  const hasDraftData = rows.some((r) => r.medicine.trim() || (r.dosage || '').trim() || (r.instructions || '').trim())
+
+  const applyKit = (kit: { label: string; items: PrescriptionRowInput[] }) => {
+    if (hasDraftData) {
+      setKitConfirm(kit)
+    } else {
+      setRows(kit.items)
+    }
+  }
+  const confirmReplace = () => {
+    if (kitConfirm) setRows(kitConfirm.items)
+    setKitConfirm(null)
+  }
+  const confirmAdd = () => {
+    if (kitConfirm) setRows((r) => [...r, ...kitConfirm.items])
+    setKitConfirm(null)
+  }
 
   const num = (s: string) => (s.trim() === '' ? undefined : Number(s))
 
@@ -195,29 +214,29 @@ export function VisitForm({
                 label: 'Fever & Cold Kit',
                 items: [
                   { medicine: 'Paracetamol', dosage: '500mg', frequency: 'tds', durationDays: 3, instructions: 'After food' },
-                  { medicine: 'Cetirizine', dosage: '10mg', frequency: 'od_night', durationDays: 5, instructions: 'At bedtime' },
-                  { medicine: 'Vitamin C', dosage: '500mg', frequency: 'od_morning', durationDays: 5, instructions: 'After food' },
+                  { medicine: 'Cetirizine', dosage: '10mg', frequency: 'od', durationDays: 5, instructions: 'At bedtime' },
+                  { medicine: 'Vitamin C', dosage: '500mg', frequency: 'od', durationDays: 5, instructions: 'After food' },
                 ],
               },
               {
                 label: 'Gastritis Protocol',
                 items: [
-                  { medicine: 'Pantoprazole', dosage: '40mg', frequency: 'od_morning', durationDays: 7, instructions: 'Before food' },
+                  { medicine: 'Pantoprazole', dosage: '40mg', frequency: 'od', durationDays: 7, instructions: 'Before food, morning' },
                   { medicine: 'Domperidone', dosage: '10mg', frequency: 'bd', durationDays: 5, instructions: '30 mins before meals' },
                 ],
               },
               {
                 label: 'Hypertension Kit',
                 items: [
-                  { medicine: 'Amlodipine', dosage: '5mg', frequency: 'od_morning', durationDays: 30, instructions: 'Morning after breakfast' },
-                  { medicine: 'Telmisartan', dosage: '40mg', frequency: 'od_morning', durationDays: 30, instructions: 'Morning' },
+                  { medicine: 'Amlodipine', dosage: '5mg', frequency: 'od', durationDays: 30, instructions: 'After breakfast' },
+                  { medicine: 'Telmisartan', dosage: '40mg', frequency: 'od', durationDays: 30, instructions: 'Morning' },
                 ],
               },
             ].map((kit) => (
               <button
                 key={kit.label}
                 type="button"
-                onClick={() => setRows(kit.items as any)}
+                onClick={() => applyKit(kit)}
                 className="rounded-full border border-primary/30 bg-canvas px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary hover:text-white"
               >
                 + {kit.label}
@@ -225,6 +244,25 @@ export function VisitForm({
             ))}
           </div>
         </div>
+
+        {kitConfirm && (
+          <div className="mb-3 rounded-lg border border-amber/30 bg-amber/5 p-3" role="alertdialog" aria-label="Confirm treatment kit">
+            <p className="text-sm font-medium text-ink">
+              You have an active prescription draft. Applying &quot;{kitConfirm.label}&quot; will replace it.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={confirmAdd} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary">
+                Add to current
+              </button>
+              <button type="button" onClick={confirmReplace} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90">
+                Replace current prescription
+              </button>
+              <button type="button" onClick={() => setKitConfirm(null)} className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-ink">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2.5">
           {rows.map((row, i) => (
@@ -241,9 +279,8 @@ export function VisitForm({
                 {[
                   { label: '1-0-1 (BD)', val: 'bd' },
                   { label: '1-1-1 (TDS)', val: 'tds' },
-                  { label: '1-0-0 (Morning)', val: 'od_morning' },
-                  { label: '0-0-1 (Night)', val: 'od_night' },
-                  { label: 'PRN (As needed)', val: 'prn' },
+                  { label: '1-0-0 (OD)', val: 'od' },
+                  { label: 'SOS (As needed)', val: 'sos' },
                 ].map((chip) => (
                   <button
                     key={chip.val}

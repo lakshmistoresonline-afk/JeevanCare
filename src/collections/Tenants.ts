@@ -179,6 +179,14 @@ export const Tenants: CollectionConfig = {
           options: TIMEZONES.map((t) => ({ label: t.label, value: t.value })),
           admin: { description: 'All times are displayed in this timezone.' },
         },
+        {
+          name: 'upiId',
+          type: 'text',
+          label: 'UPI ID for payments',
+          admin: {
+            description: 'Clinic UPI ID (e.g. clinicname@upi). Used in printed receipts and payment QR codes. Leave empty to disable UPI QR.',
+          },
+        },
       ],
     },
   ],

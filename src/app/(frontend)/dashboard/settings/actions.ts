@@ -16,6 +16,7 @@ export type ClinicSettingsInput = {
   closeTime: string
   currency: string
   timezone: string
+  upiId?: string
 }
 
 /** Owner edits their own clinic profile & settings (access enforced by Payload). */
@@ -56,6 +57,7 @@ export async function updateClinicSettings(
           closeTime: input.closeTime,
           currency: input.currency,
           timezone: input.timezone,
+          upiId: input.upiId?.trim() || null,
         },
       } as never,
     })
