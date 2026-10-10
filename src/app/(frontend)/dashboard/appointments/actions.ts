@@ -14,13 +14,15 @@ import type { Tenant, User } from '@/payload-types'
 const STAFF_ROLES = ['owner', 'doctor', 'receptionist'] as const
 
 async function resolveActorTenant(explicitUser?: User) {
-  let user: User | null = explicitUser ?? null
-  if (!user) {
-    try {
-      user = await getCurrentUser()
-    } catch {
-      user = null
-    }
+  let user: User | null = null
+  try {
+    user = await getCurrentUser()
+  } catch {
+    user = null
+  }
+  // Fallback to explicitUser ONLY if no request session exists (e.g. internal test runner)
+  if (!user && explicitUser) {
+    user = explicitUser
   }
   if (!user) return null
   if (user.role === 'superAdmin') return null
@@ -238,13 +240,14 @@ export async function getAvailableSlots(
   // actorUser is only accepted from server-side callers that have already verified
   // identity (e.g. patient booking action). For dashboard calls, getCurrentUser is
   // the source of truth.
-  let caller: User | null = actorUser ?? null
-  if (!caller) {
-    try {
-      caller = await getCurrentUser()
-    } catch {
-      caller = null
-    }
+  let caller: User | null = null
+  try {
+    caller = await getCurrentUser()
+  } catch {
+    caller = null
+  }
+  if (!caller && actorUser) {
+    caller = actorUser
   }
   if (!caller) return { ok: false, message: 'Authentication required.' }
 

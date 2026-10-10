@@ -146,6 +146,7 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'patients',
       index: true,
+      access: { update: superAdminOrOwnerField },
       admin: {
         description: 'Linked patient record for patient portal accounts.',
         condition: (data) => data?.role === 'patient',

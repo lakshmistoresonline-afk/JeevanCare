@@ -100,8 +100,16 @@ export default async function HomePage() {
     limit: 20,
     overrideAccess: true,
   })
-  const clinics = tenantsRes.docs
+  const clinics = tenantsRes.docs.map((c: any) => ({
+    id: String(c.id),
+    name: c.name,
+    city: c.city || null,
+    district: c.district || null,
+    state: c.state || null,
+    phone: c.phone || null,
+  }))
 
+  const activeTenantIds = new Set(clinics.map((c) => c.id))
   const doctorsRes = await payload.find({
     collection: 'users',
     where: { role: { equals: 'doctor' }, active: { equals: true } },
@@ -109,6 +117,17 @@ export default async function HomePage() {
     overrideAccess: true,
   })
   const doctors = doctorsRes.docs
+    .filter((d: any) => {
+      const tId = typeof d.tenant === 'object' && d.tenant !== null ? String(d.tenant.id) : String(d.tenant)
+      return activeTenantIds.has(tId)
+    })
+    .map((d: any) => ({
+      id: String(d.id),
+      name: d.name,
+      specialty: d.specialty || null,
+      consultationFee: d.consultationFee ?? null,
+      tenant: typeof d.tenant === 'object' && d.tenant !== null ? String(d.tenant.id) : String(d.tenant),
+    }))
 
   return (
     <main className="min-h-screen bg-canvas text-ink">

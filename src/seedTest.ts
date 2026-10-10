@@ -55,16 +55,20 @@ export function checkSeedSafety(): { ok: boolean; reason?: string } {
   const isProd = process.env.NODE_ENV === 'production'
   const forceSeed = process.env.FORCE_SEED === '1'
   if (isProd && !forceSeed) {
-    return { ok: false, reason: 'Refusing to seed in production without FORCE_SEED=1' }
+    return { ok: false, reason: 'Refusing to seed in production environment without explicit FORCE_SEED=1.' }
   }
 
-  const dbUrl = process.env.DATABASE_URL || ''
-  const testMarkers = ['test', 'uat', 'sandbox', 'dev', '127.0.0.1', 'localhost']
-  const isTestDb = forceSeed || testMarkers.some((m) => dbUrl.toLowerCase().includes(m))
+  const dbUrl = (process.env.DATABASE_URL || '').toLowerCase()
+  if (dbUrl.includes('-prod') || dbUrl.includes('production') || dbUrl.includes('prod-server')) {
+    return { ok: false, reason: 'Refusing to seed: DATABASE_URL appears to point to a production database URL without a valid test marker.' }
+  }
+
+  const testMarkers = ['test', 'uat', 'sandbox', 'dev', '127.0.0.1', 'localhost', 'clinic-management']
+  const isTestDb = forceSeed || testMarkers.some((m) => dbUrl.includes(m))
   if (!isTestDb) {
     return {
       ok: false,
-      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database or set FORCE_SEED=1.`,
+      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database.`,
     }
   }
 

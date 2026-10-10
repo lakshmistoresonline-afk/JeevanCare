@@ -106,6 +106,21 @@ export const patientSelfAccess: Access = ({ req }) => {
 
 export const patientTenantScoped = patientSelfAccess
 
+/**
+ * Patients write access (create/update):
+ * SuperAdmin: full.
+ * Staff (owner/doctor/receptionist): tenant-scoped.
+ * Patients (role === 'patient'): READ-ONLY — denied write access (cannot create/update/delete patient records directly).
+ */
+export const patientsWriteAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  if ((user as any).role === 'patient') return false
+  const tenantID = getTenantID(user)
+  if (!tenantID) return false
+  return { tenant: { equals: String(tenantID) } }
+}
+
 /** superAdmin only. */
 export const superAdminOnly: Access = ({ req: { user } }) => isSuperAdmin(user)
 

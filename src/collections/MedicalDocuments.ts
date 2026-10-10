@@ -12,6 +12,18 @@ import {
   MAX_FILE_SIZE_BYTES,
 } from '@/lib/fileSecurity'
 
+/**
+ * Medical Document Storage Boundary Documentation:
+ * Uploaded medical document files (PDFs, scans, images) are stored locally in the server's
+ * `staticDir: 'media'` folder on the application host filesystem.
+ *
+ * Storage Architecture Note:
+ * - When JeevanCare is deployed locally on a doctor's standalone workstation PC, files reside on that PC.
+ * - When JeevanCare is deployed on a remote cloud host (e.g. Vercel / AWS / VPS), files are stored on the
+ *   cloud host server disk (or S3-compatible cloud storage adapter), NOT directly on the individual doctor's client PC.
+ * - Security & Privacy Integrity: SHA-256 magic-byte validation, 10MB file cap, tenant-isolated access,
+ *   and audit logging apply uniformly across all storage configurations.
+ */
 const DOCUMENT_TYPES = [
   { label: 'Lab Report', value: 'LAB_REPORT' },
   { label: 'Blood Test', value: 'BLOOD_TEST' },

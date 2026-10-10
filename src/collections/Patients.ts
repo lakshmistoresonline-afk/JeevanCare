@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { superAdminOnly, tenantScoped, patientTenantScoped, getTenantID } from '@/access'
+import { superAdminOnly, patientsWriteAccess, patientTenantScoped, getTenantID } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { enforcePlanLimit } from '@/hooks/planLimit'
 import { GENDERS, BLOOD_GROUPS, ERROR_CODES, INDIAN_STATES } from '@/lib/constants'
@@ -12,8 +12,8 @@ export const Patients: CollectionConfig = {
   admin: { useAsTitle: 'name', defaultColumns: ['mrn', 'name', 'phone', 'gender'] },
   access: {
     read: patientTenantScoped,
-    create: tenantScoped,
-    update: tenantScoped,
+    create: patientsWriteAccess,
+    update: patientsWriteAccess,
     delete: superAdminOnly, // clinics don't hard-delete patients
   },
   timestamps: true,

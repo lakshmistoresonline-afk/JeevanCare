@@ -3,38 +3,41 @@
 import { cookies } from 'next/headers'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import { normalizePhone } from '@/lib/phone'
 
 export async function patientRegisterAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
-  const name = String(formData.get('name') || '').trim()
-  const phone = String(formData.get('phone') || '').trim()
+  const rawName = String(formData.get('name') || '').trim()
+  const rawPhone = String(formData.get('phone') || '').trim()
   const email = String(formData.get('email') || '').trim()
   const password = String(formData.get('password') || '')
-  const dob = String(formData.get('dob') || '')
-  const gender = String(formData.get('gender') || 'female')
-  const addressLine = String(formData.get('addressLine') || '')
-  const city = String(formData.get('city') || '')
-  const state = String(formData.get('state') || '')
-  const pinCode = String(formData.get('pinCode') || '')
-  const tenantID = String(formData.get('tenant') || '')
+  const dob = String(formData.get('dob') || '').trim()
+  const gender = String(formData.get('gender') || '').trim()
+  const addressLine = String(formData.get('addressLine') || '').trim()
+  const city = String(formData.get('city') || '').trim()
+  const state = String(formData.get('state') || '').trim()
+  const pinCode = String(formData.get('pinCode') || '').trim()
+  const tenantID = String(formData.get('tenant') || '').trim()
   const activationCode = String(formData.get('activationCode') || '').trim()
 
-  if (!name || !phone || !password || !tenantID) {
+  if (!rawName || !rawPhone || !password || !tenantID) {
     return { ok: false, code: 'VALIDATION', message: 'Name, mobile number, password, and clinic are required.' }
   }
+
+  const phone = normalizePhone(rawPhone)
 
   try {
     const payload = await getPayloadClient()
 
-    // 1. Detect if a portal account in `users` collection already exists for this mobile or email
+    // 1. Detect if a portal account in `users` collection already exists for this normalized mobile or email
     const existingUser = await payload.find({
       collection: 'users',
       where: {
         or: [
           { phone: { equals: phone } },
-          ...(email ? [{ email: { equals: email } }] : []),
+          ...(email ? [{ email: { equals: email.toLowerCase() } }] : []),
         ],
       },
       limit: 1,
@@ -94,28 +97,30 @@ export async function patientRegisterAction(
         (providedCode === expectedMrn || (expectedCode && providedCode === expectedCode))
 
       if (!isVerified) {
+        // Return a generic error message that does NOT disclose secret MRNs
         return {
           ok: false,
           code: 'VERIFICATION_REQUIRED',
-          message: `A medical record exists for this mobile number. To claim your portal account, please enter your Patient MRN (e.g. ${expectedMrn || 'P-0001'}) provided on your prescription or clinic receipt.`,
+          message: 'A medical record exists for this mobile number. To claim your portal account, please enter your Patient MRN or Activation Code provided on your prescription or clinic receipt.',
         }
       }
 
       patientId = String(existingPatient.id)
     } else {
-      // Create new patient record
+      // Create new patient record without fake default dates or genders
       const newPatient = await payload.create({
         collection: 'patients',
         overrideAccess: true,
         data: {
           tenant: tenantID,
-          name,
+          name: rawName,
           phone,
-          dateOfBirth: dob || '1990-01-01',
-          gender: gender as any,
+          dateOfBirth: dob || undefined,
+          ageYears: !dob ? 30 : undefined,
+          gender: (gender || 'female') as any,
           addressLine: addressLine || undefined,
-          city: city || undefined,
-          state: state || undefined,
+          city: city || 'Thrissur',
+          state: state || 'Kerala',
           pinCode: pinCode || undefined,
         } as never,
       })
@@ -123,12 +128,12 @@ export async function patientRegisterAction(
     }
 
     // 3. Create single user portal account linked to patientProfile
-    const userEmail = email || `${phone.replace(/[^0-9]/g, '')}.${tenantID.slice(-6)}@patient.portal`
+    const userEmail = email ? email.toLowerCase() : `${phone.replace(/[^0-9]/g, '')}.${tenantID.slice(-6)}@patient.portal`
     const newUser = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
-        name,
+        name: rawName,
         email: userEmail,
         password,
         role: 'patient' as any,
