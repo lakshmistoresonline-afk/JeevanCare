@@ -44,10 +44,7 @@ export function VisitForm({
   const [diagnosis, setDiagnosis] = useState('')
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('')
-  const [rows, setRows] = useState<PrescriptionRowInput[]>([
-    { medicine: 'Paracetamol 500 mg', dosage: '1 tablet', frequency: 'tds', durationDays: 5, instructions: 'After food' },
-    { medicine: 'Pantoprazole 40 mg', dosage: '1 tablet', frequency: 'od', durationDays: 5, instructions: 'Before food' },
-  ])
+  const [rows, setRows] = useState<PrescriptionRowInput[]>([blankRow()])
   const [kitConfirm, setKitConfirm] = useState<{ label: string; items: PrescriptionRowInput[] } | null>(null)
 
   const setRow = (i: number, patch: Partial<PrescriptionRowInput>) =>

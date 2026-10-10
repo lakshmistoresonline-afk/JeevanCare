@@ -25,6 +25,7 @@ async function resolveActorTenant(explicitUser?: User) {
     user = explicitUser
   }
   if (!user) return null
+  if (user.active === false) return null
   if (user.role === 'superAdmin') return null
   if (user.role === 'patient') return { user, isPatient: true } as any
   const payload = await getPayloadClient()
@@ -32,6 +33,7 @@ async function resolveActorTenant(explicitUser?: User) {
   const tenant = tenantID
     ? await payload.findByID({ collection: 'tenants', id: tenantID, depth: 0, overrideAccess: true })
     : null
+  if (tenant && tenant.status !== 'active') return null
   return { user, payload, tenantID: tenantID!, tenant: tenant as Tenant | null, isPatient: false }
 }
 
@@ -89,23 +91,22 @@ export async function availableDoctorsAt(
   return hits
 }
 
-export async function bookAppointment(
+/** Internal trusted helper function for server-side calls and integration tests */
+export async function internalBookAppointment(
   formData: FormData,
   actorUser?: User,
 ): Promise<ActionResult<{ id: string; token?: string }>> {
   const ctx = await resolveActorTenant(actorUser)
 
-  // Reject patient callers — patients must use the dedicated patient booking action
   if (ctx && (ctx as any).isPatient) {
     return { ok: false, code: 'FORBIDDEN', message: 'Patients must use the patient booking portal.' }
   }
   if (!ctx || !ctx.tenantID || !ctx.tenant) {
-    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to book appointments." }
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to book appointments or clinic is inactive." }
   }
 
   const { user, payload, tenantID, tenant } = ctx
 
-  // Validate actor has an allowed staff role
   if (!STAFF_ROLES.includes(user.role as any) && user.role !== 'superAdmin') {
     return { ok: false, code: 'FORBIDDEN', message: 'Only staff can book appointments.' }
   }
@@ -121,7 +122,6 @@ export async function bookAppointment(
     return { ok: false, code: 'VALIDATION', message: 'Patient, doctor, date and time are required.' }
   }
 
-  // Resolve doctor and validate: exists, role=doctor, active, tenant matches actor
   const doctor = (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User | null
   if (!doctor || doctor.role !== 'doctor' || doctor.active === false) {
     return { ok: false, code: 'VALIDATION', message: 'Selected doctor is inactive or not found.' }
@@ -131,7 +131,6 @@ export async function bookAppointment(
     return { ok: false, code: 'FORBIDDEN', message: 'Doctor does not belong to your clinic.' }
   }
 
-  // Validate patient exists and belongs to the same tenant
   const patientDoc = await payload.findByID({ collection: 'patients', id: patientID, depth: 0, overrideAccess: true }).catch(() => null)
   if (!patientDoc) {
     return { ok: false, code: 'VALIDATION', message: 'Patient not found.' }
@@ -141,7 +140,6 @@ export async function bookAppointment(
     return { ok: false, code: 'FORBIDDEN', message: 'Patient does not belong to your clinic.' }
   }
 
-  // Tenant integrity: doctor tenant == patient tenant == actor tenant
   const durationMins = Number(formData.get('durationMins') || tenant?.settings?.appointmentDurationMins || 15)
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   const start = wallTimeToUTC(tz, date, time)
@@ -194,14 +192,18 @@ export async function bookAppointment(
     try { revalidatePath('/dashboard/appointments') } catch {}
     return { ok: true, data: { id: String(appt.id), token: (appt as { tokenNumber?: string }).tokenNumber } }
   } catch (err: any) {
-    // Normalize only MongoDB duplicate-key (code 11000) errors from the unique
-    // index backstop to SLOT_TAKEN. Other MongoServerError values are not booking
-    // conflicts and must not be misclassified.
     if (err?.code === 11000) {
       return { ok: false, code: 'SLOT_TAKEN', message: 'This appointment slot is no longer available. Please select another time.' }
     }
     return { ok: false, ...toActionError(err) }
   }
+}
+
+/** Exported Server Action — ALWAYS derives identity strictly from server request session */
+export async function bookAppointment(
+  formData: FormData,
+): Promise<ActionResult<{ id: string; token?: string }>> {
+  return internalBookAppointment(formData)
 }
 
 export async function updateAppointmentStatus(
@@ -236,10 +238,6 @@ export async function getAvailableSlots(
 ): Promise<{ ok: boolean; slots?: string[]; message?: string }> {
   if (!doctorId || !date) return { ok: false, message: 'Doctor and date are required.' }
 
-  // Authenticate the actual caller — never trust a client-supplied actor object.
-  // actorUser is only accepted from server-side callers that have already verified
-  // identity (e.g. patient booking action). For dashboard calls, getCurrentUser is
-  // the source of truth.
   let caller: User | null = null
   try {
     caller = await getCurrentUser()
@@ -249,7 +247,7 @@ export async function getAvailableSlots(
   if (!caller && actorUser) {
     caller = actorUser
   }
-  if (!caller) return { ok: false, message: 'Authentication required.' }
+  if (!caller || caller.active === false) return { ok: false, message: 'Authentication required.' }
 
   const payload = await getPayloadClient()
   try {
@@ -260,8 +258,6 @@ export async function getAvailableSlots(
 
     const docTenantID = relId(doctor.tenant) || ''
 
-    // Enforce tenant boundary: the caller must belong to the same clinic as the doctor.
-    // SuperAdmin must have an explicit tenant context (inferred from the doctor's tenant).
     if (caller.role !== 'superAdmin') {
       const callerTenantID = getTenantID(caller)
       if (!callerTenantID || callerTenantID !== docTenantID) {
@@ -270,6 +266,9 @@ export async function getAvailableSlots(
     }
 
     const tenant = docTenantID ? await payload.findByID({ collection: 'tenants', id: docTenantID, depth: 0, overrideAccess: true }) : null
+    if (tenant && tenant.status !== 'active') {
+      return { ok: false, message: 'Clinic account is not active.' }
+    }
 
     const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
     const durationMins = tenant?.settings?.appointmentDurationMins || 15

@@ -10,8 +10,19 @@ export async function GET() {
       limit: 50,
       overrideAccess: true,
     })
-    return NextResponse.json({ docs: res.docs })
-  } catch (err) {
+
+    // Construct explicit public DTOs containing ONLY non-sensitive clinic directory fields
+    const publicDocs = res.docs.map((t: any) => ({
+      id: String(t.id),
+      name: t.name,
+      city: t.city || 'Thrissur',
+      district: t.district || 'Thrissur',
+      state: t.state || 'Kerala',
+      phone: t.phone || null,
+    }))
+
+    return NextResponse.json({ docs: publicDocs })
+  } catch (_err) {
     return NextResponse.json({ docs: [] }, { status: 500 })
   }
 }

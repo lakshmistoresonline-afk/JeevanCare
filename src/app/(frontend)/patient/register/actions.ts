@@ -4,6 +4,9 @@ import { cookies } from 'next/headers'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { normalizePhone } from '@/lib/phone'
+import { rateLimit } from '@/lib/rateLimit'
+
+const MAX_ACTIVATION_ATTEMPTS = 5
 
 export async function patientRegisterAction(
   _prev: ActionResult<{ id: string }> | null,
@@ -15,6 +18,7 @@ export async function patientRegisterAction(
   const password = String(formData.get('password') || '')
   const dob = String(formData.get('dob') || '').trim()
   const gender = String(formData.get('gender') || '').trim()
+  const ageYearsStr = String(formData.get('ageYears') || '').trim()
   const addressLine = String(formData.get('addressLine') || '').trim()
   const city = String(formData.get('city') || '').trim()
   const state = String(formData.get('state') || '').trim()
@@ -28,8 +32,26 @@ export async function patientRegisterAction(
 
   const phone = normalizePhone(rawPhone)
 
+  // Apply rate limiting per phone number
+  const rl = rateLimit(`patient_reg_${phone}`, 5)
+  if (!rl.allowed) {
+    return { ok: false, code: 'RATE_LIMITED', message: 'Too many registration attempts. Please try again later.' }
+  }
+
   try {
     const payload = await getPayloadClient()
+
+    // 0. Validate clinic tenant exists and is active
+    const tenant = await payload.findByID({
+      collection: 'tenants',
+      id: tenantID,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => null)
+
+    if (!tenant || tenant.status !== 'active') {
+      return { ok: false, code: 'FORBIDDEN', message: 'Selected clinic is inactive or not found.' }
+    }
 
     // 1. Detect if a portal account in `users` collection already exists for this normalized mobile or email
     const existingUser = await payload.find({
@@ -86,6 +108,16 @@ export async function patientRegisterAction(
         }
       }
 
+      // Check failed activation attempt limit
+      const attempts = existingPatient.activationAttempts ?? 0
+      if (attempts >= MAX_ACTIVATION_ATTEMPTS) {
+        return {
+          ok: false,
+          code: 'ACTIVATION_RATE_LIMITED',
+          message: 'Too many failed activation attempts. Please contact your clinic for assistance.',
+        }
+      }
+
       // Existing staff-created patient record without portal account.
       // Require ownership verification (Activation Code or MRN match)
       const expectedMrn = (existingPatient.mrn || '').trim().toUpperCase()
@@ -97,7 +129,14 @@ export async function patientRegisterAction(
         (providedCode === expectedMrn || (expectedCode && providedCode === expectedCode))
 
       if (!isVerified) {
-        // Return a generic error message that does NOT disclose secret MRNs
+        // Increment activation attempts counter on failed claim
+        await payload.update({
+          collection: 'patients',
+          id: existingPatient.id,
+          overrideAccess: true,
+          data: { activationAttempts: attempts + 1 } as never,
+        }).catch(() => {})
+
         return {
           ok: false,
           code: 'VERIFICATION_REQUIRED',
@@ -107,7 +146,7 @@ export async function patientRegisterAction(
 
       patientId = String(existingPatient.id)
     } else {
-      // Create new patient record without fake default dates or genders
+      // Create new patient record
       const newPatient = await payload.create({
         collection: 'patients',
         overrideAccess: true,
@@ -116,7 +155,7 @@ export async function patientRegisterAction(
           name: rawName,
           phone,
           dateOfBirth: dob || undefined,
-          ageYears: !dob ? 30 : undefined,
+          ageYears: ageYearsStr ? Number(ageYearsStr) : (!dob ? 30 : undefined),
           gender: (gender || 'female') as any,
           addressLine: addressLine || undefined,
           city: city || 'Thrissur',

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { Payload } from 'payload'
 import { getTestPayload, seedFixture, type Fixture } from './fixtures'
-import { getAvailableSlots, bookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
+import { getAvailableSlots, internalBookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
 import { computeEnd, overlaps } from '@/lib/booking'
 
 describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
@@ -92,7 +92,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     formData1.set('date', date)
     formData1.set('time', time)
 
-    const res1 = await bookAppointment(formData1, f.a.doctor)
+    const res1 = await internalBookAppointment(formData1, f.a.doctor)
     expect(res1.ok).toBe(true)
     if (!res1.ok) return
 
@@ -103,7 +103,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     formData2.set('date', date)
     formData2.set('time', time)
 
-    const res2 = await bookAppointment(formData2, f.a.doctor)
+    const res2 = await internalBookAppointment(formData2, f.a.doctor)
     expect(res2.ok).toBe(false)
     if (res2.ok) return
     expect(res2.code).toBe('SLOT_TAKEN')
@@ -117,7 +117,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     })
 
     // Third booking attempt now succeeds because cancelled appointment freed the slot
-    const res3 = await bookAppointment(formData2, f.a.doctor)
+    const res3 = await internalBookAppointment(formData2, f.a.doctor)
     expect(res3.ok).toBe(true)
   })
 
@@ -135,7 +135,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
       formData.set('doctor', String(f.a.doctor.id))
       formData.set('date', date)
       formData.set('time', time)
-      return bookAppointment(formData, f.a.doctor)
+      return internalBookAppointment(formData, f.a.doctor)
     }
 
     // Fire 2 concurrent simultaneous booking attempts
