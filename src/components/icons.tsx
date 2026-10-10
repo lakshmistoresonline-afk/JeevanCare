@@ -33,6 +33,7 @@ export {
   ChartColumn as IconChart,
   Download as IconDownload,
   House as IconHome,
+  Menu as IconMenu,
   Menu as IconMore,
   FileText as IconFileText,
   Pill as IconPill,
