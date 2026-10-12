@@ -97,6 +97,20 @@ export default async function NewVisitPage({
     )
   }
 
+  const calcAge = (dob?: string | null, ageYears?: number | null) => {
+    if (ageYears != null) return `${ageYears} yrs`
+    if (!dob) return null
+    const birth = new Date(dob)
+    const now = new Date()
+    let age = now.getFullYear() - birth.getFullYear()
+    const m = now.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
+    return age >= 0 ? `${age} yrs` : null
+  }
+
+  const patientAge = calcAge(patient?.dateOfBirth, patient?.ageYears) || 'Age unknown'
+  const patientGender = patient?.gender ? (patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)) : 'Not recorded'
+
   return (
     <div className="mx-auto max-w-6xl">
       {back}
@@ -105,6 +119,8 @@ export default async function NewVisitPage({
         appointmentId={String(appt.id)}
         patientName={patient?.name ?? 'Patient'}
         patientMrn={patient?.mrn}
+        patientAge={patientAge}
+        patientGender={patientGender}
         patientAllergies={patient?.allergies}
         doctorName={(appt.doctor as User)?.name ?? 'Doctor'}
         pastVisits={pastVisits}

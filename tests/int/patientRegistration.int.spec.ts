@@ -87,7 +87,7 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     if (res.ok) return
 
     expect(res.code).toBe('VERIFICATION_REQUIRED')
-    expect(res.message).toMatch(/MRN/i)
+    expect(res.message).toMatch(/Activation Code/i)
 
     // Ensure NO user portal account was created
     const userDocs = await payload.find({
@@ -98,7 +98,7 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     expect(userDocs.totalDocs).toBe(0)
   })
 
-  it('successfully links portal account when valid MRN or activation code is provided', async () => {
+  it('rejects MRN alone as activation credential and successfully links portal account when valid activation code is provided', async () => {
     const staffPatient = await payload.create({
       collection: 'patients',
       data: {
@@ -112,18 +112,37 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
       overrideAccess: true,
     })
 
-    const formData = new FormData()
-    formData.set('name', 'Staff Created Patient 2')
-    formData.set('phone', '03001112224')
-    formData.set('password', 'Test@123')
-    formData.set('tenant', String(f.a.tenant.id))
-    formData.set('activationCode', staffPatient.mrn || '123456') // Supply valid MRN
+    // 1. Attempt using MRN alone (must be REJECTED)
+    const mrnFormData = new FormData()
+    mrnFormData.set('name', 'Staff Created Patient 2')
+    mrnFormData.set('phone', '03001112224')
+    mrnFormData.set('password', 'Test@123')
+    mrnFormData.set('tenant', String(f.a.tenant.id))
+    mrnFormData.set('activationCode', staffPatient.mrn!) // Supply MRN alone
+    const mrnRes = await patientRegisterAction(null, mrnFormData)
+    expect(mrnRes.ok).toBe(false)
 
-    const res = await patientRegisterAction(null, formData)
+    // 2. Attempt using valid single-use activation code (must SUCCEED)
+    const codeFormData = new FormData()
+    codeFormData.set('name', 'Staff Created Patient 2')
+    codeFormData.set('phone', '03001112224')
+    codeFormData.set('password', 'Test@123')
+    codeFormData.set('tenant', String(f.a.tenant.id))
+    codeFormData.set('activationCode', '123456') // Supply valid single-use activation code
+
+    const res = await patientRegisterAction(null, codeFormData)
     expect(res.ok).toBe(true)
     if (!res.ok) return
 
     expect(res.data.id).toBe(String(staffPatient.id))
+
+    // Verify token was invalidated/consumed upon claim
+    const updatedPatient = await payload.findByID({
+      collection: 'patients',
+      id: staffPatient.id,
+      overrideAccess: true,
+    })
+    expect(updatedPatient.activationCode).toBeNull()
 
     // Verify EXACTLY one portal user account is linked to this patient profile
     const userDocs = await payload.find({

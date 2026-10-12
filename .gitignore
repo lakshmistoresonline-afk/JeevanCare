@@ -30,6 +30,10 @@ yarn-error.log*
 .idea/
 .vscode/
 
+# Playwright E2E artifacts
+/playwright-report/
+/test-results/
+
 # vercel
 .vercel
 

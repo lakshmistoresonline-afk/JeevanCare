@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { Payload } from 'payload'
 import { getTestPayload, seedFixture, type Fixture } from './fixtures'
-import { getAvailableSlots, internalBookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
+import { bookAppointment } from '@/app/(frontend)/dashboard/appointments/actions'
+import { internalGetAvailableSlots, internalBookAppointment } from '@/lib/bookingInternal'
 import { computeEnd, overlaps } from '@/lib/booking'
 
 describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
@@ -56,7 +57,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
 
   it('returns valid clickable slots for active doctors within availability windows', async () => {
     const date = futureDateStr(2)
-    const res = await getAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
+    const res = await internalGetAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
     expect(res.ok).toBe(true)
     expect(res.slots).toBeDefined()
     expect(res.slots!.length).toBeGreaterThan(0)
@@ -72,7 +73,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
     })
 
     const date = futureDateStr(2)
-    const slotsRes = await getAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
+    const slotsRes = await internalGetAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
     expect(slotsRes.ok).toBe(false)
     expect(slotsRes.message).toMatch(/inactive/i)
   })
@@ -147,5 +148,23 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
 
     expect(successCount).toBe(1)
     expect(failCount).toBe(1)
+  })
+
+  // =========================================================================
+  // 5. PUBLIC SERVER ACTION BOUNDARY SECURITY TEST
+  // =========================================================================
+
+  it('rejects unauthenticated booking calls through public bookAppointment Server Action', async () => {
+    const formData = new FormData()
+    formData.set('patient', String(f.a.patient.id))
+    formData.set('doctor', String(f.a.doctor.id))
+    formData.set('date', futureDateStr(5))
+    formData.set('time', '10:00 am')
+
+    const res = await bookAppointment(formData)
+    expect(res.ok).toBe(false)
+    if (!res.ok) {
+      expect(res.code).toBe('FORBIDDEN')
+    }
   })
 })

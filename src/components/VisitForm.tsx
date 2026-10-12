@@ -17,6 +17,8 @@ export function VisitForm({
   appointmentId,
   patientName,
   patientMrn,
+  patientAge,
+  patientGender,
   patientAllergies,
   doctorName,
   pastVisits = [],
@@ -24,6 +26,8 @@ export function VisitForm({
   appointmentId: string
   patientName: string
   patientMrn?: string | null
+  patientAge?: string | null
+  patientGender?: string | null
   patientAllergies?: string | null
   doctorName: string
   pastVisits?: { id: string; date: string; diagnosis?: string | null; symptoms?: string | null }[]
@@ -99,11 +103,11 @@ export function VisitForm({
             <div className="flex items-center gap-2">
               <h2 className="font-display text-lg font-bold text-ink">{patientName}</h2>
               <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary">
-                ID: {patientMrn || 'PAT-00123'}
+                ID: {patientMrn || 'N/A'}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              32 yrs | Male · Attending Physician: <span className="font-semibold text-ink">{doctorName}</span>
+              {patientAge || 'Age unknown'} | {patientGender || 'Not recorded'} · Attending Physician: <span className="font-semibold text-ink">{doctorName}</span>
             </p>
           </div>
         </div>

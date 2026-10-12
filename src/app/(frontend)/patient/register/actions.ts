@@ -1,6 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import crypto from 'crypto'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { normalizePhone } from '@/lib/phone'
@@ -119,14 +120,25 @@ export async function patientRegisterAction(
       }
 
       // Existing staff-created patient record without portal account.
-      // Require ownership verification (Activation Code or MRN match)
-      const expectedMrn = (existingPatient.mrn || '').trim().toUpperCase()
-      const expectedCode = (existingPatient.activationCode || '').trim().toUpperCase()
+      // Require ownership verification via single-use activation code / token hash ONLY. MRN is NOT accepted.
       const providedCode = activationCode.toUpperCase()
+      const expectedCode = (existingPatient.activationCode || '').trim().toUpperCase()
+      const tokenHash = existingPatient.activationTokenHash
+      const tokenExp = existingPatient.activationTokenExp ? new Date(existingPatient.activationTokenExp) : null
 
+      // Check token expiry if expiry is set
+      if (tokenExp && new Date() > tokenExp) {
+        return {
+          ok: false,
+          code: 'ACTIVATION_EXPIRED',
+          message: 'Activation code has expired. Please request a new activation code from your clinic.',
+        }
+      }
+
+      const providedHash = providedCode ? crypto.createHash('sha256').update(providedCode).digest('hex') : ''
       const isVerified =
-        providedCode &&
-        (providedCode === expectedMrn || (expectedCode && providedCode === expectedCode))
+        Boolean(providedCode) &&
+        ((expectedCode && providedCode === expectedCode) || (tokenHash && providedHash === tokenHash))
 
       if (!isVerified) {
         // Increment activation attempts counter on failed claim
@@ -140,9 +152,21 @@ export async function patientRegisterAction(
         return {
           ok: false,
           code: 'VERIFICATION_REQUIRED',
-          message: 'A medical record exists for this mobile number. To claim your portal account, please enter your Patient MRN or Activation Code provided on your prescription or clinic receipt.',
+          message: 'A medical record exists for this mobile number. To claim your portal account, please enter the Activation Code provided on your clinic receipt.',
         }
       }
+
+      // Consume/invalidate activation token upon successful claim
+      await payload.update({
+        collection: 'patients',
+        id: existingPatient.id,
+        overrideAccess: true,
+        data: {
+          activationCode: null,
+          activationTokenHash: null,
+          activationTokenExp: null,
+        } as never,
+      }).catch(() => {})
 
       patientId = String(existingPatient.id)
     } else {
