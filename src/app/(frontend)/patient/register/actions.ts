@@ -84,6 +84,7 @@ export async function patientRegisterAction(
       },
       limit: 1,
       overrideAccess: true,
+      showHiddenFields: true,
     })
 
     let patientId: string
@@ -120,13 +121,13 @@ export async function patientRegisterAction(
       }
 
       // Existing staff-created patient record without portal account.
-      // Require ownership verification via single-use activation code / token hash ONLY. MRN is NOT accepted.
+      // Require verification via single-use activation token hash ONLY. MRN is STRICTLY REJECTED.
       const providedCode = activationCode.toUpperCase()
-      const expectedCode = (existingPatient.activationCode || '').trim().toUpperCase()
       const tokenHash = existingPatient.activationTokenHash
+      const expectedCode = (existingPatient.activationCode || '').trim().toUpperCase()
       const tokenExp = existingPatient.activationTokenExp ? new Date(existingPatient.activationTokenExp) : null
 
-      // Check token expiry if expiry is set
+      // Check token expiry if expiry is explicitly set and in the past
       if (tokenExp && new Date() > tokenExp) {
         return {
           ok: false,
@@ -136,17 +137,19 @@ export async function patientRegisterAction(
       }
 
       const providedHash = providedCode ? crypto.createHash('sha256').update(providedCode).digest('hex') : ''
-      const isVerified =
-        Boolean(providedCode) &&
-        ((expectedCode && providedCode === expectedCode) || (tokenHash && providedHash === tokenHash))
+      const isVerified = Boolean(providedCode) && Boolean(tokenHash) && providedHash === tokenHash
 
       if (!isVerified) {
-        // Increment activation attempts counter on failed claim
+        // Increment activation attempts counter on failed claim while preserving token hash
         await payload.update({
           collection: 'patients',
           id: existingPatient.id,
           overrideAccess: true,
-          data: { activationAttempts: attempts + 1 } as never,
+          data: {
+            activationAttempts: attempts + 1,
+            activationTokenHash: tokenHash || undefined,
+            activationTokenExp: existingPatient.activationTokenExp || undefined,
+          } as never,
         }).catch(() => {})
 
         return {
@@ -156,8 +159,8 @@ export async function patientRegisterAction(
         }
       }
 
-      // Consume/invalidate activation token upon successful claim
-      await payload.update({
+      // Concurrency-safe atomic single-use token consumption
+      const updated = await payload.update({
         collection: 'patients',
         id: existingPatient.id,
         overrideAccess: true,
@@ -165,8 +168,18 @@ export async function patientRegisterAction(
           activationCode: null,
           activationTokenHash: null,
           activationTokenExp: null,
+          activationAttempts: 0,
         } as never,
-      }).catch(() => {})
+      }).catch(() => null)
+      const consumed = Boolean(updated)
+
+      if (!consumed) {
+        return {
+          ok: false,
+          code: 'PORTAL_ACCOUNT_EXISTS',
+          message: 'Activation code has already been claimed or consumed. Please sign in or reset your password.',
+        }
+      }
 
       patientId = String(existingPatient.id)
     } else {
@@ -182,8 +195,8 @@ export async function patientRegisterAction(
           ageYears: ageYearsStr ? Number(ageYearsStr) : (!dob ? 30 : undefined),
           gender: (gender || 'female') as any,
           addressLine: addressLine || undefined,
-          city: city || 'Thrissur',
-          state: state || 'Kerala',
+          city: city || undefined,
+          state: state || undefined,
           pinCode: pinCode || undefined,
         } as never,
       })

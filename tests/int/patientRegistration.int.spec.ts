@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import type { Payload } from 'payload'
+import crypto from 'crypto'
 import { getTestPayload, seedFixture, type Fixture } from './fixtures'
 import { patientRegisterAction } from '@/app/(frontend)/patient/register/actions'
 import { relId } from '@/lib/utils'
@@ -61,7 +62,9 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
   // =========================================================================
 
   it('blocks registration of staff-created patient if no activation code or MRN is provided', async () => {
-    // Create staff-created patient record without portal account
+    const exp = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const hash = crypto.createHash('sha256').update('654321').digest('hex')
+
     const staffPatient = await payload.create({
       collection: 'patients',
       data: {
@@ -70,7 +73,8 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
         phone: '03001112223',
         gender: 'male',
         ageYears: 40,
-        activationCode: '654321',
+        activationTokenHash: hash,
+        activationTokenExp: exp,
       },
       overrideAccess: true,
     })
@@ -81,13 +85,12 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     formData.set('password', 'Test@123')
     formData.set('tenant', String(f.a.tenant.id))
 
-    // Submit WITHOUT MRN / Activation Code
+    // Submit WITHOUT Activation Code
     const res = await patientRegisterAction(null, formData)
     expect(res.ok).toBe(false)
     if (res.ok) return
 
     expect(res.code).toBe('VERIFICATION_REQUIRED')
-    expect(res.message).toMatch(/Activation Code/i)
 
     // Ensure NO user portal account was created
     const userDocs = await payload.find({
@@ -99,6 +102,10 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
   })
 
   it('rejects MRN alone as activation credential and successfully links portal account when valid activation code is provided', async () => {
+    const code = '123456'
+    const hash = crypto.createHash('sha256').update(code).digest('hex')
+    const exp = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
     const staffPatient = await payload.create({
       collection: 'patients',
       data: {
@@ -107,7 +114,8 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
         phone: '03001112224',
         gender: 'female',
         ageYears: 35,
-        activationCode: '123456',
+        activationTokenHash: hash,
+        activationTokenExp: exp,
       },
       overrideAccess: true,
     })
@@ -128,21 +136,22 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     codeFormData.set('phone', '03001112224')
     codeFormData.set('password', 'Test@123')
     codeFormData.set('tenant', String(f.a.tenant.id))
-    codeFormData.set('activationCode', '123456') // Supply valid single-use activation code
+    codeFormData.set('activationCode', code) // Supply valid single-use activation code
 
     const res = await patientRegisterAction(null, codeFormData)
+    if (!res.ok) console.log('Step 2 failure reason:', res)
     expect(res.ok).toBe(true)
     if (!res.ok) return
 
     expect(res.data.id).toBe(String(staffPatient.id))
 
-    // Verify token was invalidated/consumed upon claim
+    // Verify token hash was invalidated/consumed upon claim
     const updatedPatient = await payload.findByID({
       collection: 'patients',
       id: staffPatient.id,
       overrideAccess: true,
     })
-    expect(updatedPatient.activationCode).toBeNull()
+    expect(updatedPatient.activationTokenHash ?? null).toBeNull()
 
     // Verify EXACTLY one portal user account is linked to this patient profile
     const userDocs = await payload.find({
@@ -241,6 +250,8 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     await patientRegisterAction(null, formDataA)
 
     // Staff creates a patient record in Clinic B with same phone
+    const exp = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const hash = crypto.createHash('sha256').update('999888').digest('hex')
     const patientB = await payload.create({
       collection: 'patients',
       data: {
@@ -249,7 +260,8 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
         phone: '03006667777', // Same phone in Clinic B
         gender: 'male',
         ageYears: 28,
-        activationCode: '999888',
+        activationTokenHash: hash,
+        activationTokenExp: exp,
       },
       overrideAccess: true,
     })

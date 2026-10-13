@@ -3,6 +3,10 @@ import 'dotenv/config'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
 
+// Set test environment defaults if not provided in environment
+process.env.JEEVANCARE_E2E_OWNER_EMAIL = process.env.JEEVANCARE_E2E_OWNER_EMAIL || 'owner1@test.com'
+process.env.JEEVANCARE_E2E_OWNER_PASSWORD = process.env.JEEVANCARE_E2E_OWNER_PASSWORD || 'Test@123'
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60_000,
