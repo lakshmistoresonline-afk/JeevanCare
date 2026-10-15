@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -22,15 +23,120 @@ export async function resolveActorTenantInternal(explicitUser?: User) {
   }
   if (!user) return null
   if (user.active === false) return null
-  if (user.role === 'superAdmin') return null
-  if (user.role === 'patient') return { user, isPatient: true } as any
+  if (user.role === 'patient') return { user, isPatient: true, isSuperAdmin: false } as any
   const payload = await getPayloadClient()
+  if (user.role === 'superAdmin') {
+    return { user, payload, tenantID: null, tenant: null, isSuperAdmin: true, isPatient: false }
+  }
+
   const tenantID = getTenantID(user)
   const tenant = tenantID
     ? await payload.findByID({ collection: 'tenants', id: tenantID, depth: 0, overrideAccess: true })
     : null
   if (tenant && tenant.status !== 'active') return null
-  return { user, payload, tenantID: tenantID!, tenant: tenant as Tenant | null, isPatient: false }
+  return { user, payload, tenantID: tenantID!, tenant: tenant as Tenant | null, isSuperAdmin: false, isPatient: false }
+}
+
+export async function internalIssuePatientActivationToken(
+  patientId: string,
+  explicitActor?: User,
+): Promise<ActionResult<{ activationCode: string; expiresAt: string }>> {
+  const ctx = await resolveActorTenantInternal(explicitActor)
+  if (!ctx || (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to issue activation codes." }
+  }
+  const { user, payload, tenantID, isSuperAdmin } = ctx
+  if (!STAFF_ROLES.includes(user.role as any) && user.role !== 'superAdmin') {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to issue activation codes." }
+  }
+
+  try {
+    const patient = await payload.findByID({
+      collection: 'patients',
+      id: patientId,
+      depth: 0,
+      user,
+      overrideAccess: isSuperAdmin,
+    }).catch(() => null)
+
+    if (!patient) {
+      return { ok: false, code: 'FORBIDDEN', message: 'Patient not found in your clinic.' }
+    }
+
+    const patientTenantID = relId(patient.tenant) || ''
+    if (!isSuperAdmin && (!tenantID || patientTenantID !== String(tenantID))) {
+      return { ok: false, code: 'FORBIDDEN', message: 'Patient not found in your clinic.' }
+    }
+
+    const rawCode = String(crypto.randomInt(100000, 999999))
+    const tokenHash = crypto.createHash('sha256').update(rawCode).digest('hex')
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
+    let updateSuccess = false
+
+    if (db) {
+      let queryId = (patient as any)._id || patient.id
+      if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
+        try {
+          const { ObjectId } = await import('mongodb')
+          queryId = new ObjectId(queryId)
+        } catch {}
+      }
+      const updateRes = await db.collection('patients').updateOne(
+        { _id: queryId },
+        {
+          $set: {
+            activationTokenHash: tokenHash,
+            activationTokenExp: expiresAt.toISOString(),
+            activationAttempts: 0,
+          },
+          $unset: { activationCode: '', activeClaimId: '', claimedAt: '' },
+        },
+      )
+      updateSuccess = updateRes.modifiedCount > 0
+    } else {
+      const updated = await payload.update({
+        collection: 'patients',
+        id: patientId,
+        user,
+        overrideAccess: isSuperAdmin,
+        data: {
+          activationCode: null,
+          activationTokenHash: tokenHash,
+          activationTokenExp: expiresAt.toISOString(),
+          activationAttempts: 0,
+        } as never,
+      }).catch(() => null)
+      updateSuccess = Boolean(updated)
+    }
+
+    if (!updateSuccess) {
+      return { ok: false, code: 'NOT_FOUND', message: 'Patient record update failed.' }
+    }
+
+    await payload.create({
+      collection: 'auditLogs',
+      overrideAccess: true,
+      data: {
+        tenant: patientTenantID || tenantID,
+        user: user.id,
+        action: 'patient.activation_code_issued',
+        summary: `Issued portal activation code for patient ${patient.name} (${patient.mrn})`,
+        details: JSON.stringify({ patientId, expiresAt: expiresAt.toISOString() }),
+      } as never,
+    }).catch(() => {})
+
+    return {
+      ok: true,
+      data: {
+        activationCode: rawCode,
+        expiresAt: expiresAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      },
+    }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
 }
 
 export async function internalBookAppointment(
@@ -42,11 +148,11 @@ export async function internalBookAppointment(
   if (ctx && (ctx as any).isPatient) {
     return { ok: false, code: 'FORBIDDEN', message: 'Patients must use the patient booking portal.' }
   }
-  if (!ctx || !ctx.tenantID || !ctx.tenant) {
+  if (!ctx || (!ctx.isSuperAdmin && (!ctx.tenantID || !ctx.tenant))) {
     return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to book appointments or clinic is inactive." }
   }
 
-  const { user, payload, tenantID, tenant } = ctx
+  const { user, payload, tenantID, tenant, isSuperAdmin } = ctx
 
   if (!STAFF_ROLES.includes(user.role as any) && user.role !== 'superAdmin') {
     return { ok: false, code: 'FORBIDDEN', message: 'Only staff can book appointments.' }
@@ -68,7 +174,7 @@ export async function internalBookAppointment(
     return { ok: false, code: 'VALIDATION', message: 'Selected doctor is inactive or not found.' }
   }
   const docTenantID = relId(doctor.tenant) || ''
-  if (!docTenantID || docTenantID !== tenantID) {
+  if (user.role !== 'superAdmin' && (!docTenantID || docTenantID !== tenantID)) {
     return { ok: false, code: 'FORBIDDEN', message: 'Doctor does not belong to your clinic.' }
   }
 
@@ -77,12 +183,26 @@ export async function internalBookAppointment(
     return { ok: false, code: 'VALIDATION', message: 'Patient not found.' }
   }
   const patTenantID = relId(patientDoc.tenant) || ''
-  if (patTenantID !== tenantID) {
+  if (user.role !== 'superAdmin' && patTenantID !== tenantID) {
     return { ok: false, code: 'FORBIDDEN', message: 'Patient does not belong to your clinic.' }
   }
 
-  const durationMins = Number(formData.get('durationMins') || tenant?.settings?.appointmentDurationMins || 15)
-  const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+  // Cross-clinic doctor and patient matching validation
+  if (docTenantID && patTenantID && docTenantID !== patTenantID) {
+    return { ok: false, code: 'FORBIDDEN', message: 'Doctor and patient must belong to the same clinic.' }
+  }
+
+  const targetTenantID = docTenantID || patTenantID || tenantID!
+  const targetTenant = (isSuperAdmin && targetTenantID
+    ? await payload.findByID({ collection: 'tenants', id: targetTenantID, depth: 0, overrideAccess: true }).catch(() => null)
+    : tenant) as Tenant | null
+
+  if (targetTenant && targetTenant.status !== 'active') {
+    return { ok: false, code: 'FORBIDDEN', message: 'Selected clinic is inactive.' }
+  }
+
+  const durationMins = Number(formData.get('durationMins') || targetTenant?.settings?.appointmentDurationMins || 15)
+  const tz = targetTenant?.settings?.timezone || DEFAULT_TIMEZONE
   const start = wallTimeToUTC(tz, date, time)
   const end = computeEnd(start, durationMins)
 
@@ -101,7 +221,7 @@ export async function internalBookAppointment(
 
   const conflict = await findConflict({
     payload,
-    tenantID,
+    tenantID: targetTenantID,
     doctorID,
     start,
     end,
@@ -120,7 +240,7 @@ export async function internalBookAppointment(
       user,
       overrideAccess: true,
       data: {
-        tenant: tenantID,
+        tenant: targetTenantID,
         patient: patientID,
         doctor: doctorID,
         start: start.toISOString(),

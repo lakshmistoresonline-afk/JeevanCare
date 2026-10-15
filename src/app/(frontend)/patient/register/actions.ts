@@ -39,6 +39,11 @@ export async function patientRegisterAction(
     return { ok: false, code: 'RATE_LIMITED', message: 'Too many registration attempts. Please try again later.' }
   }
 
+  let existingPatientForRecovery: any = null
+  let claimIdForRecovery: string | null = null
+  let tokenWasConsumed = false
+  let userAccountCreated = false
+
   try {
     const payload = await getPayloadClient()
 
@@ -91,6 +96,7 @@ export async function patientRegisterAction(
 
     if (existingPatientRes.docs.length > 0) {
       const existingPatient = existingPatientRes.docs[0] as any
+      existingPatientForRecovery = existingPatient
 
       // Check if this existing patient record ALREADY has a portal user account linked
       const existingPortalUser = await payload.find({
@@ -121,14 +127,13 @@ export async function patientRegisterAction(
       }
 
       // Existing staff-created patient record without portal account.
-      // Require verification via single-use activation token hash ONLY. MRN is STRICTLY REJECTED.
+      // Require verification via single-use activation token hash ONLY. MRN & Plaintext codes are STRICTLY REJECTED.
       const providedCode = activationCode.toUpperCase()
       const tokenHash = existingPatient.activationTokenHash
-      const expectedCode = (existingPatient.activationCode || '').trim().toUpperCase()
       const tokenExp = existingPatient.activationTokenExp ? new Date(existingPatient.activationTokenExp) : null
 
-      // Check token expiry if expiry is explicitly set and in the past
-      if (tokenExp && new Date() > tokenExp) {
+      // Mandatory Expiry Check: If activationTokenExp is missing or in the past, FAIL CLOSED.
+      if (!tokenExp || new Date() > tokenExp) {
         return {
           ok: false,
           code: 'ACTIVATION_EXPIRED',
@@ -139,18 +144,35 @@ export async function patientRegisterAction(
       const providedHash = providedCode ? crypto.createHash('sha256').update(providedCode).digest('hex') : ''
       const isVerified = Boolean(providedCode) && Boolean(tokenHash) && providedHash === tokenHash
 
+      const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
+
+      let queryId = existingPatient._id || existingPatient.id
+      if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
+        try {
+          const { ObjectId } = await import('mongodb')
+          queryId = new ObjectId(queryId)
+        } catch {}
+      }
+
       if (!isVerified) {
-        // Increment activation attempts counter on failed claim while preserving token hash
-        await payload.update({
-          collection: 'patients',
-          id: existingPatient.id,
-          overrideAccess: true,
-          data: {
-            activationAttempts: attempts + 1,
-            activationTokenHash: tokenHash || undefined,
-            activationTokenExp: existingPatient.activationTokenExp || undefined,
-          } as never,
-        }).catch(() => {})
+        // Atomic increment of activation attempts counter on failed claim
+        if (db) {
+          await db.collection('patients').updateOne(
+            { _id: queryId },
+            { $inc: { activationAttempts: 1 } },
+          ).catch(() => {})
+        } else {
+          await payload.update({
+            collection: 'patients',
+            id: existingPatient.id,
+            overrideAccess: true,
+            data: {
+              activationAttempts: attempts + 1,
+              activationTokenHash: tokenHash || undefined,
+              activationTokenExp: existingPatient.activationTokenExp || undefined,
+            } as never,
+          }).catch(() => {})
+        }
 
         return {
           ok: false,
@@ -159,21 +181,33 @@ export async function patientRegisterAction(
         }
       }
 
-      // Concurrency-safe atomic single-use token consumption
-      const updated = await payload.update({
-        collection: 'patients',
-        id: existingPatient.id,
-        overrideAccess: true,
-        data: {
-          activationCode: null,
-          activationTokenHash: null,
-          activationTokenExp: null,
-          activationAttempts: 0,
-        } as never,
-      }).catch(() => null)
-      const consumed = Boolean(updated)
+      // Database-level conditional atomic single-use token consumption with claim ownership marker
+      if (!db) {
+        return { ok: false, code: 'SYSTEM_ERROR', message: 'Database connection error during activation claim.' }
+      }
 
-      if (!consumed) {
+      const now = new Date()
+      const nowIso = now.toISOString()
+      const claimId = crypto.randomUUID()
+      claimIdForRecovery = claimId
+
+      const updateRes = await db.collection('patients').updateOne(
+        {
+          _id: queryId,
+          activationTokenHash: tokenHash, // Match condition ensures ONLY ONE concurrent request wins!
+          $or: [
+            { activationTokenExp: { $gt: now } },
+            { activationTokenExp: { $gt: nowIso } },
+          ],
+          activationAttempts: { $lt: MAX_ACTIVATION_ATTEMPTS },
+        },
+        {
+          $unset: { activationCode: '', activationTokenHash: '', activationTokenExp: '' },
+          $set: { activationAttempts: 0, activeClaimId: claimId, claimedAt: nowIso },
+        },
+      )
+
+      if (updateRes.modifiedCount === 0) {
         return {
           ok: false,
           code: 'PORTAL_ACCOUNT_EXISTS',
@@ -181,9 +215,33 @@ export async function patientRegisterAction(
         }
       }
 
+      tokenWasConsumed = true
       patientId = String(existingPatient.id)
     } else {
-      // Create new patient record
+      // Validate demographics for new patient creation (no fabricated defaults)
+      if (!dob && !ageYearsStr) {
+        return { ok: false, code: 'VALIDATION', message: 'Date of birth or age is required.' }
+      }
+      if (!gender) {
+        return { ok: false, code: 'VALIDATION', message: 'Gender is required.' }
+      }
+
+      let parsedAge: number | undefined = undefined
+      if (ageYearsStr) {
+        parsedAge = Number(ageYearsStr)
+        if (isNaN(parsedAge) || parsedAge < 0 || parsedAge > 130) {
+          return { ok: false, code: 'VALIDATION', message: 'Enter a valid age between 0 and 130 years.' }
+        }
+      }
+
+      if (dob) {
+        const birthDate = new Date(dob)
+        const now = new Date()
+        if (isNaN(birthDate.getTime()) || birthDate > now || birthDate.getFullYear() < now.getFullYear() - 130) {
+          return { ok: false, code: 'VALIDATION', message: 'Enter a valid date of birth.' }
+        }
+      }
+
       const newPatient = await payload.create({
         collection: 'patients',
         overrideAccess: true,
@@ -192,8 +250,8 @@ export async function patientRegisterAction(
           name: rawName,
           phone,
           dateOfBirth: dob || undefined,
-          ageYears: ageYearsStr ? Number(ageYearsStr) : (!dob ? 30 : undefined),
-          gender: (gender || 'female') as any,
+          ageYears: parsedAge,
+          gender: gender as any,
           addressLine: addressLine || undefined,
           city: city || undefined,
           state: state || undefined,
@@ -221,6 +279,26 @@ export async function patientRegisterAction(
       } as never,
     })
 
+    userAccountCreated = Boolean(newUser?.id)
+
+    // Clear activeClaimId and claimedAt now that user portal account creation succeeded
+    if (claimIdForRecovery && existingPatientForRecovery) {
+      const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
+      if (db) {
+        let queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
+        if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
+          try {
+            const { ObjectId } = await import('mongodb')
+            queryId = new ObjectId(queryId)
+          } catch {}
+        }
+        await db.collection('patients').updateOne(
+          { _id: queryId, activeClaimId: claimIdForRecovery },
+          { $unset: { activeClaimId: '', claimedAt: '' } },
+        ).catch(() => {})
+      }
+    }
+
     // 4. Log in the user automatically
     const loginRes = await payload.login({
       collection: 'users',
@@ -247,6 +325,56 @@ export async function patientRegisterAction(
 
     return { ok: true, data: { id: patientId } }
   } catch (err: any) {
+    // Failure Recovery: If token was consumed for an existing patient BUT user creation failed,
+    // perform atomic conditional rollback ONLY IF:
+    // 1. User account creation failed (!userAccountCreated)
+    // 2. Authoritative DB check confirms NO user portal account exists in users collection for this patient
+    // 3. The claim ownership marker matches (activeClaimId === claimIdForRecovery)
+    if (tokenWasConsumed && !userAccountCreated && claimIdForRecovery && existingPatientForRecovery) {
+      try {
+        const payload = await getPayloadClient()
+        // Authoritative Database check: Verify no user portal account exists in users collection for this patient
+        const existingPortalUser = await payload.find({
+          collection: 'users',
+          where: { patientProfile: { equals: existingPatientForRecovery.id } },
+          overrideAccess: true,
+          limit: 1,
+        })
+
+        if (existingPortalUser.docs.length === 0) {
+          const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
+
+          if (db) {
+            let queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
+            if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
+              try {
+                const { ObjectId } = await import('mongodb')
+                queryId = new ObjectId(queryId)
+              } catch {}
+            }
+
+            // Atomic conditional rollback matching ONLY THIS REQUEST'S activeClaimId!
+            // If staff issued a new activation code in the meantime, activeClaimId was cleared/changed,
+            // so this update modifies 0 docs and CANNOT overwrite staff's newly issued activation token!
+            await db.collection('patients').updateOne(
+              {
+                _id: queryId,
+                activeClaimId: claimIdForRecovery, // Claim ownership match requirement!
+              },
+              {
+                $set: {
+                  activationTokenHash: existingPatientForRecovery.activationTokenHash,
+                  activationTokenExp: existingPatientForRecovery.activationTokenExp,
+                  activationAttempts: existingPatientForRecovery.activationAttempts ?? 0,
+                },
+                $unset: { activeClaimId: '', claimedAt: '' },
+              },
+            )
+          }
+        }
+      } catch {}
+    }
+
     const isDuplicate =
       err?.data?.errors?.some((e: any) => String(e?.message || '').toLowerCase().includes('unique')) ||
       String(err?.message || '').toLowerCase().includes('unique')

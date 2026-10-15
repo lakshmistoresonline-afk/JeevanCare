@@ -28,6 +28,9 @@ export default defineConfig({
           url: BASE_URL,
           timeout: 120_000,
           reuseExistingServer: true,
+          env: {
+            NODE_ENV: 'production',
+          },
         },
       }),
   projects: [

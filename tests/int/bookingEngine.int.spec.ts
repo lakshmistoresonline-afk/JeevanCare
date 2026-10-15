@@ -64,18 +64,28 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
   })
 
   it('rejects generating slots or booking for an inactive doctor', async () => {
-    // Deactivate doctor
-    await payload.update({
-      collection: 'users',
-      id: f.a.doctor.id,
-      data: { active: false } as never,
-      overrideAccess: true,
-    })
+    try {
+      // Deactivate doctor
+      await payload.update({
+        collection: 'users',
+        id: f.a.doctor.id,
+        data: { active: false } as never,
+        overrideAccess: true,
+      })
 
-    const date = futureDateStr(2)
-    const slotsRes = await internalGetAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
-    expect(slotsRes.ok).toBe(false)
-    expect(slotsRes.message).toMatch(/inactive/i)
+      const date = futureDateStr(2)
+      const slotsRes = await internalGetAvailableSlots(String(f.a.doctor.id), date, f.a.doctor)
+      expect(slotsRes.ok).toBe(false)
+      expect(slotsRes.message).toMatch(/inactive/i)
+    } finally {
+      // Restore doctor active state so subsequent test suites aren't polluted
+      await payload.update({
+        collection: 'users',
+        id: f.a.doctor.id,
+        data: { active: true } as never,
+        overrideAccess: true,
+      })
+    }
   })
 
   // =========================================================================
@@ -123,7 +133,69 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
   })
 
   // =========================================================================
-  // 4. CONCURRENT SIMULTANEOUS BOOKING RACE CONDITION TEST
+  // 4. TENANT ISOLATION & AUTHORIZATION SUITE
+  // =========================================================================
+
+  it('prohibits Clinic A staff from booking a Clinic B doctor', async () => {
+    const date = futureDateStr(3)
+    const time = '10:00 am'
+
+    const formData = new FormData()
+    formData.set('patient', String(f.a.patient.id)) // Clinic A patient
+    formData.set('doctor', String(f.b.doctor.id))   // Clinic B doctor
+    formData.set('date', date)
+    formData.set('time', time)
+
+    const res = await internalBookAppointment(formData, f.a.owner)
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.code).toBe('FORBIDDEN')
+  })
+
+  it('prohibits Clinic A staff from booking a Clinic B patient', async () => {
+    const date = futureDateStr(3)
+    const time = '10:30 am'
+
+    const formData = new FormData()
+    formData.set('patient', String(f.b.patient.id)) // Clinic B patient
+    formData.set('doctor', String(f.a.doctor.id))   // Clinic A doctor
+    formData.set('date', date)
+    formData.set('time', time)
+
+    const res = await internalBookAppointment(formData, f.a.receptionist)
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.code).toBe('FORBIDDEN')
+  })
+
+  it('allows authorized staff to book a doctor and patient within their own clinic', async () => {
+    const date = futureDateStr(3)
+    const time = '11:30 am'
+
+    const formData = new FormData()
+    formData.set('patient', String(f.a.patient.id))
+    formData.set('doctor', String(f.a.doctor.id))
+    formData.set('date', date)
+    formData.set('time', time)
+
+    const res = await internalBookAppointment(formData, f.a.receptionist)
+    expect(res.ok).toBe(true)
+  })
+
+  it('allows super-admin to book appointments across clinics when doctor and patient belong to same clinic', async () => {
+    const date = futureDateStr(3)
+    const time = '01:00 pm'
+
+    const formData = new FormData()
+    formData.set('patient', String(f.b.patient.id)) // Clinic B patient
+    formData.set('doctor', String(f.b.doctor.id))   // Clinic B doctor
+    formData.set('date', date)
+    formData.set('time', time)
+
+    const res = await internalBookAppointment(formData, f.superAdmin)
+    expect(res.ok).toBe(true)
+  })
+
+  // =========================================================================
+  // 5. CONCURRENT SIMULTANEOUS BOOKING RACE CONDITION TEST
   // =========================================================================
 
   it('handles simultaneous concurrent booking attempts for the same slot (race condition)', async () => {
@@ -151,7 +223,7 @@ describe('Production-Grade Appointment Slot Engine & Concurrency Suite', () => {
   })
 
   // =========================================================================
-  // 5. PUBLIC SERVER ACTION BOUNDARY SECURITY TEST
+  // 6. PUBLIC SERVER ACTION BOUNDARY SECURITY TEST
   // =========================================================================
 
   it('rejects unauthenticated booking calls through public bookAppointment Server Action', async () => {

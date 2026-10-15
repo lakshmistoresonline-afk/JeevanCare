@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import type { User } from '@/payload-types'
 
 export type PatientHit = { id: string; name: string; phone: string; mrn: string }
 
@@ -138,62 +139,12 @@ export async function createPatient(input: PatientInput): Promise<ActionResult<P
 export async function issuePatientActivationToken(
   patientId: string,
 ): Promise<ActionResult<{ activationCode: string; expiresAt: string }>> {
-  const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to issue activation codes." }
-
-  try {
-    const patient = await c.payload.findByID({
-      collection: 'patients',
-      id: patientId,
-      depth: 0,
-      user: c.user,
-      overrideAccess: false,
-    })
-
-    if (!patient || String((patient as any).tenant) !== String(c.tenantID)) {
-      return { ok: false, code: 'FORBIDDEN', message: 'Patient not found in your clinic.' }
-    }
-
-    const rawCode = String(crypto.randomInt(100000, 999999))
-    const tokenHash = crypto.createHash('sha256').update(rawCode).digest('hex')
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-
-    await c.payload.update({
-      collection: 'patients',
-      id: patientId,
-      user: c.user,
-      overrideAccess: false,
-      data: {
-        activationCode: null, // Plaintext is NEVER stored in MongoDB; hash-only
-        activationTokenHash: tokenHash,
-        activationTokenExp: expiresAt.toISOString(),
-        activationAttempts: 0,
-      } as never,
-    })
-
-    await c.payload.create({
-      collection: 'auditLogs',
-      overrideAccess: true,
-      data: {
-        tenant: c.tenantID,
-        user: c.user.id,
-        action: 'patient.activation_code_issued',
-        summary: `Issued portal activation code for patient ${patient.name} (${patient.mrn})`,
-        details: JSON.stringify({ patientId, expiresAt: expiresAt.toISOString() }),
-      } as never,
-    }).catch(() => {})
-
-    revalidatePath(`/dashboard/patients/${patientId}`)
-    return {
-      ok: true,
-      data: {
-        activationCode: rawCode,
-        expiresAt: expiresAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-      },
-    }
-  } catch (err) {
-    return { ok: false, ...toActionError(err) }
+  const { internalIssuePatientActivationToken } = await import('@/lib/bookingInternal')
+  const res = await internalIssuePatientActivationToken(patientId)
+  if (res.ok) {
+    try { revalidatePath(`/dashboard/patients/${patientId}`) } catch {}
   }
+  return res
 }
 
 export async function uploadMedicalDocument(formData: FormData): Promise<ActionResult<{ id: string }>> {
