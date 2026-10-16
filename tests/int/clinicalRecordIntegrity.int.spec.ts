@@ -121,9 +121,8 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
   it('rejects recording a visit for cancelled or no-show appointments', async () => {
     const cancelledAppt = await payload.create({
       collection: 'appointments',
-      req: { payload, user: f.a.owner } as any,
+      user: f.a.owner,
       overrideAccess: true,
-      context: { disableVerification: true },
       data: {
         tenant: String(f.a.tenant.id),
         patient: String(f.a.patient.id),

@@ -151,9 +151,9 @@ export const Appointments: CollectionConfig = {
       relationTo: 'patients',
       required: true,
       filterOptions: ({ user, req }) => {
-        if (!user || (req as any)?.overrideAccess || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+        if (!user || (req as any)?.overrideAccess || (req as any)?.payload?.overrideAccess || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
-        return tenantID ? { tenant: { equals: tenantID } } : true
+        return (tenantID ? { tenant: { equals: tenantID } } : { id: { equals: '000000000000000000000000' } }) as any
       },
     },
     {
@@ -162,11 +162,10 @@ export const Appointments: CollectionConfig = {
       relationTo: 'users',
       required: true,
       filterOptions: ({ user, req }) => {
-        if (!user || (req as any)?.overrideAccess || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
+        if (!user || (req as any)?.overrideAccess || (req as any)?.payload?.overrideAccess || (req as any)?.context?.disableVerification || isSuperAdmin(user as any) || (user as any).role !== 'patient') return true
         const tenantID = getTenantID(user as any)
-        const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
-        if (tenantID) base.tenant = { equals: tenantID }
-        return base as any
+        if (!tenantID) return { id: { equals: '000000000000000000000000' } } as any
+        return { role: { equals: 'doctor' }, active: { equals: true }, tenant: { equals: tenantID } } as any
       },
     },
     {
