@@ -119,10 +119,12 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
   // =========================================================================
 
   it('rejects recording a visit for cancelled or no-show appointments', async () => {
+    // 1. Create cancelled & no-show appointment fixtures first
     const cancelledAppt = await payload.create({
       collection: 'appointments',
+      user: f.a.owner,
       overrideAccess: true,
-      context: { disableVerification: true },
+      req: { payload, user: f.a.owner, transactionID: null } as any,
       data: {
         tenant: String(f.a.tenant.id),
         patient: String(f.a.patient.id),
@@ -134,7 +136,23 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
       },
     })
 
-    const attempt = payload.create({
+    const noShowAppt = await payload.create({
+      collection: 'appointments',
+      user: f.a.owner,
+      overrideAccess: true,
+      req: { payload, user: f.a.owner, transactionID: null } as any,
+      data: {
+        tenant: String(f.a.tenant.id),
+        patient: String(f.a.patient.id),
+        doctor: String(f.a.doctor.id),
+        start: new Date().toISOString(),
+        durationMins: 15,
+        status: 'no-show',
+      },
+    })
+
+    // 2. Test visit rejection for cancelled appointment
+    const attemptCancelled = payload.create({
       collection: 'visits',
       data: {
         tenant: f.a.tenant.id,
@@ -147,7 +165,23 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
       overrideAccess: true,
     })
 
-    await expect(attempt).rejects.toBeTruthy()
+    await expect(attemptCancelled).rejects.toThrow('Check the patient in before recording a visit.')
+
+    // 3. Test visit rejection for no-show appointment
+    const attemptNoShow = payload.create({
+      collection: 'visits',
+      data: {
+        tenant: f.a.tenant.id,
+        patient: f.a.patient.id,
+        doctor: f.a.doctor.id,
+        appointment: noShowAppt.id,
+        symptoms: 'Fever',
+        diagnosis: 'Flu',
+      } as any,
+      overrideAccess: true,
+    })
+
+    await expect(attemptNoShow).rejects.toThrow('Check the patient in before recording a visit.')
   })
 
   // =========================================================================
