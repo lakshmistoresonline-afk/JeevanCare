@@ -119,12 +119,12 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
   // =========================================================================
 
   it('rejects recording a visit for cancelled or no-show appointments', async () => {
-    // 1. Create cancelled & no-show appointment fixtures first
+    // 1. Create cancelled & no-show appointment fixtures
     const cancelledAppt = await payload.create({
       collection: 'appointments',
       user: f.a.owner,
       overrideAccess: true,
-      req: { payload, user: f.a.owner, transactionID: null } as any,
+      context: { disableVerification: true },
       data: {
         tenant: String(f.a.tenant.id),
         patient: String(f.a.patient.id),
@@ -140,7 +140,7 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
       collection: 'appointments',
       user: f.a.owner,
       overrideAccess: true,
-      req: { payload, user: f.a.owner, transactionID: null } as any,
+      context: { disableVerification: true },
       data: {
         tenant: String(f.a.tenant.id),
         patient: String(f.a.patient.id),
