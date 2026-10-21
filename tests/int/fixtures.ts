@@ -14,8 +14,101 @@ export async function getTestPayload(): Promise<Payload> {
 // Delete children before parents so nothing dangles mid-wipe.
 const COLLECTIONS = ['invoices', 'visits', 'appointments', 'patients', 'users', 'tenants'] as const
 
+/** Approved dedicated test database names */
+const APPROVED_TEST_DB_NAMES = ['jeevancare_test', 'jeevancare-test', 'jeevancare_test_db'] as const
+
+/** Prohibited production/UAT database names */
+const PROHIBITED_DB_NAMES = ['jeevancare', 'production', 'prod', 'jeevancare_prod', 'jeevancare_uat'] as const
+
+/** Parse database name from MongoDB connection string */
+export function getDatabaseNameFromUrl(urlStr: string): string | null {
+  if (!urlStr || typeof urlStr !== 'string') return null
+  try {
+    const cleanUrl = urlStr.trim()
+    const match = cleanUrl.match(/mongodb(?:\+srv)?:\/\/[^\/]+\/([^?#]+)/i)
+    if (match && match[1]) {
+      return match[1].toLowerCase()
+    }
+  } catch (_) {}
+  return null
+}
+
+/** Fail-closed database safety guard for integration test wipes */
+export function checkTestDatabaseSafety(rawUrl?: string, payload?: Payload): { ok: boolean; reason?: string; dbName?: string; liveDbName?: string } {
+  const urlToTest = rawUrl ?? (process.env.DATABASE_URL || '')
+  if (!urlToTest) {
+    return { ok: false, reason: 'Refusing to run integration test wipes: DATABASE_URL environment variable is empty or undefined.' }
+  }
+
+  const dbName = getDatabaseNameFromUrl(urlToTest)
+  if (!dbName) {
+    return { ok: false, reason: 'Refusing to run integration test wipes: Could not parse database name from DATABASE_URL.' }
+  }
+
+  if (PROHIBITED_DB_NAMES.includes(dbName as any)) {
+    return {
+      ok: false,
+      dbName,
+      reason: `Refusing to run destructive integration test wipes: Database '${dbName}' is a protected UAT/Production database.`,
+    }
+  }
+
+  if (!APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
+    return {
+      ok: false,
+      dbName,
+      reason: `Refusing to run destructive integration test wipes: Configured database '${dbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
+    }
+  }
+
+  if (payload) {
+    const liveDbName = ((payload.db as any)?.connection?.db?.databaseName || (payload.db as any)?.connection?.name || '').toLowerCase()
+    if (!liveDbName) {
+      return {
+        ok: false,
+        dbName,
+        reason: 'Refusing to run destructive integration test wipes: Live connected database name could not be verified on the Payload instance.',
+      }
+    }
+
+    if (PROHIBITED_DB_NAMES.includes(liveDbName as any)) {
+      return {
+        ok: false,
+        dbName,
+        liveDbName,
+        reason: `Refusing to run destructive integration test wipes: Connected live database '${liveDbName}' is a protected UAT/Production database.`,
+      }
+    }
+
+    if (!APPROVED_TEST_DB_NAMES.includes(liveDbName as any)) {
+      return {
+        ok: false,
+        dbName,
+        liveDbName,
+        reason: `Refusing to run destructive integration test wipes: Connected live database '${liveDbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
+      }
+    }
+
+    if (liveDbName !== dbName) {
+      return {
+        ok: false,
+        dbName,
+        liveDbName,
+        reason: `Refusing to run destructive integration test wipes: Configured database ('${dbName}') and live connected database ('${liveDbName}') do not match.`,
+      }
+    }
+  }
+
+  return { ok: true, dbName, liveDbName: payload ? (((payload.db as any)?.connection?.db?.databaseName || (payload.db as any)?.connection?.name || '').toLowerCase()) : undefined }
+}
+
 /** Wipe all data so each suite starts clean. */
 export async function wipe(payload: Payload): Promise<void> {
+  const safety = checkTestDatabaseSafety(process.env.DATABASE_URL, payload)
+  if (!safety.ok) {
+    throw new Error(`INTEGRATION TEST SAFETY GUARD BLOCK: ${safety.reason}`)
+  }
+
   for (const collection of COLLECTIONS) {
     await payload.delete({ collection, where: {}, overrideAccess: true })
   }
