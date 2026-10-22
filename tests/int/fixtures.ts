@@ -110,7 +110,7 @@ export async function wipe(payload: Payload): Promise<void> {
   }
 
   for (const collection of COLLECTIONS) {
-    await payload.delete({ collection, where: {}, overrideAccess: true })
+    await payload.delete({ collection, where: {}, overrideAccess: true, disableTransaction: true })
   }
 }
 
@@ -130,6 +130,7 @@ export async function seedFixture(payload: Payload) {
       role: 'superAdmin',
     },
     overrideAccess: true,
+    disableTransaction: true,
   })
 
   const makeClinic = async (key: string, name: string) => {
@@ -140,6 +141,7 @@ export async function seedFixture(payload: Payload) {
       // the plan it needs explicitly.
       data: { name, phone: '03001234567', city: 'Testville', status: 'active', plan: 'plus' } as never,
       overrideAccess: true,
+      disableTransaction: true,
     })
     const owner = await payload.create({
       collection: 'users',
@@ -151,6 +153,7 @@ export async function seedFixture(payload: Payload) {
         tenant: tenant.id,
       },
       overrideAccess: true,
+      disableTransaction: true,
     })
     const doctor = await payload.create({
       collection: 'users',
@@ -172,6 +175,7 @@ export async function seedFixture(payload: Payload) {
         active: true,
       },
       overrideAccess: true,
+      disableTransaction: true,
     })
     const receptionist = await payload.create({
       collection: 'users',
@@ -183,6 +187,7 @@ export async function seedFixture(payload: Payload) {
         tenant: tenant.id,
       },
       overrideAccess: true,
+      disableTransaction: true,
     })
     const patient = await payload.create({
       collection: 'patients',
@@ -194,6 +199,7 @@ export async function seedFixture(payload: Payload) {
         ageYears: 30,
       },
       overrideAccess: true,
+      disableTransaction: true,
     })
     return { tenant, owner, doctor, receptionist, patient }
   }

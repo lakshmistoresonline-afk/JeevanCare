@@ -124,6 +124,7 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
       collection: 'appointments',
       user: f.a.owner,
       overrideAccess: true,
+      disableTransaction: true,
       context: { disableVerification: true },
       data: {
         tenant: String(f.a.tenant.id),
@@ -140,6 +141,7 @@ describe('Clinical Record Integrity & Immutability Hardening Suite', () => {
       collection: 'appointments',
       user: f.a.owner,
       overrideAccess: true,
+      disableTransaction: true,
       context: { disableVerification: true },
       data: {
         tenant: String(f.a.tenant.id),
