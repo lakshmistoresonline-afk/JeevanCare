@@ -117,4 +117,24 @@ describe('Fail-Closed Test Database Safety Guard Suite', () => {
     await expect(wipe(mockProtectedPayload)).rejects.toThrow('INTEGRATION TEST SAFETY GUARD BLOCK')
     expect(deleteCallCount).toBe(0)
   })
+
+  it('validateE2EDatabaseUrl throws fail-closed error for protected or unapproved databases', async () => {
+    const { validateE2EDatabaseUrl } = await import('../int/fixtures')
+
+    expect(() => validateE2EDatabaseUrl('mongodb://127.0.0.1:27017/jeevancare?replicaSet=rs0')).toThrow(
+      "Configured database 'jeevancare' is a protected or unapproved database",
+    )
+
+    expect(() => validateE2EDatabaseUrl('mongodb://localhost:27017/production')).toThrow(
+      "Configured database 'production' is a protected or unapproved database",
+    )
+
+    expect(() => validateE2EDatabaseUrl('mongodb://localhost:27017/random_db')).toThrow(
+      "Configured database 'random_db' is a protected or unapproved database",
+    )
+
+    expect(validateE2EDatabaseUrl('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')).toBe(
+      'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0',
+    )
+  })
 })

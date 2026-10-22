@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
+import { validateE2EDatabaseUrl } from './tests/int/fixtures'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
+
+// Fail-closed database isolation check for Playwright webServer
+const validatedE2EDbUrl = validateE2EDatabaseUrl(process.env.DATABASE_URL)
 
 // Set test environment defaults if not provided in environment
 process.env.JEEVANCARE_E2E_OWNER_EMAIL = process.env.JEEVANCARE_E2E_OWNER_EMAIL || 'owner1@test.com'
@@ -27,9 +31,10 @@ export default defineConfig({
           command: 'npm start',
           url: BASE_URL,
           timeout: 120_000,
-          reuseExistingServer: true,
+          reuseExistingServer: false,
           env: {
             NODE_ENV: 'production',
+            DATABASE_URL: validatedE2EDbUrl,
           },
         },
       }),

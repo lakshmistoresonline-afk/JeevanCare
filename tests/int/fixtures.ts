@@ -33,6 +33,30 @@ export function getDatabaseNameFromUrl(urlStr: string): string | null {
   return null
 }
 
+/**
+ * Validates database URL for E2E browser testing.
+ * Fails closed if rawUrl is empty, unparseable, or targets any protected/unapproved database.
+ */
+export function validateE2EDatabaseUrl(rawUrl?: string): string {
+  const urlToTest = rawUrl ?? process.env.DATABASE_URL ?? ''
+  const DEFAULT_E2E_TEST_URL = 'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0'
+
+  if (!urlToTest) {
+    return DEFAULT_E2E_TEST_URL
+  }
+
+  const dbName = getDatabaseNameFromUrl(urlToTest)
+  if (!dbName) {
+    throw new Error('PLAYWRIGHT E2E SAFETY BLOCK: Could not parse database name from DATABASE_URL.')
+  }
+
+  if (PROHIBITED_DB_NAMES.includes(dbName as any) || !APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
+    throw new Error(`PLAYWRIGHT E2E SAFETY BLOCK: Configured database '${dbName}' is a protected or unapproved database. E2E browser testing must target 'jeevancare_test'.`)
+  }
+
+  return urlToTest
+}
+
 /** Fail-closed database safety guard for integration test wipes */
 export function checkTestDatabaseSafety(rawUrl?: string, payload?: Payload): { ok: boolean; reason?: string; dbName?: string; liveDbName?: string } {
   const urlToTest = rawUrl ?? (process.env.DATABASE_URL || '')
