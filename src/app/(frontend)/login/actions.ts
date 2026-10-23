@@ -5,26 +5,60 @@ import { redirect } from 'next/navigation'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 
+const normalizePhone = (raw: string): string => {
+  const trimmed = raw.trim()
+  const hasPlus = trimmed.startsWith('+')
+  const digits = trimmed.replace(/[^0-9]/g, '')
+  return hasPlus ? `+${digits}` : digits
+}
+
 export async function loginAction(
   _prev: ActionResult<{ role: string }> | null,
   formData: FormData,
 ): Promise<ActionResult<{ role: string }>> {
-  const email = String(formData.get('email') || '').trim()
+  const input = String(formData.get('email') || '').trim()
   const password = String(formData.get('password') || '')
 
-  if (!email || !password) {
-    return { ok: false, code: 'VALIDATION', message: 'Enter your email and password.' }
+  if (!input || !password) {
+    return { ok: false, code: 'VALIDATION', message: 'Enter your email or mobile number and password.' }
   }
 
   try {
     const payload = await getPayloadClient()
+    let loginEmail = input
+
+    // If input is a phone number, resolve linked user account email
+    const isPhone = /^\+?[0-9\s-]{7,15}$/.test(input)
+    if (isPhone) {
+      const normalized = normalizePhone(input)
+      const digitsOnly = input.replace(/[^0-9]/g, '')
+      const userRes = await payload.find({
+        collection: 'users',
+        where: {
+          role: { equals: 'patient' },
+          or: [
+            { phone: { equals: normalized } },
+            { phone: { equals: `+${digitsOnly}` } },
+            { phone: { equals: digitsOnly } },
+            { email: { equals: input } },
+          ],
+        },
+        limit: 1,
+        overrideAccess: true,
+      })
+
+      if (userRes.docs.length > 0) {
+        loginEmail = userRes.docs[0].email
+      }
+    }
+
     const result = await payload.login({
       collection: 'users',
-      data: { email, password },
+      data: { email: loginEmail, password },
     })
 
     if (!result.token) {
-      return { ok: false, code: 'VALIDATION', message: 'Incorrect email or password.' }
+      return { ok: false, code: 'VALIDATION', message: 'Incorrect email/mobile or password.' }
     }
 
     const cookieStore = await cookies()
@@ -39,11 +73,10 @@ export async function loginAction(
     return { ok: true, data: { role: (result.user as { role: string }).role } }
   } catch (err) {
     const mapped = toActionError(err)
-    // Generic auth failures shouldn't reveal which field was wrong.
     if (mapped.code === 'UNKNOWN') {
-      return { ok: false, code: 'AUTH', message: 'Incorrect email or password.' }
+      return { ok: false, code: 'AUTH', message: 'Incorrect email/mobile or password.' }
     }
-    return { ok: false, ...mapped }
+    return { ok: false, ...mapped, message: 'Incorrect email/mobile or password.' }
   }
 }
 
