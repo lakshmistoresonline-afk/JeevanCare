@@ -141,7 +141,7 @@ export function JeevanCareHeader() {
                 href="/login"
                 className="rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-ink shadow-2xs transition-colors hover:border-primary hover:text-primary"
               >
-                Clinic Login
+                Login
               </Link>
               <Link
                 href="/clinics"

@@ -63,7 +63,7 @@ export default function HomePage() {
                 <IconArrowRight size={15} />
               </Link>
               <Link href="/login" className={btnGhost}>
-                Clinic Login
+                Login
               </Link>
             </div>
 

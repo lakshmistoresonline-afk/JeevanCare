@@ -176,7 +176,7 @@ export default function FeaturesPage() {
             <h2 className="font-display text-2xl font-bold text-ink">Ready to try these features in your clinic?</h2>
             <div className="flex items-center justify-center gap-3">
               <Link href="/signup" className={btnPrimary}>Register Your Clinic</Link>
-              <Link href="/login" className={btnGhost}>Clinic Login</Link>
+              <Link href="/login" className={btnGhost}>Login</Link>
             </div>
           </div>
         </section>
