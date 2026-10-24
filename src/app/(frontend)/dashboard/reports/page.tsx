@@ -147,6 +147,33 @@ export default async function ReportsPage({
             </div>
           </DashboardWidgetError>
 
+          {/* Advanced Financial Analytics & Efficiency Insights */}
+          <Card className="p-5 bg-card border-border/80">
+            <h3 className="font-display text-sm font-bold text-ink mb-3">Financial Analytics &amp; Clinic Efficiency</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="rounded-xl border border-border/80 bg-canvas p-3">
+                <span className="text-muted-foreground font-semibold block">Avg. Revenue / Appointment (ARPA)</span>
+                <span className="text-base font-bold text-primary mt-1 block">
+                  {money(report.appointments.completed > 0 ? Math.round(report.revenueCollected / report.appointments.completed) : 0)}
+                </span>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-canvas p-3">
+                <span className="text-muted-foreground font-semibold block">Collection Efficiency</span>
+                <span className="text-base font-bold text-primary mt-1 block">
+                  {report.revenueCollected + report.outstandingAdded > 0
+                    ? `${Math.round((report.revenueCollected / (report.revenueCollected + report.outstandingAdded)) * 100)}%`
+                    : '100%'}
+                </span>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-canvas p-3">
+                <span className="text-muted-foreground font-semibold block">Active Clinical Staff</span>
+                <span className="text-base font-bold text-primary mt-1 block">
+                  {report.doctors.length} Doctors
+                </span>
+              </div>
+            </div>
+          </Card>
+
           {/* Daily revenue chart */}
           <DashboardWidgetError title="Daily Revenue Trend">
             <Card className="p-6">
