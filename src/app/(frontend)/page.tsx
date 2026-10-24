@@ -199,7 +199,7 @@ export default function HomePage() {
           ].map((v) => {
             const Icon = v.icon
             return (
-              <div key={v.title} className="card-flat p-5 flex flex-col justify-between space-y-2">
+              <div key={v.title} className="card-flat p-5 flex flex-col justify-between space-y-2 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
                   <Icon size={20} />
                 </span>
