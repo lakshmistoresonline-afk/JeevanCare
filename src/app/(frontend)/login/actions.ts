@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import { rateLimit } from '@/lib/rateLimit'
 
 const normalizePhone = (raw: string): string => {
   const trimmed = raw.trim()
@@ -21,6 +22,12 @@ export async function loginAction(
 
   if (!input || !password) {
     return { ok: false, code: 'VALIDATION', message: 'Enter your email or mobile number and password.' }
+  }
+
+  // Brute-force rate limiting (max 10 attempts per hour per account)
+  const limiter = rateLimit(`login:${input.toLowerCase()}`, 10)
+  if (!limiter.allowed) {
+    return { ok: false, code: 'RATE_LIMIT', message: 'Too many login attempts. Please try again later.' }
   }
 
   try {
