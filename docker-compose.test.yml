@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: jeevancare-test-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_test:/data/db
+    healthcheck:
+      test: echo "db.runCommand({ ping: 1 })" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init-replica:
+    image: mongo:7.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: >
+      mongosh --host mongodb:27017 --eval "
+        try {
+          rs.status();
+        } catch (err) {
+          rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] });
+        }
+      "
+
+volumes:
+  mongodb_data_test:
