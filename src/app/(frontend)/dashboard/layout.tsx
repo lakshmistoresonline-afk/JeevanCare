@@ -5,6 +5,7 @@ import { CommandPalette } from '@/components/CommandPalette'
 import { ReceptionQrModal } from '@/components/ReceptionQrModal'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
+import { OfflineSyncBanner } from '@/components/OfflineSyncBanner'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant } = await requireDashboardSession()
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         role={user.role}
       />
       <div className="flex flex-1 flex-col min-w-0">
+        <OfflineSyncBanner />
         {/* Top App Chrome Header with Command Palette & Reception QR Poster trigger */}
         <header className="hidden h-14 items-center justify-between border-b border-border bg-card px-6 md:flex">
           <CommandPalette />
