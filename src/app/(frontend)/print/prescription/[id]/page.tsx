@@ -50,8 +50,13 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
   })
 
   return (
-    <main className="mx-auto w-full max-w-[150mm] bg-white px-8 py-10 text-[13px] text-ink print:max-w-none print:p-[12mm]">
+    <main className="relative mx-auto w-full max-w-[150mm] bg-white px-8 py-10 text-[13px] text-ink print:max-w-none print:p-[12mm] overflow-hidden">
       <style>{`@page { size: A5; margin: 0; } @media print { html, body { background: #fff; } }`}</style>
+
+      {/* Professional Watermark */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
+        <span className="font-display text-7xl font-bold tracking-widest text-primary rotate-[-30deg]">JEEVANCARE VERIFIED RX</span>
+      </div>
 
       <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
         <Link href={`/dashboard/patients/${relId(patient)}`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">

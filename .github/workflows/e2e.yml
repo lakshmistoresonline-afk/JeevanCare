@@ -1,0 +1,60 @@
+name: JeevanCare CI/CD & Visual Regression
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        options: --replSet rs0
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Initialize MongoDB Replica Set
+        run: |
+          npx wait-on tcp:27017
+          mongosh --eval "try { rs.status(); } catch (err) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }); }"
+
+      - name: Run Unit Tests
+        run: npx vitest run tests/unit/
+
+      - name: Run Integration Tests
+        env:
+          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
+        run: npx vitest run tests/int/ --fileParallelism=false
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E & Visual Regression Tests
+        env:
+          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
+        run: npx playwright test --project=chromium
+
+      - name: TypeScript Check
+        run: npx tsc --noEmit
+
+      - name: Linter Check
+        run: npm run lint
+
+      - name: Production Build
+        run: npm run build
