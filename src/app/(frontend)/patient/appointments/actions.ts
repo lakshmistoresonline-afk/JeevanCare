@@ -135,3 +135,36 @@ export async function patientBookAppointment(
     return { ok: false, ...toActionError(err) }
   }
 }
+
+export async function patientCancelAppointment(appointmentId: string): Promise<ActionResult<{ id: string }>> {
+  const { patient, tenant, user } = await requirePatientSession()
+  const payload = await getPayloadClient()
+
+  try {
+    const appt = (await payload.findByID({ collection: 'appointments', id: appointmentId, depth: 0, overrideAccess: true }).catch(() => null)) as any
+    if (!appt || String(relId(appt.tenant)) !== String(tenant.id) || String(relId(appt.patient)) !== String(patient.id)) {
+      return { ok: false, code: 'FORBIDDEN', message: 'Appointment not found or unauthorized.' }
+    }
+
+    if (appt.status !== 'scheduled') {
+      return { ok: false, code: 'VALIDATION', message: 'Only scheduled appointments can be cancelled.' }
+    }
+
+    const updated = await payload.update({
+      collection: 'appointments',
+      id: appointmentId,
+      user,
+      overrideAccess: true,
+      data: {
+        status: 'cancelled',
+        cancellationReason: 'Cancelled by patient via portal',
+      } as any,
+    })
+
+    try { revalidatePath('/patient/appointments') } catch {}
+    try { revalidatePath('/patient/dashboard') } catch {}
+    return { ok: true, data: { id: String(updated.id) } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}

@@ -4,6 +4,7 @@ import { Card, StatusBadge, btnPrimary, EmptyState } from '@/components/primitiv
 import { formatDateTime } from '@/lib/format'
 import { formatDoctorName } from '@/lib/utils'
 import { IconPlus } from '@/components/icons'
+import { PatientAppointmentCard } from '@/components/PatientAppointmentCard'
 
 export default async function PatientAppointmentsPage({
   searchParams,
@@ -93,23 +94,7 @@ export default async function PatientAppointmentsPage({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {appts.map((a: any) => (
-            <Card key={a.id} className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium">{formatDoctorName(a.doctor?.name)}</div>
-                  <div className="tabular mt-0.5 text-xs text-muted-foreground">
-                    {formatDateTime(a.start, tenant)}
-                  </div>
-                  {a.reason && <div className="mt-1 text-xs text-muted-foreground">Reason: {a.reason}</div>}
-                  {a.tokenNumber && (
-                    <div className="mt-2 inline-block rounded-md bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
-                      Token: {a.tokenNumber}
-                    </div>
-                  )}
-                </div>
-                <StatusBadge status={a.status} />
-              </div>
-            </Card>
+            <PatientAppointmentCard key={a.id} appt={a} tenant={tenant} />
           ))}
         </div>
       )}
