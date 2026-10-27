@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { CommandPalette } from '@/components/CommandPalette'
 import { ReceptionQrModal } from '@/components/ReceptionQrModal'
 import { logoutAction } from '@/app/(frontend)/login/actions'
+import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant } = await requireDashboardSession()
@@ -53,8 +54,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </button>
           </form>
         </header>
-        <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8">
-          <div className="mx-auto max-w-7xl animate-fade-up">{children}</div>
+        <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8 flex flex-col justify-between">
+          <div className="mx-auto max-w-7xl animate-fade-up w-full">{children}</div>
+          <footer className="mt-12 border-t border-border/60 pt-4 pb-2">
+            <JeevanCareFooterCredit />
+          </footer>
         </main>
       </div>
     </div>

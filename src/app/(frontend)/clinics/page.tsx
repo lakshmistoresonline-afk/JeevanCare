@@ -68,6 +68,9 @@ export default async function ClinicsPage() {
           </span>
           <span>JeevanCare · Your Trusted Healthcare Companion</span>
         </div>
+        <div className="mt-3 text-center text-xs font-medium text-muted-foreground">
+          Designed &amp; Developed by <span className="font-bold text-ink">Subramanian T S</span>, <span className="font-semibold text-primary">WebCraft Digital Solutions</span>.
+        </div>
       </footer>
     </main>
   )

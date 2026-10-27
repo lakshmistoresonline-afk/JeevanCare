@@ -7,6 +7,7 @@ import { IconHome, IconCalendar, IconPlus, IconClock, IconPill, IconFileText, Ic
 import { getTenantID, getPatientID } from '@/access'
 import { relId } from '@/lib/utils'
 import { PatientBottomNav } from '@/components/PatientBottomNav'
+import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 
 const NAV_ITEMS = [
   { href: '/patient/dashboard', label: 'Home', icon: IconHome },
@@ -114,8 +115,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
           )}
         </header>
 
-        <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8">
-          <div className="mx-auto max-w-5xl animate-fade-up">{children}</div>
+        <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8 flex flex-col justify-between">
+          <div className="mx-auto max-w-5xl animate-fade-up w-full">{children}</div>
+          <footer className="mt-12 border-t border-border/60 pt-4 pb-2">
+            <JeevanCareFooterCredit />
+          </footer>
         </main>
       </div>
 
