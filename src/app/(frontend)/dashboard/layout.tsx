@@ -6,6 +6,7 @@ import { ReceptionQrModal } from '@/components/ReceptionQrModal'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 import { OfflineSyncBanner } from '@/components/OfflineSyncBanner'
+import { NotificationDrawer } from '@/components/NotificationDrawer'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant } = await requireDashboardSession()
@@ -36,6 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <header className="hidden h-14 items-center justify-between border-b border-border bg-card px-6 md:flex">
           <CommandPalette />
           <div className="flex items-center gap-3">
+            <NotificationDrawer />
             <ReceptionQrModal
               clinicName={tenant?.name}
               city={tenant?.city}
