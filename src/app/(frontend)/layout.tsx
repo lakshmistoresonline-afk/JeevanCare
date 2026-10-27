@@ -1,6 +1,7 @@
 import React from 'react'
 import { Toaster } from 'sonner'
 import { PwaRegister } from '@/components/PwaRegister'
+import { AccessibilityToolbar } from '@/components/AccessibilityToolbar'
 import { figtree, bricolage } from '@/lib/fonts'
 import './globals.css'
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Toaster position="top-right" richColors />
         <PwaRegister />
+        <AccessibilityToolbar />
       </body>
     </html>
   )
