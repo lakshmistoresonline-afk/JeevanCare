@@ -9,8 +9,10 @@ import { toast } from 'sonner'
 
 export function MedicineDirectorySearch({
   onSelectMedicine,
+  onSaveToPresets,
 }: {
   onSelectMedicine: (item: PrescriptionRowInput) => void
+  onSaveToPresets?: (item: PrescriptionRowInput) => void
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<MedicineEntry[]>(searchMedicines(''))
@@ -41,31 +43,49 @@ export function MedicineDirectorySearch({
         {results.length === 0 ? (
           <div className="p-4 text-center text-xs text-muted-foreground">No medicines found in national directory.</div>
         ) : (
-          results.map((med) => (
-            <div key={med.id} className="flex items-center justify-between p-2.5 hover:bg-secondary/40 transition-colors text-xs">
-              <div>
-                <span className="font-bold text-ink">{med.brandName}</span>
-                <span className="text-muted-foreground"> ({med.genericName} — {med.strength})</span>
-                <span className="block text-[10px] text-primary font-semibold">{med.category} · {med.formulation}</span>
+          results.map((med) => {
+            const rowItem: PrescriptionRowInput = {
+              medicine: `${med.brandName} (${med.strength})`,
+              dosage: '1 tablet',
+              frequency: med.defaultFrequency,
+              durationDays: med.defaultDurationDays,
+              instructions: 'As directed',
+            }
+            return (
+              <div key={med.id} className="flex items-center justify-between p-2.5 hover:bg-secondary/40 transition-colors text-xs gap-3">
+                <div className="min-w-0">
+                  <span className="font-bold text-ink truncate block">{med.brandName}</span>
+                  <span className="text-muted-foreground text-[11px] truncate block">({med.genericName} — {med.strength})</span>
+                  <span className="text-[10px] text-primary font-semibold">{med.category} · {med.formulation}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectMedicine(rowItem)
+                      toast.success(`Added ${med.brandName} to prescription.`)
+                    }}
+                    className="rounded-lg bg-primary px-2.5 py-1 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors"
+                  >
+                    + Add Rx
+                  </button>
+                  {onSaveToPresets && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSaveToPresets(rowItem)
+                        toast.success(`Saved ${med.brandName} to your doctor presets.`)
+                      }}
+                      className="rounded-lg border border-border bg-card px-2 py-1 text-[11px] font-semibold text-ink hover:border-primary hover:text-primary transition-colors"
+                      title="Save to My Presets"
+                    >
+                      ⭐ Save
+                    </button>
+                  )}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectMedicine({
-                    medicine: `${med.brandName} (${med.strength})`,
-                    dosage: '1 tablet',
-                    frequency: med.defaultFrequency,
-                    durationDays: med.defaultDurationDays,
-                    instructions: 'As directed',
-                  })
-                  toast.success(`Added ${med.brandName} to prescription.`)
-                }}
-                className="rounded-lg bg-primary px-2.5 py-1 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors shrink-0"
-              >
-                + Add Rx
-              </button>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>
