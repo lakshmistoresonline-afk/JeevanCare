@@ -9,6 +9,7 @@ import { VoiceDictationBar } from './VoiceDictationBar'
 import { IconPlus, IconX, IconStethoscope, IconPrinter, IconCheck } from './icons'
 import { PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
 import { recordVisit, type PrescriptionRowInput } from '@/app/(frontend)/dashboard/visits/actions'
+import { MedicineDirectorySearch } from './MedicineDirectorySearch'
 
 const FREQ_OPTIONS = PRESCRIPTION_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', durationDays: undefined, instructions: '' })
@@ -294,6 +295,11 @@ export function VisitForm({
                   ))}
                 </div>
               </div>
+
+              {/* National Medicine Directory Search */}
+              <MedicineDirectorySearch
+                onSelectMedicine={(item) => setRows((r) => [...r, item])}
+              />
 
               {kitConfirm && (
                 <div className="rounded-xl border border-amber/30 bg-amber-soft/40 p-3.5 text-xs">
