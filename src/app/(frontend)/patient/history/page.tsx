@@ -34,15 +34,15 @@ export default async function PatientHistoryPage({
           <h1 className="text-xl font-semibold">Medical History & Timeline</h1>
           <p className="text-sm text-muted-foreground">Your complete chronological medical record.</p>
         </div>
-        <Link
-          href="/patient/history"
-          onClick={() => {
-            if (typeof window !== 'undefined') window.print()
-          }}
-          className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-xs font-semibold text-ink shadow-2xs transition-colors hover:border-primary hover:text-primary"
-        >
-          <IconPrinter size={15} /> Print History
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/patient/history/print"
+            target="_blank"
+            className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-xs font-semibold text-ink shadow-2xs transition-colors hover:border-primary hover:text-primary"
+          >
+            <IconPrinter size={15} /> Print Summary PDF
+          </Link>
+        </div>
       </div>
 
       {/* Filter Tabs */}
