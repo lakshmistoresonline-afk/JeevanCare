@@ -98,7 +98,7 @@ export async function seedTestUatData() {
   }
 
   // Clear ALL existing collections natively via MongoDB driver
-  const colsToWipe = ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants']
+  const colsToWipe = ['invoices', 'visits', 'appointments', 'medical-documents', 'patients', 'users', 'tenants', 'medicines']
   for (const col of colsToWipe) {
     try {
       if (db) {
@@ -416,6 +416,19 @@ export async function seedTestUatData() {
     status: 'scheduled',
     reason: 'General Checkup',
   })
+
+  // 6. Seed National Essential Medicines Directory
+  const sampleMedicines = [
+    { brandName: 'Dolo 650 / Crocin', genericName: 'Paracetamol', category: 'Analgesic / Antipyretic', formulation: 'Tablet', strength: '650 mg', defaultFrequency: 'tds', defaultDurationDays: 3 },
+    { brandName: 'Augmentin', genericName: 'Amoxicillin + Clavulanic Acid', category: 'Antibiotic', formulation: 'Tablet', strength: '625 mg', defaultFrequency: 'bd', defaultDurationDays: 5 },
+    { brandName: 'Pan 40', genericName: 'Pantoprazole', category: 'Proton Pump Inhibitor', formulation: 'Tablet', strength: '40 mg', defaultFrequency: 'od', defaultDurationDays: 7 },
+    { brandName: 'Cetzine', genericName: 'Cetirizine', category: 'Antihistamine', formulation: 'Tablet', strength: '10 mg', defaultFrequency: 'od', defaultDurationDays: 5 },
+    { brandName: 'Azithral', genericName: 'Azithromycin', category: 'Antibiotic', formulation: 'Tablet', strength: '500 mg', defaultFrequency: 'od', defaultDurationDays: 3 },
+    { brandName: 'Glucophage / Glycomet', genericName: 'Metformin', category: 'Antidiabetic', formulation: 'Tablet', strength: '500 mg', defaultFrequency: 'bd', defaultDurationDays: 30 },
+  ]
+  for (const med of sampleMedicines) {
+    await nativeInsert('medicines', med)
+  }
 
   console.log('JeevanCare Thrissur City UAT environment seeded successfully with all explicit patient scenarios (owner1@test.com, staff1@test.com, doctor1@test.com, patient1@test.com).')
 }

@@ -13,6 +13,7 @@ import { Visits } from './collections/Visits'
 import { Invoices } from './collections/Invoices'
 import { AuditLogs } from './collections/AuditLogs'
 import { MedicalDocuments } from './collections/MedicalDocuments'
+import { Medicines } from './collections/Medicines'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,7 +33,7 @@ export default buildConfig({
       titleSuffix: '— Clinic Management',
     },
   },
-  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, MedicalDocuments],
+  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, MedicalDocuments, Medicines],
   editor: lexicalEditor(),
   secret,
   typescript: {
