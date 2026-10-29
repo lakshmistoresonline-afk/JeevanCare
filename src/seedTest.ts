@@ -17,6 +17,7 @@ import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from './payload.config'
 import crypto from 'crypto'
+import { getDatabaseNameFromUrl, APPROVED_TEST_DB_NAMES, PROHIBITED_DB_NAMES } from '../tests/int/fixtures'
 
 const PASSWORD = 'Test@123'
 const NO_TX = { req: { transactionID: null, overrideAccess: true } as any }
@@ -45,30 +46,31 @@ async function safeCreate(payload: any, options: any) {
 }
 
 /**
- * Safety guard -- refuses to run unless:
- * 1. NODE_ENV is not 'production' (or FORCE_SEED=1 is set)
- * 2. The database URL contains an explicit test-designated marker
- *
- * Exported for unit testing without a DB connection.
+ * Safety guard -- refuses to run unless the database URL parses to an explicitly approved test database.
+ * FORCE_SEED=1 cannot override protected UAT or production database names.
  */
 export function checkSeedSafety(): { ok: boolean; reason?: string } {
-  const isProd = process.env.NODE_ENV === 'production'
-  const forceSeed = process.env.FORCE_SEED === '1'
-  if (isProd && !forceSeed) {
-    return { ok: false, reason: 'Refusing to seed in production environment without explicit FORCE_SEED=1.' }
+  const dbUrl = process.env.DATABASE_URL || ''
+  if (!dbUrl) {
+    return { ok: false, reason: 'Refusing to seed: DATABASE_URL environment variable is empty or undefined.' }
   }
 
-  const dbUrl = (process.env.DATABASE_URL || '').toLowerCase()
-  if (dbUrl.includes('-prod') || dbUrl.includes('production') || dbUrl.includes('prod-server')) {
-    return { ok: false, reason: 'Refusing to seed: DATABASE_URL appears to point to a production database URL without a valid test marker.' }
+  const dbName = getDatabaseNameFromUrl(dbUrl)
+  if (!dbName) {
+    return { ok: false, reason: 'Refusing to seed: Could not parse database name from DATABASE_URL.' }
   }
 
-  const testMarkers = ['test', 'uat', 'sandbox', 'dev', '127.0.0.1', 'localhost', 'clinic-management']
-  const isTestDb = forceSeed || testMarkers.some((m) => dbUrl.includes(m))
-  if (!isTestDb) {
+  if (PROHIBITED_DB_NAMES.includes(dbName as any) || dbName === 'jeevancare') {
     return {
       ok: false,
-      reason: `Database URL does not contain a recognized test marker (${testMarkers.join(', ')}). Set DATABASE_URL to an isolated test database.`,
+      reason: `Refusing to seed: Database '${dbName}' is a protected UAT/Production database. FORCE_SEED cannot override this protection.`,
+    }
+  }
+
+  if (!APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
+    return {
+      ok: false,
+      reason: `Refusing to seed: Configured database '${dbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
     }
   }
 

@@ -1,11 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { checkSeedSafety } from '../../src/seedTest'
 
-describe('checkSeedSafety', () => {
-  const origNodeEnv = process.env.NODE_ENV
-  const origDbUrl = process.env.DATABASE_URL
-  const origForceSeed = process.env.FORCE_SEED
-
+describe('checkSeedSafety (Strict Fail-Closed Seeder Safety Guard)', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
   })
@@ -14,63 +10,33 @@ describe('checkSeedSafety', () => {
     vi.unstubAllEnvs()
   })
 
-  it('refuses in production without FORCE_SEED', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/test-db')
-    vi.stubEnv('FORCE_SEED', '')
-    const result = checkSeedSafety()
-    expect(result.ok).toBe(false)
-    expect(result.reason).toContain('production')
-  })
-
-  it('allows in production with FORCE_SEED=1 and test DB marker', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/test-db')
+  it('rejects protected UAT/Production database jeevancare even with FORCE_SEED=1', () => {
+    vi.stubEnv('DATABASE_URL', 'mongodb://127.0.0.1:27017/jeevancare?replicaSet=rs0')
     vi.stubEnv('FORCE_SEED', '1')
     const result = checkSeedSafety()
-    expect(result.ok).toBe(true)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toContain("Database 'jeevancare' is a protected UAT/Production database")
   })
 
-  it('refuses when DATABASE_URL has no test marker', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('DATABASE_URL', 'mongodb://prod-server:27017/jeevancare-prod')
+  it('rejects production and unapproved database names', () => {
+    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/production')
     const result = checkSeedSafety()
     expect(result.ok).toBe(false)
-    expect(result.reason).toContain('test marker')
+    expect(result.reason).toBeTruthy()
   })
 
-  it('refuses when DATABASE_URL is empty', () => {
-    vi.stubEnv('NODE_ENV', 'development')
+  it('rejects empty or unparseable database URLs', () => {
     vi.stubEnv('DATABASE_URL', '')
-    const result = checkSeedSafety()
-    expect(result.ok).toBe(false)
-    expect(result.reason).toContain('test marker')
+    const result1 = checkSeedSafety()
+    expect(result1.ok).toBe(false)
+
+    vi.stubEnv('DATABASE_URL', 'invalid-uri')
+    const result2 = checkSeedSafety()
+    expect(result2.ok).toBe(false)
   })
 
-  it('allows in development with a test-marker DB URL', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/jeevancare-test')
-    const result = checkSeedSafety()
-    expect(result.ok).toBe(true)
-  })
-
-  it('allows with uat marker', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/jeevancare-uat')
-    const result = checkSeedSafety()
-    expect(result.ok).toBe(true)
-  })
-
-  it('allows with sandbox marker', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/sandbox-instance')
-    const result = checkSeedSafety()
-    expect(result.ok).toBe(true)
-  })
-
-  it('allows with dev marker', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('DATABASE_URL', 'mongodb://localhost:27017/dev-db')
+  it('accepts explicitly approved dedicated test database jeevancare_test', () => {
+    vi.stubEnv('DATABASE_URL', 'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')
     const result = checkSeedSafety()
     expect(result.ok).toBe(true)
   })

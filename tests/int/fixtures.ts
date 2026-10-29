@@ -15,10 +15,10 @@ export async function getTestPayload(): Promise<Payload> {
 const COLLECTIONS = ['invoices', 'visits', 'appointments', 'patients', 'users', 'tenants'] as const
 
 /** Approved dedicated test database names */
-const APPROVED_TEST_DB_NAMES = ['jeevancare_test', 'jeevancare-test', 'jeevancare_test_db'] as const
+export const APPROVED_TEST_DB_NAMES = ['jeevancare_test', 'jeevancare-test', 'jeevancare_test_db'] as const
 
 /** Prohibited production/UAT database names */
-const PROHIBITED_DB_NAMES = ['jeevancare', 'production', 'prod', 'jeevancare_prod', 'jeevancare_uat'] as const
+export const PROHIBITED_DB_NAMES = ['jeevancare', 'production', 'prod', 'jeevancare_prod', 'jeevancare_uat'] as const
 
 /** Parse database name from MongoDB connection string */
 export function getDatabaseNameFromUrl(urlStr: string): string | null {
