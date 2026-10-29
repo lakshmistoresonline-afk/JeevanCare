@@ -1,5 +1,8 @@
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
+import { checkTestDatabaseSafety, validateE2EDatabaseUrl, getDatabaseNameFromUrl, APPROVED_TEST_DB_NAMES, PROHIBITED_DB_NAMES } from '@/lib/databaseSafety'
+
+export { checkTestDatabaseSafety, validateE2EDatabaseUrl, getDatabaseNameFromUrl, APPROVED_TEST_DB_NAMES, PROHIBITED_DB_NAMES }
 
 export type Fixture = Awaited<ReturnType<typeof seedFixture>>
 
@@ -13,118 +16,6 @@ export async function getTestPayload(): Promise<Payload> {
 
 // Delete children before parents so nothing dangles mid-wipe.
 const COLLECTIONS = ['invoices', 'visits', 'appointments', 'patients', 'users', 'tenants'] as const
-
-/** Approved dedicated test database names */
-export const APPROVED_TEST_DB_NAMES = ['jeevancare_test', 'jeevancare-test', 'jeevancare_test_db'] as const
-
-/** Prohibited production/UAT database names */
-export const PROHIBITED_DB_NAMES = ['jeevancare', 'production', 'prod', 'jeevancare_prod', 'jeevancare_uat'] as const
-
-/** Parse database name from MongoDB connection string */
-export function getDatabaseNameFromUrl(urlStr: string): string | null {
-  if (!urlStr || typeof urlStr !== 'string') return null
-  try {
-    const cleanUrl = urlStr.trim()
-    const match = cleanUrl.match(/mongodb(?:\+srv)?:\/\/[^\/]+\/([^?#]+)/i)
-    if (match && match[1]) {
-      return match[1].toLowerCase()
-    }
-  } catch (_) {}
-  return null
-}
-
-/**
- * Validates database URL for E2E browser testing.
- * Fails closed if rawUrl is empty, unparseable, or targets any protected/unapproved database.
- */
-export function validateE2EDatabaseUrl(rawUrl?: string): string {
-  const urlToTest = rawUrl ?? process.env.DATABASE_URL ?? ''
-  const DEFAULT_E2E_TEST_URL = 'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0'
-
-  if (!urlToTest) {
-    return DEFAULT_E2E_TEST_URL
-  }
-
-  const dbName = getDatabaseNameFromUrl(urlToTest)
-  if (!dbName) {
-    throw new Error('PLAYWRIGHT E2E SAFETY BLOCK: Could not parse database name from DATABASE_URL.')
-  }
-
-  if (PROHIBITED_DB_NAMES.includes(dbName as any) || !APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
-    throw new Error(`PLAYWRIGHT E2E SAFETY BLOCK: Configured database '${dbName}' is a protected or unapproved database. E2E browser testing must target 'jeevancare_test'.`)
-  }
-
-  return urlToTest
-}
-
-/** Fail-closed database safety guard for integration test wipes */
-export function checkTestDatabaseSafety(rawUrl?: string, payload?: Payload): { ok: boolean; reason?: string; dbName?: string; liveDbName?: string } {
-  const urlToTest = rawUrl ?? (process.env.DATABASE_URL || '')
-  if (!urlToTest) {
-    return { ok: false, reason: 'Refusing to run integration test wipes: DATABASE_URL environment variable is empty or undefined.' }
-  }
-
-  const dbName = getDatabaseNameFromUrl(urlToTest)
-  if (!dbName) {
-    return { ok: false, reason: 'Refusing to run integration test wipes: Could not parse database name from DATABASE_URL.' }
-  }
-
-  if (PROHIBITED_DB_NAMES.includes(dbName as any)) {
-    return {
-      ok: false,
-      dbName,
-      reason: `Refusing to run destructive integration test wipes: Database '${dbName}' is a protected UAT/Production database.`,
-    }
-  }
-
-  if (!APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
-    return {
-      ok: false,
-      dbName,
-      reason: `Refusing to run destructive integration test wipes: Configured database '${dbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
-    }
-  }
-
-  if (payload) {
-    const liveDbName = ((payload.db as any)?.connection?.db?.databaseName || (payload.db as any)?.connection?.name || '').toLowerCase()
-    if (!liveDbName) {
-      return {
-        ok: false,
-        dbName,
-        reason: 'Refusing to run destructive integration test wipes: Live connected database name could not be verified on the Payload instance.',
-      }
-    }
-
-    if (PROHIBITED_DB_NAMES.includes(liveDbName as any)) {
-      return {
-        ok: false,
-        dbName,
-        liveDbName,
-        reason: `Refusing to run destructive integration test wipes: Connected live database '${liveDbName}' is a protected UAT/Production database.`,
-      }
-    }
-
-    if (!APPROVED_TEST_DB_NAMES.includes(liveDbName as any)) {
-      return {
-        ok: false,
-        dbName,
-        liveDbName,
-        reason: `Refusing to run destructive integration test wipes: Connected live database '${liveDbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
-      }
-    }
-
-    if (liveDbName !== dbName) {
-      return {
-        ok: false,
-        dbName,
-        liveDbName,
-        reason: `Refusing to run destructive integration test wipes: Configured database ('${dbName}') and live connected database ('${liveDbName}') do not match.`,
-      }
-    }
-  }
-
-  return { ok: true, dbName, liveDbName: payload ? (((payload.db as any)?.connection?.db?.databaseName || (payload.db as any)?.connection?.name || '').toLowerCase()) : undefined }
-}
 
 /** Wipe all data so each suite starts clean. */
 export async function wipe(payload: Payload): Promise<void> {
@@ -160,9 +51,6 @@ export async function seedFixture(payload: Payload) {
   const makeClinic = async (key: string, name: string) => {
     const tenant = await payload.create({
       collection: 'tenants',
-      // Default the shared fixture to the unlimited plan so unrelated suites (which
-      // add several doctors/patients) aren't constrained; the plan-limit suite sets
-      // the plan it needs explicitly.
       data: { name, phone: '03001234567', city: 'Testville', status: 'active', plan: 'plus' } as never,
       overrideAccess: true,
       disableTransaction: true,
@@ -218,9 +106,10 @@ export async function seedFixture(payload: Payload) {
       data: {
         tenant: tenant.id,
         name: `Patient ${key}`,
-        phone: `0300000000${key === 'A' ? '1' : '2'}`,
-        gender: 'male',
+        phone: `0300000000${key}`,
+        gender: 'female',
         ageYears: 30,
+        mrn: `MRN-${key}`,
       },
       overrideAccess: true,
       disableTransaction: true,
@@ -228,8 +117,14 @@ export async function seedFixture(payload: Payload) {
     return { tenant, owner, doctor, receptionist, patient }
   }
 
-  const a = await makeClinic('A', 'City Care Clinic')
-  const b = await makeClinic('B', 'Shifa Family Clinic')
+  const clinicA = await makeClinic('A', 'Clinic A')
+  const clinicB = await makeClinic('B', 'Clinic B')
 
-  return { superAdmin, a, b }
+  return {
+    superAdmin,
+    a: clinicA,
+    b: clinicB,
+    clinicA,
+    clinicB,
+  }
 }

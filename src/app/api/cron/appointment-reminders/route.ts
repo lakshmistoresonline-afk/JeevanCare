@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server'
 import { getPayloadClient } from '@/lib/auth'
 import { sendSms } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
+import { validateProductionSecret } from '@/lib/secretValidation'
+import { escapeHtml } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || 'jeevancare-cron-secret'
-    if (authHeader !== `Bearer ${cronSecret}` && process.env.NODE_ENV === 'production') {
+    const cronSecret = process.env.CRON_SECRET
+    const check = validateProductionSecret('CRON_SECRET', cronSecret, 32)
+    if (!check.ok || !cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ ok: false, error: 'Unauthorized cron request' }, { status: 401 })
     }
 
@@ -42,17 +45,17 @@ export async function GET(request: Request) {
         dispatchedCount++
       }
       if (patient?.email) {
+        const safeName = escapeHtml(patient.name)
         await sendEmail({
           to: patient.email,
           subject: 'Appointment Reminder - JeevanCare',
-          html: `<p>Dear ${patient.name},</p><p>You have a scheduled appointment at JeevanCare on <strong>${new Date(appt.start).toLocaleString('en-IN')}</strong>.</p>`,
+          html: `<p>Dear ${safeName},</p><p>You have a scheduled appointment at JeevanCare on <strong>${new Date(appt.start).toLocaleString('en-IN')}</strong>.</p>`,
         })
       }
     }
 
     return NextResponse.json({ ok: true, remindersDispatched: dispatchedCount })
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({ ok: false, error: errorMsg }, { status: 500 })
+    return NextResponse.json({ ok: false, error: 'Internal server error during appointment reminders execution' }, { status: 500 })
   }
 }

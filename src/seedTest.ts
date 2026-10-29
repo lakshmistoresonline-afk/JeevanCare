@@ -17,7 +17,7 @@ import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from './payload.config'
 import crypto from 'crypto'
-import { getDatabaseNameFromUrl, APPROVED_TEST_DB_NAMES, PROHIBITED_DB_NAMES } from '../tests/int/fixtures'
+import { validateDatabaseUrlSafety, checkTestDatabaseSafety } from './lib/databaseSafety'
 
 const PASSWORD = 'Test@123'
 const NO_TX = { req: { transactionID: null, overrideAccess: true } as any }
@@ -50,31 +50,8 @@ async function safeCreate(payload: any, options: any) {
  * FORCE_SEED=1 cannot override protected UAT or production database names.
  */
 export function checkSeedSafety(): { ok: boolean; reason?: string } {
-  const dbUrl = process.env.DATABASE_URL || ''
-  if (!dbUrl) {
-    return { ok: false, reason: 'Refusing to seed: DATABASE_URL environment variable is empty or undefined.' }
-  }
-
-  const dbName = getDatabaseNameFromUrl(dbUrl)
-  if (!dbName) {
-    return { ok: false, reason: 'Refusing to seed: Could not parse database name from DATABASE_URL.' }
-  }
-
-  if (PROHIBITED_DB_NAMES.includes(dbName as any) || dbName === 'jeevancare') {
-    return {
-      ok: false,
-      reason: `Refusing to seed: Database '${dbName}' is a protected UAT/Production database. FORCE_SEED cannot override this protection.`,
-    }
-  }
-
-  if (!APPROVED_TEST_DB_NAMES.includes(dbName as any)) {
-    return {
-      ok: false,
-      reason: `Refusing to seed: Configured database '${dbName}' is not in approved dedicated test database allowlist (${APPROVED_TEST_DB_NAMES.join(', ')}).`,
-    }
-  }
-
-  return { ok: true }
+  const res = validateDatabaseUrlSafety(process.env.DATABASE_URL)
+  return { ok: res.ok, reason: res.reason }
 }
 
 export async function seedTestUatData() {
@@ -85,6 +62,13 @@ export async function seedTestUatData() {
   }
 
   const payload = await getPayload({ config: await config })
+
+  const liveSafety = checkTestDatabaseSafety(process.env.DATABASE_URL, payload)
+  if (!liveSafety.ok) {
+    console.error(`Live database safety verification failed: ${liveSafety.reason}`)
+    throw new Error(`SEEDER SAFETY GUARD BLOCK: ${liveSafety.reason}`)
+  }
+
   console.log('Seeding JeevanCare Test/UAT environment with explicit test accounts (owner1@test.com, staff1@test.com, doctor1@test.com)...')
 
   const db = (payload.db as any).connection?.db

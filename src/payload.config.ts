@@ -15,12 +15,15 @@ import { AuditLogs } from './collections/AuditLogs'
 import { MedicalDocuments } from './collections/MedicalDocuments'
 import { Medicines } from './collections/Medicines'
 
+import { validateProductionSecret } from './lib/secretValidation'
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const secret = process.env.PAYLOAD_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'jeevancare_dev_secret_fallback_key_minimum_32_chars_2026')
-if (process.env.NODE_ENV === 'production' && (!secret || secret.length < 32)) {
-  throw new Error('CRITICAL CONFIGURATION ERROR: PAYLOAD_SECRET environment variable must be set to a secure string of at least 32 characters in production.')
+const secretCheck = validateProductionSecret('PAYLOAD_SECRET', process.env.PAYLOAD_SECRET, 32)
+if (!secretCheck.ok) {
+  throw new Error(`CRITICAL CONFIGURATION ERROR: ${secretCheck.reason}`)
 }
 
 export default buildConfig({

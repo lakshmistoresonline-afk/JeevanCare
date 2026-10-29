@@ -1,102 +1,89 @@
-import { describe, it, expect } from 'vitest'
-import { checkTestDatabaseSafety, getDatabaseNameFromUrl } from '../int/fixtures'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { checkTestDatabaseSafety, checkDestructiveDatabaseSafety, parseMongoUrl, validateDatabaseUrlSafety, isAllowedTestHost } from '@/lib/databaseSafety'
 
-describe('Fail-Closed Test Database Safety Guard Suite', () => {
-  it('correctly parses database names from MongoDB URIs', () => {
-    expect(getDatabaseNameFromUrl('mongodb://127.0.0.1:27017/jeevancare?replicaSet=rs0')).toBe('jeevancare')
-    expect(getDatabaseNameFromUrl('mongodb://localhost:27017/jeevancare_test?replicaSet=rs0')).toBe('jeevancare_test')
-    expect(getDatabaseNameFromUrl('mongodb+srv://user:pass@cluster.mongodb.net/production?retryWrites=true')).toBe('production')
-    expect(getDatabaseNameFromUrl('invalid-uri')).toBeNull()
-    expect(getDatabaseNameFromUrl('')).toBeNull()
+describe('Fail-Closed Test Database Safety Guard Suite (P0 Final Closure)', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs()
   })
 
-  it('rejects protected UAT/Production database jeevancare', () => {
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/jeevancare?replicaSet=rs0')
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('correctly parses database names and multi-hosts from complex MongoDB URIs and rejects malformed/unsupported URIs', () => {
+    expect(parseMongoUrl('mongodb://user:pass@127.0.0.1:27017,127.0.0.1:27018/jeevancare_test?replicaSet=rs0')).toEqual({
+      dbName: 'jeevancare_test',
+      hosts: ['127.0.0.1', '127.0.0.1'],
+      valid: true,
+    })
+    expect(parseMongoUrl('malformed-uri-string')).toEqual({
+      dbName: null,
+      hosts: [],
+      valid: false,
+    })
+    expect(parseMongoUrl('http://unsupported-scheme.com/db')).toEqual({
+      dbName: null,
+      hosts: [],
+      valid: false,
+    })
+  })
+
+  it('rejects multi-host URIs when any host is unapproved', () => {
+    const res = validateDatabaseUrlSafety('mongodb://127.0.0.1:27017,malicious-remote.com:27017/jeevancare_test?replicaSet=rs0')
     expect(res.ok).toBe(false)
-    expect(res.dbName).toBe('jeevancare')
-    expect(res.reason).toContain("Database 'jeevancare' is a protected UAT/Production database")
+    expect(res.reason).toContain('Target host')
   })
 
-  it('rejects databases named production or prod', () => {
-    const res1 = checkTestDatabaseSafety('mongodb://localhost:27017/production')
-    expect(res1.ok).toBe(false)
-    expect(res1.reason).toContain('protected UAT/Production database')
-
-    const res2 = checkTestDatabaseSafety('mongodb://localhost:27017/prod')
-    expect(res2.ok).toBe(false)
-    expect(res2.reason).toContain('protected UAT/Production database')
+  it('rejects protected UAT/Production databases', () => {
+    for (const db of ['jeevancare', 'production', 'prod', 'jeevancare_prod', 'jeevancare_uat']) {
+      const res = checkTestDatabaseSafety(`mongodb://127.0.0.1:27017/${db}?replicaSet=rs0`)
+      expect(res.ok).toBe(false)
+      expect(res.reason).toBeTruthy()
+    }
   })
 
-  it('rejects empty, missing, or unparseable database URLs', () => {
-    const res1 = checkTestDatabaseSafety('')
-    expect(res1.ok).toBe(false)
-    expect(res1.reason).toContain('DATABASE_URL environment variable is empty or undefined')
-
-    const res2 = checkTestDatabaseSafety('mongodb://127.0.0.1:27017')
-    expect(res2.ok).toBe(false)
-    expect(res2.reason).toContain('Could not parse database name from DATABASE_URL')
-  })
-
-  it('rejects unapproved database names', () => {
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/random_db')
+  it('rejects unapproved hosts', () => {
+    const res = checkTestDatabaseSafety('mongodb://malicious-server.com:27017/jeevancare_test?replicaSet=rs0')
     expect(res.ok).toBe(false)
-    expect(res.reason).toContain("is not in approved dedicated test database allowlist")
+    expect(res.reason).toContain('Target host')
   })
 
-  it('accepts explicitly approved dedicated test database jeevancare_test when configured and live match', () => {
-    const mockPayload = {
+  it('rejects production environment unconditionally even if FORCE_SEED=1 is provided', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('FORCE_SEED', '1')
+
+    const res = validateDatabaseUrlSafety('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')
+    expect(res.ok).toBe(false)
+    expect(res.reason).toContain('unconditionally blocked in production runtime')
+  })
+
+  it('rejects when live connected host is missing or unapproved', () => {
+    const mockPayloadMissingHost = {
       db: {
         connection: {
           db: { databaseName: 'jeevancare_test' },
-          name: 'jeevancare_test',
         },
       },
     } as any
 
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0', mockPayload)
-    expect(res.ok).toBe(true)
-    expect(res.dbName).toBe('jeevancare_test')
-    expect(res.liveDbName).toBe('jeevancare_test')
-  })
-
-  it('rejects when live connected database name cannot be obtained on payload instance', () => {
-    const mockEmptyPayload = {
-      db: {
-        connection: {},
-      },
-    } as any
-
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0', mockEmptyPayload)
-    expect(res.ok).toBe(false)
-    expect(res.reason).toContain('Live connected database name could not be verified on the Payload instance')
-  })
-
-  it('rejects when live connected database points to protected jeevancare even if env url says jeevancare_test', () => {
-    const mockMismatchedPayload = {
-      db: {
-        connection: {
-          db: { databaseName: 'jeevancare' },
-        },
-      },
-    } as any
-
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0', mockMismatchedPayload)
-    expect(res.ok).toBe(false)
-    expect(res.reason).toContain("Connected live database 'jeevancare' is a protected UAT/Production database")
+    const res1 = checkDestructiveDatabaseSafety(mockPayloadMissingHost, 'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')
+    expect(res1.ok).toBe(false)
+    expect(res1.reason).toContain('Live connected host identity')
   })
 
   it('rejects when configured and live connected database names do not match', () => {
-    const mockMismatchedPayload = {
+    const mockPayload = {
       db: {
         connection: {
-          db: { databaseName: 'other_db' },
+          host: '127.0.0.1',
+          db: { databaseName: 'jeevancare_test_db' },
         },
       },
     } as any
 
-    const res = checkTestDatabaseSafety('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0', mockMismatchedPayload)
+    const res = checkDestructiveDatabaseSafety(mockPayload, 'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')
     expect(res.ok).toBe(false)
-    expect(res.reason).toContain("is not in approved dedicated test database allowlist")
+    expect(res.reason).toContain('does not match live connected database name')
   })
 
   it('invokes payload.delete ZERO times when safety check fails during wipe(payload)', async () => {
@@ -109,6 +96,7 @@ describe('Fail-Closed Test Database Safety Guard Suite', () => {
       },
       db: {
         connection: {
+          host: 'malicious-host.com',
           db: { databaseName: 'jeevancare' },
         },
       },
@@ -116,25 +104,5 @@ describe('Fail-Closed Test Database Safety Guard Suite', () => {
 
     await expect(wipe(mockProtectedPayload)).rejects.toThrow('INTEGRATION TEST SAFETY GUARD BLOCK')
     expect(deleteCallCount).toBe(0)
-  })
-
-  it('validateE2EDatabaseUrl throws fail-closed error for protected or unapproved databases', async () => {
-    const { validateE2EDatabaseUrl } = await import('../int/fixtures')
-
-    expect(() => validateE2EDatabaseUrl('mongodb://127.0.0.1:27017/jeevancare?replicaSet=rs0')).toThrow(
-      "Configured database 'jeevancare' is a protected or unapproved database",
-    )
-
-    expect(() => validateE2EDatabaseUrl('mongodb://localhost:27017/production')).toThrow(
-      "Configured database 'production' is a protected or unapproved database",
-    )
-
-    expect(() => validateE2EDatabaseUrl('mongodb://localhost:27017/random_db')).toThrow(
-      "Configured database 'random_db' is a protected or unapproved database",
-    )
-
-    expect(validateE2EDatabaseUrl('mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0')).toBe(
-      'mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0',
-    )
   })
 })

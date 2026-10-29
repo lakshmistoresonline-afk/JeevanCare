@@ -19,3 +19,13 @@ export function relId(value: unknown): string {
   }
   return String(value)
 }
+
+export function escapeHtml(str?: string): string {
+  if (!str) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
