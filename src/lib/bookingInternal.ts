@@ -76,13 +76,7 @@ export async function internalIssuePatientActivationToken(
     let updateSuccess = false
 
     if (db) {
-      let queryId = (patient as any)._id || patient.id
-      if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
-        try {
-          const { ObjectId } = await import('mongodb')
-          queryId = new ObjectId(queryId)
-        } catch {}
-      }
+      const queryId = (patient as any)._id || patient.id
       const updateRes = await db.collection('patients').updateOne(
         { _id: queryId },
         {
