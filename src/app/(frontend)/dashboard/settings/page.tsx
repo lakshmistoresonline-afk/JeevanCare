@@ -9,6 +9,8 @@ import {
   DEFAULT_TIMEZONE,
 } from '@/lib/constants'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SettingsPage() {
   const session = await requireDashboardSession()
   await requireRole(session, ['owner'])
