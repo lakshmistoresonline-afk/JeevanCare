@@ -279,13 +279,7 @@ export async function patientRegisterAction(
     if (claimIdForRecovery && existingPatientForRecovery) {
       const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
       if (db) {
-        let queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
-        if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
-          try {
-            const { ObjectId } = await import('mongodb')
-            queryId = new ObjectId(queryId)
-          } catch {}
-        }
+        const queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
         await db.collection('patients').updateOne(
           { _id: queryId, activeClaimId: claimIdForRecovery },
           { $unset: { activeClaimId: '', claimedAt: '' } },
