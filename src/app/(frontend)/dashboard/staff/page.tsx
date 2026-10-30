@@ -15,6 +15,8 @@ function availabilitySummary(u: User): string {
   return `${dayLabel} · ${formatWindow(windowOf(u))}`
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function StaffPage() {
   const session = await requireDashboardSession()
   await requireRole(session, ['owner'])

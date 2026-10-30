@@ -4,6 +4,8 @@ import { PageTitle } from '@/components/primitives'
 import { PlanPanel } from '@/components/PlanPanel'
 import { asPlan } from '@/lib/plans'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PlanPage() {
   const session = await requireDashboardSession()
   await requireRole(session, ['owner'])

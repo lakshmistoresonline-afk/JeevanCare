@@ -38,6 +38,8 @@ function pageNumbers(current: number, total: number): (number | '…')[] {
   return out
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function PatientsPage({
   searchParams,
 }: {
