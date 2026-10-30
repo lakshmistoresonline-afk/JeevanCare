@@ -146,13 +146,7 @@ export async function patientRegisterAction(
 
       const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
 
-      let queryId = existingPatient._id || existingPatient.id
-      if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
-        try {
-          const { ObjectId } = await import('mongodb')
-          queryId = new ObjectId(queryId)
-        } catch {}
-      }
+      const queryId = existingPatient._id || existingPatient.id
 
       if (!isVerified) {
         // Atomic increment of activation attempts counter on failed claim
