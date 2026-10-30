@@ -5,6 +5,8 @@ import { PageTitle, Card, Th, Td, EmptyState } from '@/components/primitives'
 import { AUDIT_ACTIONS, DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { AuditLog, User } from '@/payload-types'
 
+export const dynamic = 'force-dynamic'
+
 const actionLabel = (value: string) =>
   AUDIT_ACTIONS.find((a) => a.value === value)?.label ?? value
 
