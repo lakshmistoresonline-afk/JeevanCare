@@ -333,13 +333,7 @@ export async function patientRegisterAction(
           const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
 
           if (db) {
-            let queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
-            if (typeof queryId === 'string' && /^[0-9a-fA-F]{24}$/.test(queryId)) {
-              try {
-                const { ObjectId } = await import('mongodb')
-                queryId = new ObjectId(queryId)
-              } catch {}
-            }
+            const queryId = existingPatientForRecovery._id || existingPatientForRecovery.id
 
             // Atomic conditional rollback matching ONLY THIS REQUEST'S activeClaimId!
             // If staff issued a new activation code in the meantime, activeClaimId was cleared/changed,
