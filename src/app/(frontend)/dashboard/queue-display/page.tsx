@@ -6,6 +6,8 @@ import { formatDoctorName } from '@/lib/utils'
 import { QueueAudioAnnouncer } from '@/components/QueueAudioAnnouncer'
 import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
 
+export const dynamic = 'force-dynamic'
+
 export default async function QueueDisplayPage() {
   const { tenant } = await requireDashboardSession()
   if (!tenant) redirect('/login')
