@@ -68,27 +68,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           errors.push({ row: i, reason: 'Missing required clinic name or phone.' })
           continue
         }
-        await payload.create({
-          collection: 'tenants',
-          overrideAccess: true,
-          data: {
-            name: row.name,
-            phone: row.phone,
-            city: row.city || 'Thrissur',
-            state: row.state || 'Kerala',
-            country: 'India',
-            status: 'active',
-            plan: 'clinic',
-            settings: {
-              currency: 'INR',
-              timezone: 'Asia/Kolkata',
-              appointmentDurationMins: 15,
-              openTime: '09:00',
-              closeTime: '17:00',
-            },
-          } as never,
-        })
-        importedCount++
+        try {
+          await payload.create({
+            collection: 'tenants',
+            overrideAccess: true,
+            data: {
+              name: row.name,
+              phone: row.phone,
+              city: row.city || 'Thrissur',
+              state: row.state || 'Kerala',
+              country: 'India',
+              status: 'active',
+              plan: 'clinic',
+              settings: {
+                currency: 'INR',
+                timezone: 'Asia/Kolkata',
+                appointmentDurationMins: 15,
+                openTime: '09:00',
+                closeTime: '17:00',
+              },
+            } as never,
+          })
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Failed to create clinic record.' })
+        }
       } else if (normalizedType === 'staff') {
         if (!row.name || !row.email || !row.role) {
           errors.push({ row: i, reason: 'Missing required name, email, or role.' })
@@ -117,23 +121,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         // Secure temporary password generation per account if not provided
         const initialPassword = row.password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
 
-        await payload.create({
-          collection: 'users',
-          overrideAccess: true,
-          data: {
-            name: row.name,
-            email: row.email.toLowerCase(),
-            password: initialPassword,
-            role: role as any,
-            tenant: targetTenantID,
-            phone: row.phone || '',
-            specialty: row.specialty || undefined,
-            consultationFee: row.fee ? Number(row.fee) : undefined,
-            medicalRegistrationNumber: row.regno || undefined,
-            active: true,
-          } as never,
-        })
-        importedCount++
+        try {
+          await payload.create({
+            collection: 'users',
+            overrideAccess: true,
+            data: {
+              name: row.name,
+              email: row.email.toLowerCase(),
+              password: initialPassword,
+              role: role as any,
+              tenant: targetTenantID,
+              phone: row.phone || '',
+              specialty: row.specialty || undefined,
+              consultationFee: row.fee ? Number(row.fee) : undefined,
+              medicalRegistrationNumber: row.regno || undefined,
+              active: true,
+            } as never,
+          })
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Failed to create staff record.' })
+        }
       }
     }
 
