@@ -102,9 +102,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         }
 
         // Derive tenant ID strictly from authenticated actor if owner
-        const targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
+        let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
+        if (!targetTenantID && isSuper) {
+          const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
+          if (firstTenant.docs.length > 0) {
+            targetTenantID = String(firstTenant.docs[0].id)
+          }
+        }
         if (!targetTenantID) {
-          errors.push({ row: i, reason: 'Could not determine target clinic tenant.' })
+          errors.push({ row: i, reason: 'Could not determine target clinic tenant. Please import or create a clinic first.' })
           continue
         }
 
