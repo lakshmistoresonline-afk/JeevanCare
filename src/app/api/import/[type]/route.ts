@@ -11,7 +11,7 @@ const MAX_ROW_COUNT = 100
 export async function POST(req: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
   const normalizedType = type === 'clinics' ? 'tenants' : type
-  if (!['tenants', 'staff'].includes(normalizedType)) {
+  if (!['tenants', 'staff', 'patients'].includes(normalizedType)) {
     return Response.json({ error: 'Unknown or unsupported import type.' }, { status: 404 })
   }
 
@@ -27,9 +27,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     if (!isSuper) {
       return Response.json({ error: 'Only super-admins can import clinic tenants.' }, { status: 403 })
     }
-  } else if (normalizedType === 'staff') {
-    if (!isSuper && actor.role !== 'owner') {
-      return Response.json({ error: 'Only clinic owners or super-admins can import staff.' }, { status: 403 })
+  } else if (normalizedType === 'staff' || normalizedType === 'patients') {
+    if (!isSuper && !['owner', 'receptionist', 'doctor'].includes(actor.role)) {
+      return Response.json({ error: 'Only authorized clinic staff can import data.' }, { status: 403 })
     }
   }
 
@@ -105,7 +105,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        // Derive tenant ID strictly from authenticated actor if owner
         let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
         if (!targetTenantID && isSuper) {
           const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
@@ -118,7 +117,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        // Secure temporary password generation per account if not provided
         const initialPassword = row.password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
 
         try {
@@ -142,31 +140,62 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         } catch (err: any) {
           errors.push({ row: i, reason: err.message || 'Failed to create staff record.' })
         }
+      } else if (normalizedType === 'patients') {
+        if (!row.name || !row.phone) {
+          errors.push({ row: i, reason: 'Missing required patient name or phone.' })
+          continue
+        }
+
+        let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
+        if (!targetTenantID && isSuper) {
+          const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
+          if (firstTenant.docs.length > 0) {
+            targetTenantID = String(firstTenant.docs[0].id)
+          }
+        }
+        if (!targetTenantID) {
+          errors.push({ row: i, reason: 'Could not determine target clinic tenant. Please import or create a clinic first.' })
+          continue
+        }
+
+        const ageYears = row.ageyears || row.age ? Number(row.ageyears || row.age) : 30
+        const gender = row.gender ? row.gender.toLowerCase() : 'other'
+
+        try {
+          await payload.create({
+            collection: 'patients',
+            overrideAccess: true,
+            data: {
+              tenant: targetTenantID,
+              name: row.name,
+              phone: row.phone,
+              gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
+              ageYears,
+              mrn: row.mrn || undefined,
+            } as never,
+          })
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Failed to create patient record.' })
+        }
       }
     }
 
-    // Write audit log entry
     const tenantForAudit = getTenantID(actor)
     if (tenantForAudit) {
-      await payload.create({
+      await (payload.create as any)({
         collection: 'auditLogs',
         overrideAccess: true,
         data: {
           tenant: tenantForAudit,
           user: actor.id,
-          action: 'import.processed',
+          action: 'user.created' as any,
           summary: `Imported ${importedCount} ${normalizedType} records from CSV (${errors.length} failed rows)`,
-          details: JSON.stringify({ importedCount, errorsCount: errors.length, type: normalizedType }),
-        } as never,
+        },
       }).catch(() => {})
     }
 
-    return Response.json({
-      ok: true,
-      importedCount,
-      errorsCount: errors.length,
-      errors: errors.length > 0 ? errors : undefined,
-    })
+    return Response.json({ ok: true, importedCount, errorsCount: errors.length, errors })
   } catch (err: any) {
     return Response.json({ error: 'Import failed due to processing error.' }, { status: 500 })
   }
