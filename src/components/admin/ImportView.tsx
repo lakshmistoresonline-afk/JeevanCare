@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { toast } from 'sonner'
 
 export default function ImportView() {
-  const [importType, setImportType] = useState<'clinics' | 'staff' | 'medicines' | 'patients'>('clinics')
+  const [importType, setImportType] = useState<'clinics' | 'doctors' | 'receptionists' | 'patients' | 'medicines'>('clinics')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -24,9 +24,10 @@ export default function ImportView() {
       if (importType === 'medicines') {
         res = await fetch('/api/import/medicines', { method: 'POST' })
       } else {
+        const endpointType = (importType === 'doctors' || importType === 'receptionists') ? 'staff' : importType
         const formData = new FormData()
         if (file) formData.append('file', file)
-        res = await fetch(`/api/import/${importType}`, {
+        res = await fetch(`/api/import/${endpointType}`, {
           method: 'POST',
           body: formData,
         })
@@ -49,9 +50,9 @@ export default function ImportView() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto bg-card rounded-xl border border-border shadow-xs mt-10">
-      <h1 className="text-2xl font-bold font-display text-primary mb-2">Bulk CSV / Excel &amp; Medicine Catalog Import</h1>
+      <h1 className="text-2xl font-bold font-display text-primary mb-2">Bulk Data Import &amp; Catalog Seeding</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Upload CSV files for clinics, staff, or patients, or populate the 50,000+ Indian medicine catalog.
+        Select your target entity below and upload your CSV file or populate the medicine database.
       </p>
 
       <form onSubmit={handleUpload} className="space-y-6">
@@ -62,10 +63,11 @@ export default function ImportView() {
             onChange={(e) => setImportType(e.target.value as any)}
             className="w-full h-10 px-3 rounded-lg border border-border bg-background text-ink text-sm font-medium"
           >
-            <option value="clinics">Clinics / Tenants (SuperAdmin only)</option>
-            <option value="staff">Staff &amp; Doctors (Owners / SuperAdmin)</option>
-            <option value="patients">Patients (Clinic Staff / SuperAdmin)</option>
-            <option value="medicines">Indian Medicine Catalog (50,000+ Salts &amp; Brands)</option>
+            <option value="clinics">🏥 Clinics / Hospitals (SuperAdmin only)</option>
+            <option value="doctors">👨‍⚕️ Doctors &amp; Specialists</option>
+            <option value="receptionists">👩‍💼 Staff &amp; Receptionists</option>
+            <option value="patients">🧑‍⚕️ Patients (Profiles &amp; MRNs)</option>
+            <option value="medicines">💊 Indian Medicine Catalog (50,000+ Salts &amp; Brands)</option>
           </select>
         </div>
 
