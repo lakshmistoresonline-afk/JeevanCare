@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { searchMedicines, type MedicineEntry } from '@/lib/medicineDirectory'
 import { Card, inputClass } from './primitives'
 import { IconSearch } from './icons'
@@ -17,10 +17,20 @@ export function MedicineDirectorySearch({
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<MedicineEntry[]>(searchMedicines(''))
 
-  const handleSearch = (val: string) => {
-    setQuery(val)
-    setResults(searchMedicines(val))
-  }
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/medicines/search?q=${encodeURIComponent(query)}`)
+        const data = await res.json()
+        if (data.ok && Array.isArray(data.medicines)) {
+          setResults(data.medicines)
+        }
+      } catch {
+        setResults(searchMedicines(query))
+      }
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [query])
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -28,20 +38,20 @@ export function MedicineDirectorySearch({
         <span className="flex size-7 items-center justify-center rounded-lg bg-primary-soft text-primary">
           <IconSearch size={14} />
         </span>
-        <h4 className="font-display text-xs font-bold text-ink">National Essential Medicine Directory Search</h4>
+        <h4 className="font-display text-xs font-bold text-ink">MongoDB Medicine Directory Search</h4>
       </div>
 
       <input
         type="text"
         value={query}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by generic name, brand (e.g. Paracetamol, Dolo, Augmentin)…"
         className={inputClass}
       />
 
       <div className="max-h-56 overflow-y-auto divide-y divide-border/60 rounded-xl border border-border/80 bg-canvas">
         {results.length === 0 ? (
-          <div className="p-4 text-center text-xs text-muted-foreground">No medicines found in national directory.</div>
+          <div className="p-4 text-center text-xs text-muted-foreground">No medicines found in directory.</div>
         ) : (
           results.map((med) => {
             const rowItem: PrescriptionRowInput = {
