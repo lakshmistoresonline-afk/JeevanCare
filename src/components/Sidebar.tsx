@@ -139,16 +139,16 @@ export function Sidebar({
                 {role === 'superAdmin' ? 'Super admin' : role}
               </div>
             </div>
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                title="Log out"
-                className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground/60 transition-colors duration-150 hover:bg-white/[0.07] hover:text-sidebar-active-fg"
-              >
-                <IconLogout size={15} strokeWidth={1.75} />
-              </button>
-            </form>
           </div>
+          <form action={logoutAction} className="mt-2">
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors duration-150 hover:bg-white/[0.07] hover:text-sidebar-active-fg border border-sidebar-border"
+            >
+              <IconLogout size={15} strokeWidth={1.75} />
+              <span>Log out</span>
+            </button>
+          </form>
         </div>
       </aside>
 
