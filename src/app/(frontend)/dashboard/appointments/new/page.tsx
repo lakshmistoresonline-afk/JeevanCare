@@ -20,6 +20,8 @@ function noteFor(d: User): { tag: string; note: string } {
   return { tag: 'regular', note: `${dayLabel} · ${formatWindow(windowOf(d))}` }
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewAppointmentPage() {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
