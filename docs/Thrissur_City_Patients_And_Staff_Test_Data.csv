@@ -1,0 +1,7 @@
+name,email,phone,role,mrn,gender,ageyears
+"Rahul Sharma","staff1@test.com","+919847021001","receptionist","","",""
+"Deepika Ramesh","staff2@test.com","+919847021002","receptionist","","",""
+"Aswathy Menon","patient1@test.com","+919847031001","patient","MRN-TH-001","female","32"
+"Manoj Das","patient2@test.com","+919847031002","patient","MRN-TH-002","male","45"
+"Lakshmi Devi","patient3@test.com","+919847031003","patient","MRN-TH-003","female","28"
+"Vineeth Nair","patient4@test.com","+919847031004","patient","MRN-TH-004","male","51"
