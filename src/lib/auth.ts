@@ -24,11 +24,13 @@ export type Session = {
   tenant: Tenant | null
 }
 
-export const requireDashboardSession = cache(async (): Promise<Session> => {
+export const requireDashboardSession = cache(async (): Promise<{ user: User; tenant: Tenant | null }> => {
   const user = await getCurrentUser()
   if (!user || user.active === false) redirect('/login?error=account_deactivated')
-  if (user.role === 'superAdmin') redirect('/super')
   if ((user as any).role === 'patient') redirect('/patient/dashboard')
+  if (user.role === 'superAdmin') {
+    return { user, tenant: null }
+  }
 
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)
