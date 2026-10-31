@@ -35,6 +35,17 @@ export default buildConfig({
     meta: {
       titleSuffix: '— Clinic Management',
     },
+    components: {
+      views: {
+        BulkImport: {
+          Component: '@/components/admin/ImportView',
+          path: '/bulk-import',
+          meta: {
+            title: 'Bulk CSV Import',
+          },
+        },
+      },
+    },
   },
   collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, MedicalDocuments, Medicines],
   editor: lexicalEditor(),
