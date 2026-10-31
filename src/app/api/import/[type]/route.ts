@@ -118,6 +118,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         }
 
         const initialPassword = row.password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
+        const rawPhone = row.phone || ''
+        const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
 
         try {
           await payload.create({
@@ -129,7 +131,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
               password: initialPassword,
               role: role as any,
               tenant: targetTenantID,
-              phone: row.phone || '',
+              phone: cleanPhone,
               specialty: row.specialty || undefined,
               consultationFee: row.fee ? Number(row.fee) : undefined,
               medicalRegistrationNumber: row.regno || undefined,
@@ -160,6 +162,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
         const ageYears = row.ageyears || row.age ? Number(row.ageyears || row.age) : 30
         const gender = row.gender ? row.gender.toLowerCase() : 'other'
+        const rawPhone = row.phone || ''
+        const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
 
         try {
           await payload.create({
@@ -168,7 +172,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             data: {
               tenant: targetTenantID,
               name: row.name,
-              phone: row.phone,
+              phone: cleanPhone,
               gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
               ageYears,
               mrn: row.mrn || undefined,
