@@ -1,7 +1,40 @@
-name,email,phone,role,mrn,gender,ageyears,password
-"Rahul Sharma","staff1@test.com","+919847021001","receptionist","","","","Test@123"
-"Deepika Ramesh","staff2@test.com","+919847021002","receptionist","","","","Test@123"
-"Aswathy Menon","patient1@test.com","+919847031001","patient","MRN-TH-001","female","32","Test@123"
-"Manoj Das","patient2@test.com","+919847031002","patient","MRN-TH-002","male","45","Test@123"
-"Lakshmi Devi","patient3@test.com","+919847031003","patient","MRN-TH-003","female","28","Test@123"
-"Vineeth Nair","patient4@test.com","+919847031004","patient","MRN-TH-004","male","51","Test@123"
+name,email,phone,role,mrn,gender,ageyears,password,clinic_name
+"Staff Swaraj","staff_swaraj@test.com","+919847021001","receptionist","","","","Test@123","Swaraj Medical Centre"
+"Patient Swaraj 1","pat_swaraj_1@test.com","+919847031001","patient","MRN-SW-001","female","32","Test@123","Swaraj Medical Centre"
+"Patient Swaraj 2","pat_swaraj_2@test.com","+919847031002","patient","MRN-SW-002","male","45","Test@123","Swaraj Medical Centre"
+
+"Staff Mission","staff_mission@test.com","+919847021002","receptionist","","","","Test@123","Mission Quarters Health Clinic"
+"Patient Mission 1","pat_mission_1@test.com","+919847031003","patient","MRN-MQ-001","female","28","Test@123","Mission Quarters Health Clinic"
+"Patient Mission 2","pat_mission_2@test.com","+919847031004","patient","MRN-MQ-002","male","51","Test@123","Mission Quarters Health Clinic"
+
+"Staff Ayyanthole","staff_ayyanthole@test.com","+919847021003","receptionist","","","","Test@123","Ayyanthole Family Practice"
+"Patient Ayyanthole 1","pat_ayyanthole_1@test.com","+919847031005","patient","MRN-AY-001","female","36","Test@123","Ayyanthole Family Practice"
+"Patient Ayyanthole 2","pat_ayyanthole_2@test.com","+919847031006","patient","MRN-AY-002","male","42","Test@123","Ayyanthole Family Practice"
+
+"Staff Chembukkavu","staff_chembukkavu@test.com","+919847021004","receptionist","","","","Test@123","Chembukkavu Specialist Chambers"
+"Patient Chembukkavu 1","pat_chembukkavu_1@test.com","+919847031007","patient","MRN-CS-001","female","29","Test@123","Chembukkavu Specialist Chambers"
+"Patient Chembukkavu 2","pat_chembukkavu_2@test.com","+919847031008","patient","MRN-CS-002","male","48","Test@123","Chembukkavu Specialist Chambers"
+
+"Staff EastFort","staff_eastfort@test.com","+919847021005","receptionist","","","","Test@123","East Fort Outpatient Centre"
+"Patient EastFort 1","pat_eastfort_1@test.com","+919847031009","patient","MRN-EF-001","female","35","Test@123","East Fort Outpatient Centre"
+"Patient EastFort 2","pat_eastfort_2@test.com","+919847031010","patient","MRN-EF-002","male","55","Test@123","East Fort Outpatient Centre"
+
+"Staff WestFort","staff_westfort@test.com","+919847021006","receptionist","","","","Test@123","West Fort Multispeciality Clinic"
+"Patient WestFort 1","pat_westfort_1@test.com","+919847031011","patient","MRN-WF-001","female","41","Test@123","West Fort Multispeciality Clinic"
+"Patient WestFort 2","pat_westfort_2@test.com","+919847031012","patient","MRN-WF-002","male","39","Test@123","West Fort Multispeciality Clinic"
+
+"Staff Punkunnam","staff_punkunnam@test.com","+919847021007","receptionist","","","","Test@123","Punkunnam Medical Centre"
+"Patient Punkunnam 1","pat_punkunnam_1@test.com","+919847031013","patient","MRN-PK-001","female","26","Test@123","Punkunnam Medical Centre"
+"Patient Punkunnam 2","pat_punkunnam_2@test.com","+919847031014","patient","MRN-PK-002","male","60","Test@123","Punkunnam Medical Centre"
+
+"Staff Ollur","staff_ollur@test.com","+919847021008","receptionist","","","","Test@123","Ollur Urban Health Hub"
+"Patient Ollur 1","pat_ollur_1@test.com","+919847031015","patient","MRN-OL-001","female","33","Test@123","Ollur Urban Health Hub"
+"Patient Ollur 2","pat_ollur_2@test.com","+919847031016","patient","MRN-OL-002","male","52","Test@123","Ollur Urban Health Hub"
+
+"Staff Mannuthy","staff_mannuthy@test.com","+919847021009","receptionist","","","","Test@123","Mannuthy Care Clinic"
+"Patient Mannuthy 1","pat_mannuthy_1@test.com","+919847031017","patient","MRN-MN-001","female","30","Test@123","Mannuthy Care Clinic"
+"Patient Mannuthy 2","pat_mannuthy_2@test.com","+919847031018","patient","MRN-MN-002","male","44","Test@123","Mannuthy Care Clinic"
+
+"Staff Koorkanchery","staff_koorkanchery@test.com","+919847021010","receptionist","","","","Test@123","Koorkanchery Outpatient Unit"
+"Patient Koorkanchery 1","pat_koorkanchery_1@test.com","+919847031019","patient","MRN-KO-001","female","27","Test@123","Koorkanchery Outpatient Unit"
+"Patient Koorkanchery 2","pat_koorkanchery_2@test.com","+919847031020","patient","MRN-KO-002","male","58","Test@123","Koorkanchery Outpatient Unit"

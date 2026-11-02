@@ -432,6 +432,19 @@ export async function seedTestUatData() {
     reason: 'General Checkup',
   })
 
+  // Ensure every single one of the 10 clinics has at least one active appointment
+  for (let i = 0; i < tenantDocs.length; i++) {
+    await nativeInsert('appointments', {
+      tenant: tenantDocs[i].id,
+      patient: patientDocs[i % patientDocs.length].id,
+      doctor: doctorDocs[i % doctorDocs.length].id,
+      start: new Date(Date.now() + (i + 1) * 2 * 3600 * 1000).toISOString(),
+      durationMins: 15,
+      status: 'scheduled',
+      reason: `Scheduled appointment for clinic #${i + 1}`,
+    }).catch(() => {})
+  }
+
   // 6. Seed National Essential Medicines Directory
   const sampleMedicines = [
     { brandName: 'Dolo 650 / Crocin', genericName: 'Paracetamol', category: 'Analgesic / Antipyretic', formulation: 'Tablet', strength: '650 mg', defaultFrequency: 'tds', defaultDurationDays: 3 },

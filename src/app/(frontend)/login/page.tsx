@@ -72,7 +72,7 @@ function LoginForm() {
                 id="email"
                 name="email"
                 type="text"
-                autoComplete="username"
+                autoComplete="off"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

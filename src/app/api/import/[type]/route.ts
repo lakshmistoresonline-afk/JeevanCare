@@ -125,6 +125,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         }
 
         let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
+        if (!targetTenantID && row.clinic_name) {
+          const foundTenant = await payload.find({
+            collection: 'tenants',
+            where: { name: { like: row.clinic_name } },
+            limit: 1,
+            overrideAccess: true,
+          })
+          if (foundTenant.docs.length > 0) {
+            targetTenantID = String(foundTenant.docs[0].id)
+          }
+        }
         if (!targetTenantID && isSuper) {
           const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
           if (firstTenant.docs.length > 0) {
@@ -168,6 +179,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         }
 
         let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
+        if (!targetTenantID && row.clinic_name) {
+          const foundTenant = await payload.find({
+            collection: 'tenants',
+            where: { name: { like: row.clinic_name } },
+            limit: 1,
+            overrideAccess: true,
+          })
+          if (foundTenant.docs.length > 0) {
+            targetTenantID = String(foundTenant.docs[0].id)
+          }
+        }
         if (!targetTenantID && isSuper) {
           const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
           if (firstTenant.docs.length > 0) {

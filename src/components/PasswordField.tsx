@@ -58,14 +58,14 @@ export function PasswordField({
           id={id}
           name={name}
           type={show ? 'text' : 'password'}
-          autoComplete={autoComplete}
+          autoComplete="new-password"
           required={required}
           defaultValue={defaultValue}
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
           minLength={minLength}
-          className={`${inputClass} pe-16`}
+          className={`${inputClass} pe-20`}
         />
         <div className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
           {Boolean(currentValue) && (
