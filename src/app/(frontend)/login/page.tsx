@@ -67,18 +67,29 @@ function LoginForm() {
 
         <form action={formAction} className="mt-6 flex flex-col gap-4">
           <Field label="Email Address or Mobile Number" htmlFor="email">
-            <input
-              id="email"
-              name="email"
-              type="text"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={(e) => e.target.select()}
-              placeholder="you@clinic.com or +91 98470 11111"
-              className={inputClass}
-            />
+            <div className="relative">
+              <input
+                id="email"
+                name="email"
+                type="text"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@clinic.com or +91 98470 11111"
+                className={`${inputClass} pr-9`}
+              />
+              {email && (
+                <button
+                  type="button"
+                  onClick={() => setEmail('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-ink text-xs font-bold size-5 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                  title="Clear text"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </Field>
 
           <PasswordField
