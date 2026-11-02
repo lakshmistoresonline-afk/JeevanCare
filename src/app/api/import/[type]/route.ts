@@ -69,7 +69,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
         try {
-          await payload.create({
+          const tenant = await payload.create({
             collection: 'tenants',
             overrideAccess: true,
             data: {
@@ -79,7 +79,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
               state: row.state || 'Kerala',
               country: 'India',
               status: 'active',
-              plan: 'clinic',
+              plan: row.plan || 'clinic',
               settings: {
                 currency: 'INR',
                 timezone: 'Asia/Kolkata',
@@ -89,6 +89,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
               },
             } as never,
           })
+
+          // Automatically provision clinic owner if owner details are in CSV
+          if (row.owner_email) {
+            const ownerPassword = row.owner_password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
+            await payload.create({
+              collection: 'users',
+              overrideAccess: true,
+              data: {
+                name: row.owner_name || `Owner — ${row.name}`,
+                email: row.owner_email.toLowerCase(),
+                password: ownerPassword,
+                role: 'owner',
+                tenant: tenant.id,
+                phone: row.phone,
+                active: true,
+              } as never,
+            }).catch(() => {})
+          }
+
           importedCount++
         } catch (err: any) {
           errors.push({ row: i, reason: err.message || 'Failed to create clinic record.' })

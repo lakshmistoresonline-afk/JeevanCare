@@ -1,0 +1,11 @@
+name,phone,city,state,country,status,plan,owner_name,owner_email,owner_password
+"Swaraj Medical Centre","+919847011111","Thrissur","Kerala","India","active","plus","Dr. Ramesh Swaraj","owner1@test.com","Test@123"
+"Mission Quarters Health Clinic","+919847022222","Thrissur","Kerala","India","active","clinic","Dr. Mary Kurian","owner2@test.com","Test@123"
+"Ayyanthole Family Practice","+919847033333","Thrissur","Kerala","India","active","clinic","Dr. George Varghese","owner3@test.com","Test@123"
+"Chembukkavu Specialist Chambers","+919847044444","Thrissur","Kerala","India","active","plus","Dr. Shobha Menon","owner4@test.com","Test@123"
+"East Fort Outpatient Centre","+919847055555","Thrissur","Kerala","India","active","clinic","Dr. K. P. Nambiar","owner5@test.com","Test@123"
+"West Fort Multispeciality Clinic","+919847066666","Thrissur","Kerala","India","active","plus","Dr. Thomas Joseph","owner6@test.com","Test@123"
+"Punkunnam Medical Centre","+919847077777","Thrissur","Kerala","India","active","clinic","Dr. Lalitha Sharma","owner7@test.com","Test@123"
+"Ollur Urban Health Hub","+919847088888","Thrissur","Kerala","India","active","clinic","Dr. Biju Panicker","owner8@test.com","Test@123"
+"Mannuthy Care Clinic","+919847099999","Thrissur","Kerala","India","active","clinic","Dr. Radhika Pillai","owner9@test.com","Test@123"
+"Koorkanchery Outpatient Unit","+919847012121","Thrissur","Kerala","India","active","clinic","Dr. Anil Kumar","owner10@test.com","Test@123"

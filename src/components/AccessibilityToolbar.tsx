@@ -33,12 +33,12 @@ export function AccessibilityToolbar() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-40 hidden sm:flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-1.5 shadow-lg backdrop-blur-md text-xs">
+    <div className="fixed top-3 right-20 z-50 hidden sm:flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-1 shadow-lg backdrop-blur-md text-[11px]">
       <span className="font-bold text-primary">♿ Accessibility:</span>
       <button
         type="button"
         onClick={toggleHighContrast}
-        className={`rounded-full px-2.5 py-0.5 font-semibold transition-colors ${
+        className={`rounded-full px-2 py-0.5 font-semibold transition-colors ${
           highContrast ? 'bg-primary text-white' : 'bg-secondary text-ink hover:bg-secondary/80'
         }`}
       >
@@ -47,7 +47,7 @@ export function AccessibilityToolbar() {
       <button
         type="button"
         onClick={toggleLargeText}
-        className={`rounded-full px-2.5 py-0.5 font-semibold transition-colors ${
+        className={`rounded-full px-2 py-0.5 font-semibold transition-colors ${
           largeText ? 'bg-primary text-white' : 'bg-secondary text-ink hover:bg-secondary/80'
         }`}
       >

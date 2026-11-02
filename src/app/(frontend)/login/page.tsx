@@ -75,6 +75,7 @@ function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onFocus={(e) => e.target.select()}
               placeholder="you@clinic.com or +91 98470 11111"
               className={inputClass}
             />

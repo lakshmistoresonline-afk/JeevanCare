@@ -229,6 +229,35 @@ export async function seedTestUatData() {
     doctorDocs.push(doctor)
   }
 
+  // Also map key doctors across multiple clinics via shift timings (Option A implementation)
+  const multiClinicDoctors = [
+    { name: 'Dr. Sabitha Krishnamoorthy', email: 'doctor1_mission@test.com', specialty: 'Internal Medicine', fee: 800, regno: 'KMC-11223', tenantIdx: 1 },
+    { name: 'Dr. Suresh Menon', email: 'dr.suresh_ayyanthole@test.com', specialty: 'Orthopedics', fee: 700, regno: 'KMC-2026-103', tenantIdx: 2 },
+  ]
+  for (const mcDoc of multiClinicDoctors) {
+    const doctor = await safeCreate(payload, {
+      collection: 'users',
+      ...adminCtx,
+      data: {
+        name: mcDoc.name,
+        email: mcDoc.email,
+        password: PASSWORD,
+        role: 'doctor',
+        tenant: tenantDocs[mcDoc.tenantIdx].id,
+        specialty: mcDoc.specialty,
+        qualification: 'MBBS, MD, DNB',
+        medicalRegistrationNumber: mcDoc.regno,
+        stateMedicalCouncil: 'Travancore Cochin Medical Council',
+        consultationFee: mcDoc.fee,
+        availabilityType: 'regular',
+        availableDays: ['mon', 'wed', 'fri'],
+        availableFrom: '14:00',
+        availableTo: '20:00', // Evening shift at secondary clinic
+      } as never,
+    })
+    doctorDocs.push(doctor)
+  }
+
   // 4. Test Patients & Portal Accounts (patient1@test.com to patient10@test.com)
   const patientDocs = []
   const patientUserDocs = []

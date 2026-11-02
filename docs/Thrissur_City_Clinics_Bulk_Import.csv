@@ -1,11 +1,11 @@
-name,phone,city,state
-"Swaraj Medical Centre","+919847011111","Thrissur","Kerala"
-"Mission Quarters Health Clinic","+919847022222","Thrissur","Kerala"
-"Ayyanthole Family Practice","+919847033333","Thrissur","Kerala"
-"Chembukkavu Specialist Chambers","+919847044444","Thrissur","Kerala"
-"East Fort Outpatient Centre","+919847055555","Thrissur","Kerala"
-"West Fort Multispeciality Clinic","+919847066666","Thrissur","Kerala"
-"Punkunnam Medical Centre","+919847077777","Thrissur","Kerala"
-"Ollur Urban Health Hub","+919847088888","Thrissur","Kerala"
-"Mannuthy Care Clinic","+919847099999","Thrissur","Kerala"
-"Koorkanchery Outpatient Unit","+919847012121","Thrissur","Kerala"
+name,phone,city,state,country,status,plan
+Swaraj Medical Centre,9.19847E+11,Thrissur,Kerala,India,active,plus
+Mission Quarters Health Clinic,9.19847E+11,Thrissur,Kerala,India,active,clinic
+Ayyanthole Family Practice,9.19847E+11,Thrissur,Kerala,India,active,clinic
+Chembukkavu Specialist Chambers,9.19847E+11,Thrissur,Kerala,India,active,plus
+East Fort Outpatient Centre,9.19847E+11,Thrissur,Kerala,India,active,clinic
+West Fort Multispeciality Clinic,9.19847E+11,Thrissur,Kerala,India,active,plus
+Punkunnam Medical Centre,9.19847E+11,Thrissur,Kerala,India,active,clinic
+Ollur Urban Health Hub,9.19847E+11,Thrissur,Kerala,India,active,clinic
+Mannuthy Care Clinic,9.19847E+11,Thrissur,Kerala,India,active,clinic
+Koorkanchery Outpatient Unit,9.19847E+11,Thrissur,Kerala,India,active,clinic
