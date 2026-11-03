@@ -50,7 +50,6 @@ async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: 
     }
   }
 
-  // Foolproof fallback: distribute evenly across all available clinics in the database
   const allTenants = await payload.find({
     collection: 'tenants',
     limit: 100,
@@ -221,7 +220,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
         const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
         if (!targetTenantID) {
-          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
+          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
           continue
         }
 
@@ -283,7 +282,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
         const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
         if (!targetTenantID) {
-          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
+          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
           continue
         }
 
@@ -373,16 +372,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        const patRes = await payload.find({
-          collection: 'patients',
-          where: { tenant: { equals: targetTenantID }, email: { equals: row.patient_email.toLowerCase() } },
+        const userPatRes = await payload.find({
+          collection: 'users',
+          where: { tenant: { equals: targetTenantID }, email: { equals: row.patient_email.toLowerCase() }, role: { equals: 'patient' } },
           limit: 1,
           overrideAccess: true,
         })
-        if (patRes.docs.length === 0) {
+        if (userPatRes.docs.length === 0 || !userPatRes.docs[0].patientProfile) {
           errors.push({ row: i, reason: `Patient with email '${row.patient_email}' not found in clinic.` })
           continue
         }
+        const patientID = typeof userPatRes.docs[0].patientProfile === 'object' ? userPatRes.docs[0].patientProfile.id : userPatRes.docs[0].patientProfile
 
         const docRes = await payload.find({
           collection: 'users',
@@ -410,7 +410,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             overrideAccess: true,
             data: {
               tenant: targetTenantID,
-              patient: patRes.docs[0].id,
+              patient: patientID,
               doctor: docRes.docs[0].id,
               start: startDate.toISOString(),
               durationMins: duration,
@@ -441,6 +441,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
     return Response.json({ ok: true, importedCount, errorsCount: errors.length, errors })
   } catch (err: any) {
-    return Response.json({ error: 'Import failed due to processing error.' }, { status: 500 })
+    return Response.json({ error: err.message || 'Import failed due to processing error.' }, { status: 500 })
   }
 }
