@@ -295,10 +295,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
         try {
           let patient: any
-          if (row.email) {
+          if (cleanPhone) {
             const existingPat = await payload.find({
               collection: 'patients',
-              where: { tenant: { equals: targetTenantID }, email: { equals: row.email.toLowerCase() } },
+              where: { tenant: { equals: targetTenantID }, phone: { equals: cleanPhone } },
               limit: 1,
               overrideAccess: true,
             })
@@ -309,7 +309,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 overrideAccess: true,
                 data: {
                   name: row.name,
-                  phone: cleanPhone,
                   gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
                   ageYears,
                 } as never,
@@ -325,7 +324,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 tenant: targetTenantID,
                 name: row.name,
                 phone: cleanPhone,
-                email: row.email ? row.email.toLowerCase() : undefined,
                 gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
                 ageYears,
                 mrn: row.mrn || undefined,
