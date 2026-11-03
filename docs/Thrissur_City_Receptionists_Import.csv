@@ -1,0 +1,11 @@
+name,email,role,phone,password,clinic_name
+"Rahul Sharma","staff1@test.com","receptionist","+919847021001","Test@123","Swaraj Medical Centre"
+"Deepika Ramesh","staff2@test.com","receptionist","+919847021002","Test@123","Mission Quarters Health Clinic"
+"George Staff","staff3@test.com","receptionist","+919847021003","Test@123","Ayyanthole Family Practice"
+"Priya Staff","staff4@test.com","receptionist","+919847021004","Test@123","Chembukkavu Specialist Chambers"
+"Mohan Staff","staff5@test.com","receptionist","+919847021005","Test@123","East Fort Outpatient Centre"
+"Anu Staff","staff6@test.com","receptionist","+919847021006","Test@123","West Fort Multispeciality Clinic"
+"Sreejith Staff","staff7@test.com","receptionist","+919847021007","Test@123","Punkunnam Medical Centre"
+"Remya Staff","staff8@test.com","receptionist","+919847021008","Test@123","Ollur Urban Health Hub"
+"Pradeep Staff","staff9@test.com","receptionist","+919847021009","Test@123","Mannuthy Care Clinic"
+"Kiran Staff","staff10@test.com","receptionist","+919847021010","Test@123","Koorkanchery Outpatient Unit"

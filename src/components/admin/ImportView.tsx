@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { toast } from 'sonner'
 
 export default function ImportView() {
-  const [importType, setImportType] = useState<'clinics' | 'doctors' | 'receptionists' | 'patients' | 'medicines'>('clinics')
+  const [importType, setImportType] = useState<'clinics' | 'doctors' | 'receptionists' | 'patients' | 'appointments' | 'medicines'>('clinics')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -67,6 +67,7 @@ export default function ImportView() {
             <option value="doctors">👨‍⚕️ Doctors &amp; Specialists</option>
             <option value="receptionists">👩‍💼 Staff &amp; Receptionists</option>
             <option value="patients">🧑‍⚕️ Patients (Profiles &amp; MRNs)</option>
+            <option value="appointments">📅 Appointments (Patient &amp; Doctor Booking)</option>
             <option value="medicines">💊 Indian Medicine Catalog (50,000+ Salts &amp; Brands)</option>
           </select>
         </div>

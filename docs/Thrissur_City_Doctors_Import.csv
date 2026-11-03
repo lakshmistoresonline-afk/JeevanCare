@@ -1,0 +1,11 @@
+name,email,role,specialty,qualification,consultationfee,phone,regno,password,clinic_name
+"Dr. Sabitha Krishnamoorthy","doctor1@test.com","doctor","Internal Medicine","MBBS, MD","800","+919847011001","KMC-11223","Test@123","Swaraj Medical Centre"
+"Dr. Bins M John","doctor2@test.com","doctor","General Medicine","MBBS, DNB","600","+919847011002","KMC-11224","Test@123","Mission Quarters Health Clinic"
+"Dr. Vinaya Thekkethil","doctor3@test.com","doctor","Family Medicine","MBBS, MRCGP","500","+919847011003","KMC-11225","Test@123","Ayyanthole Family Practice"
+"Dr. Shobha Menon","doctor4@test.com","doctor","Gynecology","MBBS, DGO","800","+919847011009","KMC-2026-104","Test@123","Chembukkavu Specialist Chambers"
+"Dr. K. P. Nambiar","doctor5@test.com","doctor","Orthopedics","MBBS, MS","750","+919847011005","KMC-11227","Test@123","East Fort Outpatient Centre"
+"Dr. Thomas Joseph","doctor6@test.com","doctor","Cardiology","MBBS, DM","1000","+919847011010","KMC-2026-105","Test@123","West Fort Multispeciality Clinic"
+"Dr. Lalitha Sharma","doctor7@test.com","doctor","Dermatology","MBBS, DVD","800","+919847011004","KMC-11226","Test@123","Punkunnam Medical Centre"
+"Dr. Biju Panicker","doctor8@test.com","doctor","General Practice","MBBS","500","+919847011004","KMC-11226","Test@123","Ollur Urban Health Hub"
+"Dr. Radhika Pillai","doctor9@test.com","doctor","Pediatrics","MBBS, DCH","600","+919847011007","KMC-2026-102","Test@123","Mannuthy Care Clinic"
+"Dr. Anil Kumar","doctor10@test.com","doctor","Internal Medicine","MBBS, MD","800","+919847011001","KMC-11223","Test@123","Koorkanchery Outpatient Unit"

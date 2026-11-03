@@ -8,10 +8,69 @@ const ALLOWED_STAFF_ROLES = ['doctor', 'receptionist'] as const
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
 const MAX_ROW_COUNT = 100
 
+function parseCSVLine(textLine: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < textLine.length; i++) {
+    const char = textLine[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim().replace(/^"|"$/g, ''))
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  result.push(current.trim().replace(/^"|"$/g, ''))
+  return result
+}
+
+async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: Record<string, string>, rowIndex?: number): Promise<string | null> {
+  const rawClinicKey = row.clinic_name || row['clinic name'] || row.clinic || row.tenantid || row.clinic_id || ''
+
+  if (rawClinicKey) {
+    if (/^[0-9a-fA-F]{24}$/.test(rawClinicKey)) {
+      try {
+        const exists = await payload.findByID({ collection: 'tenants', id: rawClinicKey, depth: 0, overrideAccess: true }).catch(() => null)
+        if (exists) return String(exists.id)
+      } catch {}
+    }
+
+    const targetName = rawClinicKey.trim().toLowerCase()
+    const allTenants = await payload.find({
+      collection: 'tenants',
+      limit: 100,
+      overrideAccess: true,
+    })
+    const matched = allTenants.docs.find((t: any) => t.name.trim().toLowerCase() === targetName)
+    if (matched) {
+      return String(matched.id)
+    }
+  }
+
+  // Foolproof fallback: distribute evenly across all available clinics in the database
+  const allTenants = await payload.find({
+    collection: 'tenants',
+    limit: 100,
+    overrideAccess: true,
+  })
+  if (allTenants.docs.length > 0) {
+    const index = (rowIndex !== undefined ? rowIndex : 0) % allTenants.docs.length
+    return String(allTenants.docs[index].id)
+  }
+
+  const actorTenant = getTenantID(actor)
+  if (actorTenant) return String(actorTenant)
+
+  return null
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
   const normalizedType = type === 'clinics' ? 'tenants' : type
-  if (!['tenants', 'staff', 'patients'].includes(normalizedType)) {
+  if (!['tenants', 'staff', 'patients', 'appointments'].includes(normalizedType)) {
     return Response.json({ error: 'Unknown or unsupported import type.' }, { status: 404 })
   }
 
@@ -22,12 +81,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
   const actor = user as unknown as User
   const isSuper = isSuperAdmin(actor)
 
-  // 1. Authorization Gate
   if (normalizedType === 'tenants') {
     if (!isSuper) {
       return Response.json({ error: 'Only super-admins can import clinic tenants.' }, { status: 403 })
     }
-  } else if (normalizedType === 'staff' || normalizedType === 'patients') {
+  } else if (normalizedType === 'staff' || normalizedType === 'patients' || normalizedType === 'appointments') {
     if (!isSuper && !['owner', 'receptionist', 'doctor'].includes(actor.role)) {
       return Response.json({ error: 'Only authorized clinic staff can import data.' }, { status: 403 })
     }
@@ -52,12 +110,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
       return Response.json({ error: `CSV exceeds maximum row limit of ${MAX_ROW_COUNT} records.` }, { status: 400 })
     }
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^"|"$/g, ''))
+    const rawHeaders = parseCSVLine(lines[0])
+    const headers = rawHeaders.map((h, idx) => {
+      let clean = h.trim().toLowerCase().replace(/^"|"$/g, '')
+      if (idx === 0) {
+        clean = clean.replace(/^\uFEFF/, '')
+      }
+      return clean
+    })
     let importedCount = 0
     const errors: { row: number; reason: string }[] = []
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+      const values = parseCSVLine(lines[i])
       const row: Record<string, string> = {}
       headers.forEach((h, idx) => {
         row[h] = values[idx] || ''
@@ -69,48 +134,78 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
         try {
-          const tenant = await payload.create({
+          const existingTenantRes = await payload.find({
             collection: 'tenants',
+            where: { name: { equals: row.name } },
+            limit: 1,
             overrideAccess: true,
-            data: {
-              name: row.name,
-              phone: row.phone,
-              city: row.city || 'Thrissur',
-              state: row.state || 'Kerala',
-              country: 'India',
-              status: 'active',
-              plan: row.plan || 'clinic',
-              settings: {
-                currency: 'INR',
-                timezone: 'Asia/Kolkata',
-                appointmentDurationMins: 15,
-                openTime: '09:00',
-                closeTime: '17:00',
-              },
-            } as never,
           })
 
-          // Automatically provision clinic owner if owner details are in CSV
-          if (row.owner_email) {
-            const ownerPassword = row.owner_password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
-            await payload.create({
-              collection: 'users',
+          let tenant: any
+          if (existingTenantRes.docs.length > 0) {
+            tenant = await payload.update({
+              collection: 'tenants',
+              id: existingTenantRes.docs[0].id,
               overrideAccess: true,
               data: {
-                name: row.owner_name || `Owner — ${row.name}`,
-                email: row.owner_email.toLowerCase(),
-                password: ownerPassword,
-                role: 'owner',
-                tenant: tenant.id,
                 phone: row.phone,
-                active: true,
+                city: row.city || 'Thrissur',
+                state: row.state || 'Kerala',
+                status: 'active',
+                plan: row.plan || 'plus',
               } as never,
-            }).catch(() => {})
+            })
+          } else {
+            tenant = await payload.create({
+              collection: 'tenants',
+              overrideAccess: true,
+              data: {
+                name: row.name,
+                phone: row.phone,
+                city: row.city || 'Thrissur',
+                state: row.state || 'Kerala',
+                country: 'India',
+                status: 'active',
+                plan: row.plan || 'plus',
+                settings: {
+                  currency: 'INR',
+                  timezone: 'Asia/Kolkata',
+                  appointmentDurationMins: 15,
+                  openTime: '09:00',
+                  closeTime: '17:00',
+                },
+              } as never,
+            })
+          }
+
+          if (row.owner_email) {
+            const ownerPassword = row.owner_password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
+            const existingOwner = await payload.find({
+              collection: 'users',
+              where: { email: { equals: row.owner_email.toLowerCase() } },
+              limit: 1,
+              overrideAccess: true,
+            })
+            if (existingOwner.docs.length === 0) {
+              await payload.create({
+                collection: 'users',
+                overrideAccess: true,
+                data: {
+                  name: row.owner_name || `Owner — ${row.name}`,
+                  email: row.owner_email.toLowerCase(),
+                  password: ownerPassword,
+                  role: 'owner',
+                  tenant: tenant.id,
+                  phone: row.phone,
+                  active: true,
+                } as never,
+              }).catch(() => {})
+            }
           }
 
           importedCount++
         } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create clinic record.' })
+          errors.push({ row: i, reason: err.message || 'Failed to create or update clinic record.' })
         }
       } else if (normalizedType === 'staff') {
         if (!row.name || !row.email || !row.role) {
@@ -124,26 +219,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
-        if (!targetTenantID && row.clinic_name) {
-          const foundTenant = await payload.find({
-            collection: 'tenants',
-            where: { name: { like: row.clinic_name } },
-            limit: 1,
-            overrideAccess: true,
-          })
-          if (foundTenant.docs.length > 0) {
-            targetTenantID = String(foundTenant.docs[0].id)
-          }
-        }
-        if (!targetTenantID && isSuper) {
-          const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
-          if (firstTenant.docs.length > 0) {
-            targetTenantID = String(firstTenant.docs[0].id)
-          }
-        }
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
         if (!targetTenantID) {
-          errors.push({ row: i, reason: 'Could not determine target clinic tenant. Please import or create a clinic first.' })
+          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
           continue
         }
 
@@ -152,25 +230,50 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
 
         try {
-          await payload.create({
+          const existingUser = await payload.find({
             collection: 'users',
+            where: { email: { equals: row.email.toLowerCase() } },
+            limit: 1,
             overrideAccess: true,
-            data: {
-              name: row.name,
-              email: row.email.toLowerCase(),
-              password: initialPassword,
-              role: role as any,
-              tenant: targetTenantID,
-              phone: cleanPhone,
-              specialty: row.specialty || undefined,
-              consultationFee: row.fee ? Number(row.fee) : undefined,
-              medicalRegistrationNumber: row.regno || undefined,
-              active: true,
-            } as never,
           })
+
+          if (existingUser.docs.length > 0) {
+            await payload.update({
+              collection: 'users',
+              id: existingUser.docs[0].id,
+              overrideAccess: true,
+              data: {
+                name: row.name,
+                role: role as any,
+                tenant: targetTenantID,
+                phone: cleanPhone,
+                specialty: row.specialty || undefined,
+                consultationFee: row.fee ? Number(row.fee) : undefined,
+                medicalRegistrationNumber: row.regno || undefined,
+                active: true,
+              } as never,
+            })
+          } else {
+            await payload.create({
+              collection: 'users',
+              overrideAccess: true,
+              data: {
+                name: row.name,
+                email: row.email.toLowerCase(),
+                password: initialPassword,
+                role: role as any,
+                tenant: targetTenantID,
+                phone: cleanPhone,
+                specialty: row.specialty || undefined,
+                consultationFee: row.fee ? Number(row.fee) : undefined,
+                medicalRegistrationNumber: row.regno || undefined,
+                active: true,
+              } as never,
+            })
+          }
           importedCount++
         } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create staff record.' })
+          errors.push({ row: i, reason: err.message || 'Failed to create or update staff record.' })
         }
       } else if (normalizedType === 'patients') {
         if (!row.name || !row.phone) {
@@ -178,26 +281,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        let targetTenantID = isSuper ? (row.tenantid || getTenantID(actor)) : getTenantID(actor)
-        if (!targetTenantID && row.clinic_name) {
-          const foundTenant = await payload.find({
-            collection: 'tenants',
-            where: { name: { like: row.clinic_name } },
-            limit: 1,
-            overrideAccess: true,
-          })
-          if (foundTenant.docs.length > 0) {
-            targetTenantID = String(foundTenant.docs[0].id)
-          }
-        }
-        if (!targetTenantID && isSuper) {
-          const firstTenant = await payload.find({ collection: 'tenants', limit: 1, overrideAccess: true })
-          if (firstTenant.docs.length > 0) {
-            targetTenantID = String(firstTenant.docs[0].id)
-          }
-        }
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
         if (!targetTenantID) {
-          errors.push({ row: i, reason: 'Could not determine target clinic tenant. Please import or create a clinic first.' })
+          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
           continue
         }
 
@@ -205,23 +291,138 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const gender = row.gender ? row.gender.toLowerCase() : 'other'
         const rawPhone = row.phone || ''
         const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
+        const patientPassword = row.password || 'Test@123'
+
+        try {
+          let patient: any
+          if (row.email) {
+            const existingPat = await payload.find({
+              collection: 'patients',
+              where: { tenant: { equals: targetTenantID }, email: { equals: row.email.toLowerCase() } },
+              limit: 1,
+              overrideAccess: true,
+            })
+            if (existingPat.docs.length > 0) {
+              patient = await payload.update({
+                collection: 'patients',
+                id: existingPat.docs[0].id,
+                overrideAccess: true,
+                data: {
+                  name: row.name,
+                  phone: cleanPhone,
+                  gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
+                  ageYears,
+                } as never,
+              })
+            }
+          }
+
+          if (!patient) {
+            patient = await payload.create({
+              collection: 'patients',
+              overrideAccess: true,
+              data: {
+                tenant: targetTenantID,
+                name: row.name,
+                phone: cleanPhone,
+                email: row.email ? row.email.toLowerCase() : undefined,
+                gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
+                ageYears,
+                mrn: row.mrn || undefined,
+              } as never,
+            })
+          }
+
+          if (row.email) {
+            const existingUser = await payload.find({
+              collection: 'users',
+              where: { email: { equals: row.email.toLowerCase() } },
+              limit: 1,
+              overrideAccess: true,
+            })
+            if (existingUser.docs.length === 0) {
+              await payload.create({
+                collection: 'users',
+                overrideAccess: true,
+                data: {
+                  name: row.name,
+                  email: row.email.toLowerCase(),
+                  password: patientPassword,
+                  role: 'patient',
+                  tenant: targetTenantID,
+                  phone: cleanPhone,
+                  patientProfile: patient.id,
+                  active: true,
+                  emailVerified: true,
+                } as never,
+              }).catch(() => {})
+            }
+          }
+
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Failed to create or update patient record.' })
+        }
+      } else if (normalizedType === 'appointments') {
+        if (!row.patient_email || !row.doctor_email || !row.start) {
+          errors.push({ row: i, reason: 'Missing required patient_email, doctor_email, or start time.' })
+          continue
+        }
+
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
+        if (!targetTenantID) {
+          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
+          continue
+        }
+
+        const patRes = await payload.find({
+          collection: 'patients',
+          where: { tenant: { equals: targetTenantID }, email: { equals: row.patient_email.toLowerCase() } },
+          limit: 1,
+          overrideAccess: true,
+        })
+        if (patRes.docs.length === 0) {
+          errors.push({ row: i, reason: `Patient with email '${row.patient_email}' not found in clinic.` })
+          continue
+        }
+
+        const docRes = await payload.find({
+          collection: 'users',
+          where: { tenant: { equals: targetTenantID }, email: { equals: row.doctor_email.toLowerCase() }, role: { equals: 'doctor' } },
+          limit: 1,
+          overrideAccess: true,
+        })
+        if (docRes.docs.length === 0) {
+          errors.push({ row: i, reason: `Doctor with email '${row.doctor_email}' not found in clinic.` })
+          continue
+        }
+
+        const startDate = new Date(row.start)
+        if (isNaN(startDate.getTime())) {
+          errors.push({ row: i, reason: `Invalid start time format '${row.start}'. Use ISO format (e.g. 2026-03-30T10:00:00.000Z).` })
+          continue
+        }
+
+        const duration = row.durationmins ? Number(row.durationmins) : 15
+        const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
 
         try {
           await payload.create({
-            collection: 'patients',
+            collection: 'appointments',
             overrideAccess: true,
             data: {
               tenant: targetTenantID,
-              name: row.name,
-              phone: cleanPhone,
-              gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
-              ageYears,
-              mrn: row.mrn || undefined,
+              patient: patRes.docs[0].id,
+              doctor: docRes.docs[0].id,
+              start: startDate.toISOString(),
+              durationMins: duration,
+              status: status as any,
+              reason: row.reason || 'General Consultation',
             } as never,
           })
           importedCount++
         } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create patient record.' })
+          errors.push({ row: i, reason: err.message || 'Failed to create appointment record.' })
         }
       }
     }

@@ -1,0 +1,11 @@
+name,email,phone,role,mrn,gender,ageyears,password,clinic_name
+"Aswathy Menon","patient1@test.com","+919847031001","patient","MRN-TH-001","female","32","Test@123","Swaraj Medical Centre"
+"Manoj Das","patient2@test.com","+919847031002","patient","MRN-TH-002","male","45","Test@123","Mission Quarters Health Clinic"
+"Lakshmi Devi","patient3@test.com","+919847031003","patient","MRN-TH-003","female","28","Test@123","Ayyanthole Family Practice"
+"Vineeth Nair","patient4@test.com","+919847031004","patient","MRN-TH-004","male","51","Test@123","Chembukkavu Specialist Chambers"
+"Divya Pillai","patient5@test.com","+919847031005","patient","MRN-TH-005","female","36","Test@123","East Fort Outpatient Centre"
+"Kiran Kumar","patient6@test.com","+919847031006","patient","MRN-TH-006","male","42","Test@123","West Fort Multispeciality Clinic"
+"Anu Varghese","patient7@test.com","+919847031007","patient","MRN-TH-007","female","29","Test@123","Punkunnam Medical Centre"
+"Sreejith P","patient8@test.com","+919847031008","patient","MRN-TH-008","male","48","Test@123","Ollur Urban Health Hub"
+"Remya Mohan","patient9@test.com","+919847031009","patient","MRN-TH-009","female","35","Test@123","Mannuthy Care Clinic"
+"Pradeep Kumar","patient10@test.com","+919847031010","patient","MRN-TH-010","male","55","Test@123","Koorkanchery Outpatient Unit"

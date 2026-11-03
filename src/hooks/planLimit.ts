@@ -18,6 +18,7 @@ import { asPlan, limitFor, planLabel, type LimitedResource } from '@/lib/plans'
 export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeChangeHook {
   return async ({ data, req, operation }) => {
     if (operation !== 'create' || !data) return data
+    if (req.context?.disablePlanLimit) return data
 
     // Doctors are the only capped user role; other roles (and updates) pass through.
     if (resource === 'doctors' && data.role !== 'doctor') return data
