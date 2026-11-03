@@ -25,7 +25,10 @@ export default async function StaffPage() {
 
   const res = await payload.find({
     collection: 'users',
-    where: { tenant: { equals: tenantID } },
+    where: {
+      tenant: { equals: tenantID },
+      role: { not_equals: 'patient' },
+    },
     limit: 100,
     sort: 'name',
     overrideAccess: true,

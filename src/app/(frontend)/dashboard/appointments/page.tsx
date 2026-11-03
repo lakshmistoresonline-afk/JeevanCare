@@ -6,6 +6,7 @@ import { formatTime } from '@/lib/format'
 import { btnPrimary, PageTitle } from '@/components/primitives'
 import { IconChevronLeft, IconChevronRight, IconPlus } from '@/components/icons'
 import { DayRail, type DoctorColumn } from '@/components/DayRail'
+import { AppointmentDateSelector } from '@/components/AppointmentDateSelector'
 import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availability'
 import { waReminderLink } from '@/lib/whatsapp'
 import { DEFAULT_TIMEZONE, WEEKDAYS, type AppointmentStatus } from '@/lib/constants'
@@ -146,14 +147,7 @@ export default async function AppointmentsPage({
               >
                 <IconChevronLeft size={15} />
               </Link>
-              <Link
-                href="/dashboard/appointments"
-                className={`tabular border-x border-border px-3.5 text-[13px] font-medium leading-9 transition-colors hover:bg-canvas ${
-                  isToday ? 'text-primary' : 'text-ink'
-                }`}
-              >
-                {isToday ? 'Today' : dateStr}
-              </Link>
+              <AppointmentDateSelector dateStr={dateStr} isToday={isToday} />
               <Link
                 href={`/dashboard/appointments?date=${addDays(dateStr, 1)}`}
                 className="flex size-9 items-center justify-center rounded-e-lg text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
