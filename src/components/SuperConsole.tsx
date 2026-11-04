@@ -113,8 +113,8 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
           <p className="mt-0.5 text-xs text-muted-foreground">Multi-Tenant Healthcare Infrastructure · {tenants.length} Total Clinics</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <a href="/dashboard/import" className={btnGhost}>Bulk Data Import</a>
-          <a href="/admin" className={btnGhost}>CMS Payload Admin</a>
+          <a href="/dashboard/import" target="_blank" rel="noopener noreferrer" className={btnGhost}>Bulk Data Import</a>
+          <a href="/admin" target="_blank" rel="noopener noreferrer" className={btnGhost}>CMS Payload Admin</a>
           <button className={btnPrimary} onClick={() => setShowAdd((s) => !s)}>
             <IconPlus size={15} />
             New Clinic
