@@ -98,16 +98,19 @@ export const Appointments: CollectionConfig = {
         }
         return data
       },
-      // Walk-in token: atomic sequential allocation per clinic per day (T-01, T-02…).
-      // Uses findOneAndUpdate with $inc on a counter document — this is atomic at the
-      // document level, so two concurrent walk-ins can never receive the same token.
-      async ({ data, req, operation }) => {
-        if (operation !== 'create' || !data.isWalkIn) return data
-        const tenantID = data.tenant ? String(data.tenant) : null
+      // Universal OPD token: atomic sequential allocation per clinic per day (T-01, T-02…)
+      // Issued to all checked-in or walk-in appointments.
+      async ({ data, req, operation, originalDoc }) => {
+        if (!data) return data
+        const status = data.status ?? originalDoc?.status
+        const shouldHaveToken = (status === 'checked-in' || data.isWalkIn) && !data.tokenNumber
+        if (!shouldHaveToken) return data
+
+        const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
         if (!tenantID) return data
 
         const tenant = await req.payload
-          .findByID({ collection: 'tenants', id: tenantID, depth: 0, req })
+          .findByID({ collection: 'tenants', id: tenantID, depth: 0, req, overrideAccess: true })
           .catch(() => null)
         const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
         const start = data.start ? new Date(data.start) : new Date()
@@ -129,6 +132,14 @@ export const Appointments: CollectionConfig = {
 
           const seq = counterDoc?.seq ?? 1
           data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
+          data.tokenDay = dayKey
+        } else {
+          const existing = await req.payload.count({
+            collection: 'appointments',
+            where: { tenant: { equals: tenantID } },
+            req,
+          })
+          data.tokenNumber = `T-${String(existing.totalDocs + 1).padStart(2, '0')}`
           data.tokenDay = dayKey
         }
         return data
