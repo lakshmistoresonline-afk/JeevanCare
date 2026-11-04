@@ -27,7 +27,7 @@ export function MetricCard({
 }: MetricCardProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-150 hover:border-primary/30 hover:shadow-md ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 backdrop-blur-md p-5 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">

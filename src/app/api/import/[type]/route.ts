@@ -227,6 +227,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const initialPassword = row.password || `Tmp#${crypto.randomBytes(6).toString('hex')}!`
         const rawPhone = row.phone || ''
         const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
+        const feeVal = row.fee || row.consultationfee || row.consultation_fee
+        const consultationFee = feeVal ? Number(feeVal) : 800
 
         try {
           const existingUser = await payload.find({
@@ -247,7 +249,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 tenant: targetTenantID,
                 phone: cleanPhone,
                 specialty: row.specialty || undefined,
-                consultationFee: row.fee ? Number(row.fee) : undefined,
+                consultationFee,
                 medicalRegistrationNumber: row.regno || undefined,
                 active: true,
               } as never,
@@ -264,7 +266,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 tenant: targetTenantID,
                 phone: cleanPhone,
                 specialty: row.specialty || undefined,
-                consultationFee: row.fee ? Number(row.fee) : undefined,
+                consultationFee,
                 medicalRegistrationNumber: row.regno || undefined,
                 active: true,
               } as never,

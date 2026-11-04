@@ -9,6 +9,7 @@ export const TENANT_ROLES = ['owner', 'doctor', 'receptionist'] as const
 export const APPOINTMENT_STATUSES = [
   'scheduled',
   'checked-in',
+  'in-consultation',
   'completed',
   'cancelled',
   'no-show',
@@ -18,14 +19,15 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 // Legal status transitions (spec §8.4). Terminal states have no outgoing edges.
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   scheduled: ['checked-in', 'cancelled', 'no-show'],
-  'checked-in': ['completed', 'cancelled'],
+  'checked-in': ['in-consultation', 'completed', 'cancelled'],
+  'in-consultation': ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
   'no-show': [],
 }
 
 // Statuses that occupy a doctor's slot for conflict detection.
-export const ACTIVE_STATUSES: AppointmentStatus[] = ['scheduled', 'checked-in']
+export const ACTIVE_STATUSES: AppointmentStatus[] = ['scheduled', 'checked-in', 'in-consultation']
 
 export const GENDERS = ['male', 'female', 'other'] as const
 
@@ -53,7 +55,7 @@ export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] a
 // --- v2: clinical loop ---
 
 // Appointment statuses on which a Visit (consultation) may be recorded.
-export const VISIT_ALLOWED_APPOINTMENT_STATUSES: AppointmentStatus[] = ['checked-in', 'completed']
+export const VISIT_ALLOWED_APPOINTMENT_STATUSES: AppointmentStatus[] = ['checked-in', 'in-consultation', 'completed']
 
 // Prescription dosing frequencies (standard medical shorthand). `other` reveals a note.
 export const PRESCRIPTION_FREQUENCIES = [

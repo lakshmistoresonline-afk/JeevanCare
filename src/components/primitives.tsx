@@ -17,6 +17,7 @@ export { StatusBadge, AllergyBanner } from './ui-kit'
 export const STATUS_BAR: Record<AppointmentStatus, string> = {
   scheduled: 'bg-primary',
   'checked-in': 'bg-blue',
+  'in-consultation': 'bg-purple',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
   'no-show': 'bg-amber',

@@ -7,6 +7,7 @@ import { windowOf, weekdayInTz } from '@/lib/availability'
 import { StatusBadge, EmptyState } from '@/components/ui-kit'
 import { btnPrimary, Avatar } from '@/components/primitives'
 import { MetricCard } from '@/components/MetricCard'
+import { LiveQueueTicker } from '@/components/LiveQueueTicker'
 import { DashboardWidgetError } from '@/components/DashboardWidgetError'
 import {
   IconPlus,
@@ -132,6 +133,12 @@ export default async function DashboardHome({
   })
   const firstName = user.name?.split(/\s+/)[0] ?? 'there'
 
+  const currentAppt = data.upcoming[0]
+  const currentPatient = (currentAppt?.patient as Patient)?.name
+  const currentDocUser = currentAppt?.doctor as User
+  const currentDoctorName = currentDocUser?.name
+  const waitingCount = data.upcoming.length
+
   return (
     <div className="space-y-6">
       {showWelcome && (
@@ -196,6 +203,13 @@ export default async function DashboardHome({
         </Link>
       </div>
 
+      {/* Live Queue Status Ticker */}
+      <LiveQueueTicker
+        currentPatient={currentPatient}
+        currentDoctor={currentDoctorName}
+        waitingCount={waitingCount}
+      />
+
       {/* Primary KPI Metrics Row */}
       <DashboardWidgetError title="Primary Metrics">
         <div className="grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
@@ -253,7 +267,7 @@ export default async function DashboardHome({
             </div>
 
             {/* Revenue Trend Chart */}
-            <section className="card-flat flex flex-col p-5 sm:p-6">
+            <section className="card-flat flex flex-col p-5 sm:p-6 backdrop-blur-md bg-card/85">
               <div className="mb-4 flex items-baseline justify-between gap-3">
                 <div>
                   <h2 className="font-display text-lg font-semibold">14-Day Revenue Analytics</h2>
@@ -274,7 +288,7 @@ export default async function DashboardHome({
       {/* Activity Chart & Up Next OPD Queue */}
       <div className="grid items-stretch gap-4 xl:grid-cols-3">
         <DashboardWidgetError title="Patient Volume Activity" className="xl:col-span-2">
-          <section className="card-flat flex flex-col p-5 sm:p-6 h-full">
+          <section className="card-flat flex flex-col p-5 sm:p-6 h-full backdrop-blur-md bg-card/85">
             <div className="mb-4 flex items-baseline justify-between gap-3">
               <div>
                 <h2 className="font-display text-lg font-semibold">Patient Volume Activity</h2>
@@ -289,7 +303,7 @@ export default async function DashboardHome({
         </DashboardWidgetError>
 
         <DashboardWidgetError title="OPD Queue">
-          <section className="card-flat flex flex-col overflow-hidden h-full">
+          <section className="card-flat flex flex-col overflow-hidden h-full backdrop-blur-md bg-card/85">
             <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
               <h2 className="font-display text-lg font-semibold">Up next today</h2>
               <Link
@@ -350,7 +364,7 @@ export default async function DashboardHome({
       {/* Doctors today & Quick actions & Recent patients */}
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         <DashboardWidgetError title="Doctors On Duty">
-          <section className="card-flat overflow-hidden">
+          <section className="card-flat overflow-hidden backdrop-blur-md bg-card/85">
             <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
               <h2 className="font-display text-lg font-semibold">Doctors today</h2>
               <span className="tabular text-xs font-semibold text-primary">
@@ -379,7 +393,7 @@ export default async function DashboardHome({
           </section>
         </DashboardWidgetError>
 
-        <section className="card-flat overflow-hidden">
+        <section className="card-flat overflow-hidden backdrop-blur-md bg-card/85">
           <div className="border-b border-border/80 px-5 py-4">
             <h2 className="font-display text-lg font-semibold">Quick actions</h2>
           </div>
@@ -438,7 +452,7 @@ export default async function DashboardHome({
           </ul>
         </section>
 
-        <section className="card-flat overflow-hidden md:col-span-2 xl:col-span-1">
+        <section className="card-flat overflow-hidden md:col-span-2 xl:col-span-1 backdrop-blur-md bg-card/85">
           <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
             <h2 className="font-display text-lg font-semibold">Recent patients</h2>
             <Link

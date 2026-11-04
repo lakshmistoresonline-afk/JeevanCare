@@ -16,6 +16,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { IconClock, IconStethoscope, IconCheck, IconCalendar, IconWhatsApp } from './icons'
 import { STATUS_TRANSITIONS, type AppointmentStatus } from '@/lib/constants'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
+import { QueueKanbanBoard } from './QueueKanbanBoard'
+import { DoctorStatusBadge } from './DoctorStatusBadge'
 
 export type Block = {
   id: string
@@ -50,6 +52,7 @@ const MIN_VISUAL_MINS = 16
 const BLOCK_STYLES: Record<AppointmentStatus, { bar: string; card: string }> = {
   scheduled: { bar: 'bg-primary', card: 'border-border bg-card hover:border-primary/40' },
   'checked-in': { bar: 'bg-blue', card: 'border-blue/25 bg-blue-soft/70 hover:border-blue/50' },
+  'in-consultation': { bar: 'bg-purple', card: 'border-purple/25 bg-purple-soft/70 hover:border-purple/50' },
   completed: {
     bar: 'bg-green-strong',
     card: 'border-green-strong/20 bg-green-soft/60 hover:border-green-strong/40',
@@ -61,6 +64,7 @@ const BLOCK_STYLES: Record<AppointmentStatus, { bar: string; card: string }> = {
 const STATUS_DOTS: Record<AppointmentStatus, string> = {
   scheduled: 'bg-primary',
   'checked-in': 'bg-blue',
+  'in-consultation': 'bg-purple',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
   'no-show': 'bg-amber',
@@ -68,6 +72,7 @@ const STATUS_DOTS: Record<AppointmentStatus, string> = {
 
 const NEXT_ACTION: Partial<Record<AppointmentStatus, { label: string; style: string }>> = {
   'checked-in': { label: 'Check in', style: btnPrimary },
+  'in-consultation': { label: 'Start consult', style: btnPrimary },
   completed: { label: 'Mark completed', style: btnPrimary },
   'no-show': { label: 'Mark no-show', style: btnGhost },
 }
@@ -77,7 +82,8 @@ const QUICK_STEP: Partial<
   Record<AppointmentStatus, { to: AppointmentStatus; label: string; doing: string }>
 > = {
   scheduled: { to: 'checked-in', label: 'Check in', doing: 'Checking in…' },
-  'checked-in': { to: 'completed', label: 'Complete', doing: 'Completing…' },
+  'checked-in': { to: 'in-consultation', label: 'Start Consult', doing: 'Starting…' },
+  'in-consultation': { to: 'completed', label: 'Complete', doing: 'Completing…' },
 }
 
 /** Minutes-from-midnight → "9 am" / "9:30 am". */
@@ -140,7 +146,7 @@ export function DayRail({
   /** Doctors/owners may record a consultation from the details sheet. */
   canRecordVisit?: boolean
 }) {
-  const [view, setView] = useState<'list' | 'rail'>('list')
+  const [view, setView] = useState<'list' | 'rail' | 'kanban'>('list')
   const [selected, setSelected] = useState<Block | null>(null)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -150,10 +156,10 @@ export function DayRail({
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('jeevancare-day-view') : null
-    if (saved === 'rail' || saved === 'list') setView(saved)
+    if (saved === 'rail' || saved === 'list' || saved === 'kanban') setView(saved as any)
   }, [])
 
-  const switchView = (v: 'list' | 'rail') => {
+  const switchView = (v: 'list' | 'rail' | 'kanban') => {
     setView(v)
     try {
       localStorage.setItem('jeevancare-day-view', v)
@@ -207,35 +213,57 @@ export function DayRail({
   return (
     <div className="relative">
       {/* View switch + hint */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-          {(
-            [
-              { key: 'list', label: 'List' },
-              { key: 'rail', label: 'Timeline' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => switchView(opt.key)}
-              className={`rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                view === opt.key
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            {(
+              [
+                { key: 'list', label: 'List' },
+                { key: 'rail', label: 'Timeline' },
+                { key: 'kanban', label: 'OPD Kanban' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => switchView(opt.key)}
+                className={`rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  view === opt.key
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Doctor Status Badges summary */}
+          <div className="hidden lg:flex items-center gap-2 border-l border-border pl-3">
+            {columns.map((c) => {
+              const isOff = c.availabilityNote?.includes('Off')
+              const status = isOff ? 'off-duty' : 'on-duty'
+              return (
+                <div key={c.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="font-medium text-ink">{c.name}:</span>
+                  <DoctorStatusBadge status={status} label={c.availabilityNote || 'On Duty'} />
+                </div>
+              )
+            })}
+          </div>
         </div>
+
         <p className="text-xs text-faint">
           {view === 'list'
             ? 'Today in order — tap Check in / Complete right on the row.'
-            : 'Each column is one doctor’s day. Click any card for actions.'}
+            : view === 'rail'
+            ? 'Each column is one doctor’s day. Click any card for actions.'
+            : 'Interactive OPD Kanban flow board — manage patient status transitions across columns.'}
         </p>
       </div>
 
-      {view === 'list' ? (
+      {view === 'kanban' ? (
+        <QueueKanbanBoard columns={columns} />
+      ) : view === 'list' ? (
         <QueueList
           columns={columns}
           nowMinutes={nowMinutes}

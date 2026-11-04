@@ -66,14 +66,17 @@ export default async function NewVisitPage({
     collection: 'visits',
     where: { tenant: { equals: tenantID }, patient: { equals: relId(patient) } },
     sort: '-visitDate',
-    limit: 5,
+    limit: 10,
     overrideAccess: true,
   })
   const pastVisits = pastVisitsRes.docs.map((v: any) => ({
     id: String(v.id),
-    date: new Date(v.visitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    date: new Date(v.visitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
     diagnosis: v.diagnosis,
     symptoms: v.symptoms,
+    notes: v.notes,
+    prescription: v.prescription,
+    vitals: v.vitals,
   }))
 
   // A visit already exists (either pre-existing, or we just recorded one and the

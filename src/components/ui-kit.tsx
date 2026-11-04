@@ -13,6 +13,7 @@ const STATUS_STYLES: Record<string, string> = {
   // appointments
   scheduled: 'bg-secondary text-primary',
   'checked-in': 'bg-blue-soft text-blue',
+  'in-consultation': 'bg-purple-soft text-purple',
   completed: 'bg-green-soft text-green-strong',
   cancelled: 'bg-muted text-muted-foreground',
   'no-show': 'bg-amber-soft text-amber',
@@ -26,6 +27,7 @@ const STATUS_STYLES: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   scheduled: 'Scheduled',
   'checked-in': 'Checked in',
+  'in-consultation': 'In Consultation',
   completed: 'Completed',
   cancelled: 'Cancelled',
   'no-show': 'No-show',
