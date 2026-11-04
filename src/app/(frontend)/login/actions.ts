@@ -68,16 +68,27 @@ export async function loginAction(
       return { ok: false, code: 'VALIDATION', message: 'Incorrect email/mobile or password.' }
     }
 
+    const userRole = (result.user as { role: string }).role
     const cookieStore = await cookies()
-    cookieStore.set('payload-token', result.token, {
+    const cookieOpts = {
       httpOnly: true,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       secure: process.env.NODE_ENV === 'production',
       expires: result.exp ? new Date(result.exp * 1000) : undefined,
-    })
+    }
 
-    return { ok: true, data: { role: (result.user as { role: string }).role } }
+    cookieStore.set('payload-token', result.token, cookieOpts)
+
+    if (userRole === 'superAdmin') {
+      cookieStore.set('payload-token-super', result.token, cookieOpts)
+    } else if (userRole === 'patient') {
+      cookieStore.set('payload-token-patient', result.token, cookieOpts)
+    } else {
+      cookieStore.set('payload-token-staff', result.token, cookieOpts)
+    }
+
+    return { ok: true, data: { role: userRole } }
   } catch (err) {
     const mapped = toActionError(err)
     if (mapped.code === 'UNKNOWN') {

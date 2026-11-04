@@ -12,6 +12,7 @@ import {
   IconClock,
   IconCreditCard,
   IconChart,
+  IconReceipt,
 } from './icons'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 
@@ -43,6 +44,7 @@ export function Sidebar({
     { href: '/dashboard', label: 'Dashboard', icon: IconDashboard },
     { href: '/dashboard/appointments', label: 'Appointments', icon: IconCalendar },
     { href: '/dashboard/patients', label: 'Patients', icon: IconUsers },
+    { href: '/dashboard/invoices', label: 'Invoices & Billing', icon: IconReceipt },
     { href: '/dashboard/queue-display', label: 'Waiting Room TV', icon: IconClock },
   ]
   const adminItems: NavItem[] = []

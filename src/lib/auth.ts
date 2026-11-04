@@ -11,10 +11,35 @@ export async function getPayloadClient() {
   return getPayload({ config: await config })
 }
 
-export const getCurrentUser = cache(async (): Promise<User | null> => {
+function parseCookie(cookieHeader: string, name: string): string | null {
+  const match = cookieHeader.match(new RegExp('(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+export const getCurrentUser = cache(async (workspaceScope?: 'super' | 'staff' | 'patient'): Promise<User | null> => {
   const payload = await getPayloadClient()
-  const headers = await nextHeaders()
-  const { user } = await payload.auth({ headers })
+  const reqHeaders = await nextHeaders()
+  const cookieHeader = reqHeaders.get('cookie') || ''
+
+  let activeToken: string | null = null
+  if (workspaceScope === 'super') {
+    activeToken = parseCookie(cookieHeader, 'payload-token-super')
+  } else if (workspaceScope === 'staff') {
+    activeToken = parseCookie(cookieHeader, 'payload-token-staff')
+  } else if (workspaceScope === 'patient') {
+    activeToken = parseCookie(cookieHeader, 'payload-token-patient')
+  }
+
+  if (!activeToken) {
+    activeToken = parseCookie(cookieHeader, 'payload-token')
+  }
+
+  const customHeaders = new Headers(reqHeaders)
+  if (activeToken) {
+    customHeaders.set('cookie', `payload-token=${activeToken}`)
+  }
+
+  const { user } = await payload.auth({ headers: customHeaders })
   if (!user || (user as User).active === false) return null
   return (user as User) ?? null
 })
@@ -25,7 +50,7 @@ export type Session = {
 }
 
 export const requireDashboardSession = cache(async (): Promise<{ user: User; tenant: Tenant | null }> => {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser('staff')
   if (!user || user.active === false) redirect('/login?error=account_deactivated')
   if ((user as any).role === 'patient') redirect('/patient/dashboard')
   if (user.role === 'superAdmin') {
@@ -58,7 +83,7 @@ export type PatientSession = {
 }
 
 export const requirePatientSession = cache(async (): Promise<PatientSession> => {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser('patient')
   if (!user || user.active === false) redirect('/patient/login?error=account_deactivated')
   if ((user as any).role !== 'patient') redirect('/dashboard')
 
@@ -91,7 +116,6 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
     }
   }
 
-  // Fail closed if patientProfile is missing, invalid, or does not belong to user's tenant
   if (!patient || String(relId(patient.tenant)) !== String(tenantID)) {
     redirect('/patient/login?error=no_patient_profile')
   }
@@ -104,7 +128,7 @@ export async function requireRole(session: Session, roles: User['role'][]) {
 }
 
 export const requireSuperAdmin = cache(async (): Promise<User> => {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser('super')
   if (!user || user.active === false) redirect('/login?error=account_deactivated')
   if (user.role !== 'superAdmin') redirect('/dashboard')
   return user

@@ -200,7 +200,9 @@ export async function internalBookAppointment(
   const start = wallTimeToUTC(tz, date, time)
   const end = computeEnd(start, durationMins)
 
-  if (!isWalkIn && start < new Date()) {
+  // Patients (via patient portal) are blocked from booking in the past, but staff
+  // are permitted to record past slots for late walk-ins or retroactive documentation.
+  if (user.role === 'patient' && !isWalkIn && start < new Date()) {
     return { ok: false, code: 'VALIDATION', message: 'Cannot book appointments in the past.' }
   }
 
