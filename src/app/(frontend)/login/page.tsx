@@ -8,6 +8,7 @@ import { AuthLayout } from '@/components/AuthLayout'
 import { BookingContextBanner } from '@/components/BookingContextBanner'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { PasswordField } from '@/components/PasswordField'
+import { QuickLoginToolbar } from '@/components/QuickLoginToolbar'
 
 const DEMO_ACCOUNTS = [
   { label: 'Owner', email: 'owner1@test.com' },
@@ -117,6 +118,14 @@ function LoginForm() {
             {pending ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
+
+        {/* User-Configurable 1-Click Quick Login Toolbar */}
+        <QuickLoginToolbar
+          onSelectAccount={(accEmail, accPassword) => {
+            setEmail(accEmail)
+            setPassword(accPassword || 'Test@123')
+          }}
+        />
 
         {/* Demo quick-fill — gated for development environment */}
         {process.env.NODE_ENV === 'development' && (
