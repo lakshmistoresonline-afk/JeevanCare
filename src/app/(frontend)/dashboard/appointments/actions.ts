@@ -118,7 +118,7 @@ export async function recordPatientVitals(
   if (!ctx || (ctx as any).isPatient) {
     return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to record vitals." }
   }
-  const { user, payload } = ctx
+  const { user, payload, tenantID } = ctx
 
   try {
     const existingVisits = await payload.find({
@@ -132,16 +132,15 @@ export async function recordPatientVitals(
       await payload.update({
         collection: 'visits',
         id: existingVisits.docs[0].id,
-        user,
-        overrideAccess: false,
+        overrideAccess: true,
         data: { vitals } as never,
       })
     } else {
       await payload.create({
         collection: 'visits',
-        user,
-        overrideAccess: false,
+        overrideAccess: true,
         data: {
+          tenant: tenantID,
           appointment: appointmentId,
           vitals,
         } as never,
