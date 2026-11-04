@@ -136,7 +136,7 @@ export function Sidebar({
                 {userName}
               </div>
               <div className="truncate text-[11px] capitalize text-sidebar-foreground/70">
-                {role === 'superAdmin' ? 'Super admin' : role}
+                {role === 'superAdmin' ? 'Super Admin' : role === 'owner' ? 'Clinic Admin' : role}
               </div>
             </div>
           </div>

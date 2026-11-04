@@ -18,6 +18,7 @@ import { STATUS_TRANSITIONS, type AppointmentStatus } from '@/lib/constants'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
 import { QueueKanbanBoard } from './QueueKanbanBoard'
 import { DoctorStatusBadge } from './DoctorStatusBadge'
+import { VitalsModal } from './VitalsModal'
 
 export type Block = {
   id: string
@@ -204,6 +205,7 @@ export function DayRail({
     )
   }
 
+  const [vitalsOpen, setVitalsOpen] = useState(false)
   const allBlocks = columns.flatMap((c) => c.blocks)
   const statusCounts = allBlocks.reduce<Partial<Record<AppointmentStatus, number>>>((acc, b) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1
@@ -364,6 +366,16 @@ export function DayRail({
                   </p>
                 )}
 
+                {(selected.status === 'checked-in' || selected.status === 'scheduled') && (
+                  <button
+                    type="button"
+                    onClick={() => setVitalsOpen(true)}
+                    className={`${btnGhost} mt-3 w-full border-primary/30 text-primary hover:bg-primary/10 font-bold`}
+                  >
+                    📊 Record Patient Vitals
+                  </button>
+                )}
+
                 {canRecordVisit && (selected.status === 'checked-in' || selected.status === 'completed') && (
                   <Link
                     href={`/dashboard/visits/new?appointment=${selected.id}`}
@@ -398,6 +410,14 @@ export function DayRail({
                 </div>
               </div>
             </>
+          )}
+          {selected && (
+            <VitalsModal
+              appointmentId={selected.id}
+              patientName={selected.patientName}
+              isOpen={vitalsOpen}
+              onClose={() => setVitalsOpen(false)}
+            />
           )}
         </SheetContent>
       </Sheet>

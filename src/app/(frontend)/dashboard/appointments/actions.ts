@@ -104,6 +104,58 @@ export async function updateAppointmentStatus(
   }
 }
 
+export async function recordPatientVitals(
+  appointmentId: string,
+  vitals: {
+    bpSystolic?: number
+    bpDiastolic?: number
+    temperatureC?: number
+    weightKg?: number
+    pulse?: number
+  },
+): Promise<ActionResult<{ ok: boolean }>> {
+  const ctx = await resolveActorTenantInternal()
+  if (!ctx || (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to record vitals." }
+  }
+  const { user, payload } = ctx
+
+  try {
+    const existingVisits = await payload.find({
+      collection: 'visits',
+      where: { appointment: { equals: appointmentId } },
+      limit: 1,
+      overrideAccess: true,
+    })
+
+    if (existingVisits.docs.length > 0) {
+      await payload.update({
+        collection: 'visits',
+        id: existingVisits.docs[0].id,
+        user,
+        overrideAccess: false,
+        data: { vitals } as never,
+      })
+    } else {
+      await payload.create({
+        collection: 'visits',
+        user,
+        overrideAccess: false,
+        data: {
+          appointment: appointmentId,
+          vitals,
+        } as never,
+      })
+    }
+
+    try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard') } catch {}
+    return { ok: true, data: { ok: true } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
 /** Exported Server Action — ALWAYS derives caller identity strictly from server request session */
 export async function getAvailableSlots(
   doctorId: string,
