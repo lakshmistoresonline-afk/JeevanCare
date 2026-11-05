@@ -24,6 +24,7 @@ export function VisitForm({
   doctorName,
   pastVisits = [],
   initialVitals,
+  initialPaymentInfo,
 }: {
   appointmentId: string
   patientName: string
@@ -48,6 +49,11 @@ export function VisitForm({
     weightKg?: number | null
     pulse?: number | null
   }
+  initialPaymentInfo?: {
+    isPaid: boolean
+    amountPaid: number
+    paymentMethod: string
+  }
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -70,7 +76,7 @@ export function VisitForm({
   const [diagnosis, setDiagnosis] = useState('')
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('')
-  const [consultationFee, setConsultationFee] = useState('500')
+  const [consultationFee, setConsultationFee] = useState(initialPaymentInfo?.isPaid ? '0' : '800')
   const [rows, setRows] = useState<PrescriptionRowInput[]>([blankRow()])
   const [kitConfirm, setKitConfirm] = useState<{ label: string; items: PrescriptionRowInput[] } | null>(null)
 
@@ -595,14 +601,32 @@ export function VisitForm({
                   <span className="text-muted-foreground">Prescribed Medicines:</span>
                   <span className="font-semibold text-ink">{rows.filter((r) => r.medicine.trim()).length} items</span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Consultation Fee:</span>
-                  <span className="font-semibold text-ink">₹ {consultationFee}</span>
-                </div>
-                <div className="border-t border-border pt-2 flex justify-between text-sm font-bold text-ink">
-                  <span>Total Due:</span>
-                  <span className="text-primary">₹ {consultationFee}</span>
-                </div>
+
+                {initialPaymentInfo?.isPaid ? (
+                  <div className="rounded-xl border border-green-strong/30 bg-green-soft/60 p-3.5 space-y-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-green-strong">
+                      <span>✓</span> Consultation Fee Paid at Reception
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Collected ₹{initialPaymentInfo.amountPaid} via {initialPaymentInfo.paymentMethod.toUpperCase()} during front-desk check-in. Patient does not owe any additional fee.
+                    </p>
+                    <div className="border-t border-green-strong/20 pt-1.5 flex justify-between text-xs font-bold text-ink">
+                      <span>Balance Due:</span>
+                      <span className="text-green-strong">₹ 0 (Paid)</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Consultation Fee:</span>
+                      <span className="font-semibold text-ink">₹ {consultationFee}</span>
+                    </div>
+                    <div className="border-t border-border pt-2 flex justify-between text-sm font-bold text-ink">
+                      <span>Total Due:</span>
+                      <span className="text-primary">₹ {consultationFee}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

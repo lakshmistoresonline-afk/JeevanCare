@@ -82,6 +82,22 @@ export default async function NewVisitPage({
   const existingVisit = existing.docs[0] as any
   const isCompletedVisit = Boolean(existingVisit?.diagnosis || (existingVisit?.prescription && existingVisit.prescription.length > 0))
 
+  // Check if consultation fee was already collected at front-desk check-in
+  const existingInvoiceRes = await payload.find({
+    collection: 'invoices',
+    where: { tenant: { equals: tenantID }, patient: { equals: relId(patient) } },
+    sort: '-createdAt',
+    limit: 1,
+    overrideAccess: true,
+  })
+  const existingInv = existingInvoiceRes.docs[0] as any
+  const isPaidAtReception = existingInv?.paymentStatus === 'paid' && Number(existingInv?.amountPaid) > 0
+  const initialPaymentInfo = {
+    isPaid: isPaidAtReception,
+    amountPaid: isPaidAtReception ? Number(existingInv.amountPaid) : 0,
+    paymentMethod: isPaidAtReception ? (existingInv.payments?.[0]?.method || 'cash') : 'cash',
+  }
+
   // If a fully completed consultation visit already exists, show "Visit recorded"
   if (existingVisit && isCompletedVisit) {
     return (
@@ -130,6 +146,7 @@ export default async function NewVisitPage({
         doctorName={(appt.doctor as User)?.name ?? 'Doctor'}
         pastVisits={pastVisits}
         initialVitals={existingVisit?.vitals}
+        initialPaymentInfo={initialPaymentInfo}
       />
     </div>
   )
