@@ -189,12 +189,13 @@ export async function checkInAndCollectPayment(input: {
       data: { status: 'checked-in' } as never,
     })) as Appointment
 
-    const apptTenantID = relId(appt.tenant)
+    const apptTenantID = relId(appt.tenant) || tenantID
     const doctorID = relId(appt.doctor)
     const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User : null
+    const fee = input.amount > 0 ? input.amount : (typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800)
 
     let invoiceId: string | undefined = undefined
-    if (input.amount > 0 && apptTenantID) {
+    if (fee > 0 && apptTenantID) {
       const inv = await payload.create({
         collection: 'invoices',
         overrideAccess: true,
@@ -203,19 +204,19 @@ export async function checkInAndCollectPayment(input: {
           patient: relId(appt.patient),
           lineItems: [
             {
-              description: `Consultation Fee — ${doctor?.name ?? 'Doctor'}`,
+              description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
               quantity: 1,
-              unitAmount: input.amount,
-              amount: input.amount,
+              unitAmount: fee,
+              amount: fee,
             },
           ],
-          totalAmount: input.amount,
-          amountPaid: input.amount,
+          totalAmount: fee,
+          amountPaid: fee,
           balanceDue: 0,
           paymentStatus: 'paid',
           payments: [
             {
-              amount: input.amount,
+              amount: fee,
               method: input.paymentMethod || 'cash',
               receivedAt: new Date().toISOString(),
               receivedBy: user.id,
