@@ -70,9 +70,10 @@ export type PrescriptionFrequency = (typeof PRESCRIPTION_FREQUENCIES)[number]['v
 
 export const PAYMENT_METHODS = [
   { label: 'Cash', value: 'cash' },
-  { label: 'Card', value: 'card' },
-  { label: 'Bank transfer', value: 'bank-transfer' },
-  { label: 'Other', value: 'other' },
+  { label: 'UPI / QR Code (GPay, PhonePe, Paytm)', value: 'upi' },
+  { label: 'Credit / Debit Card', value: 'card' },
+  { label: 'Bank Transfer / NEFT', value: 'bank-transfer' },
+  { label: 'Cheque / Other', value: 'other' },
 ] as const
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number]['value']
 

@@ -605,7 +605,13 @@ function QueueList({
                       )}
                       {step && (
                         <button
-                          onClick={() => onQuick(b, step.to)}
+                          onClick={() => {
+                            if (b.status === 'scheduled' || b.status === 'in-consultation') {
+                              onOpen(b)
+                            } else {
+                              onQuick(b, step.to)
+                            }
+                          }}
                           disabled={busy}
                           className={`inline-flex h-8 min-w-[80px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors disabled:opacity-70 sm:min-w-[96px] sm:px-3 ${
                             b.status === 'scheduled'
