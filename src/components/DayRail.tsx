@@ -448,6 +448,11 @@ export function DayRail({
                 doctorName={selected.doctorName}
                 isOpen={checkInOpen}
                 onClose={() => setCheckInOpen(false)}
+                onSuccess={(token) => {
+                  setSelected((prev) =>
+                    prev ? { ...prev, status: 'checked-in', token: token || prev.token } : null
+                  )
+                }}
               />
             </>
           )}

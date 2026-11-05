@@ -17,6 +17,7 @@ export function CheckInModal({
   consultationFee = 800,
   isOpen,
   onClose,
+  onSuccess,
 }: {
   appointmentId: string
   patientName: string
@@ -24,6 +25,7 @@ export function CheckInModal({
   consultationFee?: number
   isOpen: boolean
   onClose: () => void
+  onSuccess?: (token?: string) => void
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -46,6 +48,7 @@ export function CheckInModal({
             ? `Checked in ${patientName}! Token ${res.data.token || 'assigned'} & Paid Receipt Generated.`
             : `Checked in ${patientName}! Token ${res.data.token || 'assigned'}.`
         )
+        onSuccess?.(res.data.token)
         onClose()
         router.refresh()
       } else {
