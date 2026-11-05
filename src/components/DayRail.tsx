@@ -18,6 +18,8 @@ import { STATUS_TRANSITIONS, type AppointmentStatus } from '@/lib/constants'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
 import { DoctorStatusBadge } from './DoctorStatusBadge'
 import { VitalsModal } from './VitalsModal'
+import { CheckInModal } from './CheckInModal'
+import { QueueAutoRefresher } from './QueueAutoRefresher'
 
 export type Block = {
   id: string
@@ -182,6 +184,19 @@ export function DayRail({
     })
   }
 
+  const handleStartConsult = (appointmentId: string) => {
+    setError(null)
+    startTransition(async () => {
+      const res = await updateAppointmentStatus(appointmentId, 'in-consultation')
+      if (res.ok) {
+        setSelected(null)
+        router.push(`/dashboard/visits/new?appointment=${appointmentId}`)
+      } else {
+        setError(res.message)
+      }
+    })
+  }
+
   const quickAct = (b: Block, to: AppointmentStatus) => {
     setQuickId(b.id)
     startTransition(async () => {
@@ -205,6 +220,7 @@ export function DayRail({
   }
 
   const [vitalsOpen, setVitalsOpen] = useState(false)
+  const [checkInOpen, setCheckInOpen] = useState(false)
   const allBlocks = columns.flatMap((c) => c.blocks)
   const statusCounts = allBlocks.reduce<Partial<Record<AppointmentStatus, number>>>((acc, b) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1
@@ -389,7 +405,15 @@ export function DayRail({
                         key={next}
                         className={NEXT_ACTION[next]?.style ?? btnGhost}
                         disabled={pending}
-                        onClick={() => act(next)}
+                        onClick={() => {
+                          if (next === 'checked-in') {
+                            setCheckInOpen(true)
+                          } else if (next === 'in-consultation' && canRecordVisit) {
+                            handleStartConsult(selected.id)
+                          } else {
+                            act(next)
+                          }
+                        }}
                       >
                         {pending && <Spinner />}
                         {next === 'in-consultation'
@@ -408,15 +432,27 @@ export function DayRail({
             </>
           )}
           {selected && (
-            <VitalsModal
-              appointmentId={selected.id}
-              patientName={selected.patientName}
-              isOpen={vitalsOpen}
-              onClose={() => setVitalsOpen(false)}
-            />
+            <>
+              <VitalsModal
+                appointmentId={selected.id}
+                patientName={selected.patientName}
+                isOpen={vitalsOpen}
+                onClose={() => setVitalsOpen(false)}
+              />
+              <CheckInModal
+                appointmentId={selected.id}
+                patientName={selected.patientName}
+                doctorName={selected.doctorName}
+                isOpen={checkInOpen}
+                onClose={() => setCheckInOpen(false)}
+              />
+            </>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Real-time background dashboard auto-refresher */}
+      <QueueAutoRefresher intervalMs={4000} />
     </div>
   )
 }

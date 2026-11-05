@@ -7,7 +7,8 @@ import { wallTimeToUTC } from '@/lib/reports'
 import { computeEnd, findConflict } from '@/lib/booking'
 import { checkAvailability, formatWindow, windowOf, type AvailabilityTag } from '@/lib/availability'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
-import type { User } from '@/payload-types'
+import { relId } from '@/lib/utils'
+import type { User, Appointment } from '@/payload-types'
 import {
   resolveActorTenantInternal,
   internalBookAppointment,
@@ -150,6 +151,81 @@ export async function recordPatientVitals(
     try { revalidatePath('/dashboard/appointments') } catch {}
     try { revalidatePath('/dashboard') } catch {}
     return { ok: true, data: { ok: true } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
+export async function checkInAndCollectPayment(input: {
+  appointmentId: string
+  amount: number
+  paymentMethod: string
+}): Promise<ActionResult<{ id: string; invoiceId?: string; token?: string }>> {
+  const ctx = await resolveActorTenantInternal()
+  if (!ctx || (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to check in patients." }
+  }
+  const { user, payload, tenantID } = ctx
+
+  try {
+    const appt = (await payload.update({
+      collection: 'appointments',
+      id: input.appointmentId,
+      user,
+      overrideAccess: false,
+      data: { status: 'checked-in' } as never,
+    })) as Appointment
+
+    const doctorID = relId(appt.doctor)
+    const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User : null
+
+    let invoiceId: string | undefined = undefined
+    if (input.amount > 0) {
+      const inv = await payload.create({
+        collection: 'invoices',
+        user,
+        overrideAccess: true,
+        data: {
+          tenant: tenantID,
+          patient: relId(appt.patient),
+          lineItems: [
+            {
+              description: `Consultation Fee — ${doctor?.name ?? 'Doctor'}`,
+              quantity: 1,
+              unitAmount: input.amount,
+              amount: input.amount,
+            },
+          ],
+          totalAmount: input.amount,
+          amountPaid: input.amount,
+          balanceDue: 0,
+          paymentStatus: 'paid',
+          payments: [
+            {
+              amount: input.amount,
+              method: input.paymentMethod || 'cash',
+              receivedAt: new Date().toISOString(),
+              receivedBy: user.id,
+            },
+          ],
+          voided: false,
+        } as never,
+      })
+      invoiceId = String(inv.id)
+    }
+
+    try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard/invoices') } catch {}
+    try { revalidatePath('/dashboard') } catch {}
+
+    return {
+      ok: true,
+      data: {
+        id: String(appt.id),
+        invoiceId,
+        token: (appt as { tokenNumber?: string }).tokenNumber,
+      },
+    }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }

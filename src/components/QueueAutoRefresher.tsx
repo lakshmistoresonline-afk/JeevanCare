@@ -1,14 +1,19 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-export function QueueAutoRefresher({ intervalMs = 5000 }: { intervalMs?: number }) {
+export function QueueAutoRefresher({ intervalMs = 4000 }: { intervalMs?: number }) {
+  const router = useRouter()
+
   useEffect(() => {
     const timer = setInterval(() => {
-      window.location.reload()
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        router.refresh()
+      }
     }, intervalMs)
     return () => clearInterval(timer)
-  }, [intervalMs])
+  }, [intervalMs, router])
 
   return null
 }
