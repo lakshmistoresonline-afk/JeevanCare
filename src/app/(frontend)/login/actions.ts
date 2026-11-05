@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { getPayloadClient } from '@/lib/auth'
+import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -101,5 +101,30 @@ export async function loginAction(
 export async function logoutAction() {
   const cookieStore = await cookies()
   cookieStore.delete('payload-token')
+  cookieStore.delete('payload-token-super')
+  cookieStore.delete('payload-token-staff')
+  cookieStore.delete('payload-token-patient')
   redirect('/login')
+}
+
+export async function getActiveSessionUser(): Promise<{
+  active: boolean
+  name?: string
+  email?: string
+  role?: string
+} | null> {
+  try {
+    const user = await getCurrentUser()
+    if (user && user.active !== false) {
+      return {
+        active: true,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }
+    }
+    return { active: false }
+  } catch {
+    return { active: false }
+  }
 }
