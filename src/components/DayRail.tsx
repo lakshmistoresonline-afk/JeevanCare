@@ -386,13 +386,13 @@ export function DayRail({
                   </button>
                 )}
 
-                {canRecordVisit && (selected.status === 'checked-in' || selected.status === 'completed') && (
+                {(selected.status === 'checked-in' || selected.status === 'completed' || selected.status === 'in-consultation') && (
                   <Link
                     href={`/dashboard/visits/new?appointment=${selected.id}`}
-                    className={`${selected.status === 'checked-in' ? btnPrimary : btnGhost} mt-6 w-full`}
+                    className={`${selected.status === 'checked-in' || selected.status === 'in-consultation' ? btnPrimary : btnGhost} mt-6 w-full`}
                   >
                     <IconStethoscope size={15} />
-                    Record visit
+                    {selected.status === 'completed' ? '🩺 View Consultation / Rx' : '🩺 Record Visit / EMR'}
                   </Link>
                 )}
 
