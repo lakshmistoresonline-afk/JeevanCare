@@ -389,7 +389,7 @@ export function DayRail({
                   </button>
                 )}
 
-                {(selected.status === 'checked-in' || selected.status === 'completed' || selected.status === 'in-consultation') && (
+                {canRecordVisit && (selected.status === 'checked-in' || selected.status === 'completed' || selected.status === 'in-consultation') && (
                   <Link
                     href={`/dashboard/visits/new?appointment=${selected.id}`}
                     className={`${selected.status === 'checked-in' || selected.status === 'in-consultation' ? btnPrimary : btnGhost} mt-6 w-full`}
