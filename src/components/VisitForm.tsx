@@ -23,6 +23,7 @@ export function VisitForm({
   patientAllergies,
   doctorName,
   pastVisits = [],
+  initialVitals,
 }: {
   appointmentId: string
   patientName: string
@@ -40,6 +41,13 @@ export function VisitForm({
     prescription?: any[]
     vitals?: Record<string, any>
   }[]
+  initialVitals?: {
+    bpSystolic?: number | null
+    bpDiastolic?: number | null
+    temperatureC?: number | null
+    weightKg?: number | null
+    pulse?: number | null
+  }
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -51,12 +59,12 @@ export function VisitForm({
   // 5-Step EMR Tab Navigation
   const [activeStep, setActiveStep] = useState<'vitals' | 'diagnosis' | 'prescriptions' | 'history' | 'billing'>('vitals')
 
-  // Vitals
-  const [bpS, setBpS] = useState('')
-  const [bpD, setBpD] = useState('')
-  const [temp, setTemp] = useState('')
-  const [weight, setWeight] = useState('')
-  const [pulse, setPulse] = useState('')
+  // Vitals initialized from staff-entered triage vitals
+  const [bpS, setBpS] = useState(initialVitals?.bpSystolic != null ? String(initialVitals.bpSystolic) : '')
+  const [bpD, setBpD] = useState(initialVitals?.bpDiastolic != null ? String(initialVitals.bpDiastolic) : '')
+  const [temp, setTemp] = useState(initialVitals?.temperatureC != null ? String(initialVitals.temperatureC) : '')
+  const [weight, setWeight] = useState(initialVitals?.weightKg != null ? String(initialVitals.weightKg) : '')
+  const [pulse, setPulse] = useState(initialVitals?.pulse != null ? String(initialVitals.pulse) : '')
 
   const [symptoms, setSymptoms] = useState('')
   const [diagnosis, setDiagnosis] = useState('')

@@ -79,9 +79,11 @@ export default async function NewVisitPage({
     vitals: v.vitals,
   }))
 
-  // A visit already exists (either pre-existing, or we just recorded one and the
-  // route re-rendered) — show a "what's next" panel rather than a dead end.
-  if (existing.totalDocs > 0) {
+  const existingVisit = existing.docs[0] as any
+  const isCompletedVisit = Boolean(existingVisit?.diagnosis || (existingVisit?.prescription && existingVisit.prescription.length > 0))
+
+  // If a fully completed consultation visit already exists, show "Visit recorded"
+  if (existingVisit && isCompletedVisit) {
     return (
       <div className="mx-auto max-w-3xl">
         {back}
@@ -94,7 +96,7 @@ export default async function NewVisitPage({
           <p className="mt-2 text-sm text-muted-foreground">
             The consultation for {patient?.name ?? 'the patient'} is saved.
           </p>
-          <PostVisitActions visitId={String(existing.docs[0].id)} patientId={relId(patient)} />
+          <PostVisitActions visitId={String(existingVisit.id)} patientId={relId(patient)} />
         </Card>
       </div>
     )
@@ -127,6 +129,7 @@ export default async function NewVisitPage({
         patientAllergies={patient?.allergies}
         doctorName={(appt.doctor as User)?.name ?? 'Doctor'}
         pastVisits={pastVisits}
+        initialVitals={existingVisit?.vitals}
       />
     </div>
   )
