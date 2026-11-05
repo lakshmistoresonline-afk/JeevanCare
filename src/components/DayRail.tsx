@@ -284,6 +284,7 @@ export function DayRail({
           nowMinutes={nowMinutes}
           quickId={quickId}
           pending={pending}
+          canRecordVisit={canRecordVisit}
           onQuick={quickAct}
           onOpen={openSheet}
         />
@@ -475,6 +476,7 @@ function QueueList({
   nowMinutes,
   quickId,
   pending,
+  canRecordVisit,
   onQuick,
   onOpen,
 }: {
@@ -482,6 +484,7 @@ function QueueList({
   nowMinutes?: number | null
   quickId: string | null
   pending: boolean
+  canRecordVisit?: boolean
   onQuick: (b: Block, to: AppointmentStatus) => void
   onOpen: (b: Block) => void
 }) {
@@ -632,6 +635,8 @@ function QueueList({
                               <Spinner className="size-3.5" />
                               {step.doing}
                             </>
+                          ) : b.status === 'checked-in' ? (
+                            !canRecordVisit ? '📢 Call Patient' : '🩺 Start Consult'
                           ) : (
                             step.label
                           )}

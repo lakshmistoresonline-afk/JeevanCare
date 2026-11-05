@@ -171,22 +171,21 @@ export async function checkInAndCollectPayment(input: {
     const appt = (await payload.update({
       collection: 'appointments',
       id: input.appointmentId,
-      user,
-      overrideAccess: false,
+      overrideAccess: true,
       data: { status: 'checked-in' } as never,
     })) as Appointment
 
+    const apptTenantID = relId(appt.tenant)
     const doctorID = relId(appt.doctor)
     const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User : null
 
     let invoiceId: string | undefined = undefined
-    if (input.amount > 0) {
+    if (input.amount > 0 && apptTenantID) {
       const inv = await payload.create({
         collection: 'invoices',
-        user,
         overrideAccess: true,
         data: {
-          tenant: tenantID,
+          tenant: apptTenantID,
           patient: relId(appt.patient),
           lineItems: [
             {
