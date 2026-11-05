@@ -69,6 +69,14 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
         followUpDate: input.followUpDate || undefined,
       } as never,
     })
+
+    // Transition appointment status to 'post-consultation' (Pharmacy / Checkout stage)
+    await payload.update({
+      collection: 'appointments',
+      id: input.appointmentId,
+      overrideAccess: true,
+      data: { status: 'post-consultation' } as never,
+    }).catch(() => {})
     revalidatePath('/dashboard/appointments')
     revalidatePath('/dashboard')
     return { ok: true, data: { id: String(visit.id) } }

@@ -10,6 +10,7 @@ export const APPOINTMENT_STATUSES = [
   'scheduled',
   'checked-in',
   'in-consultation',
+  'post-consultation',
   'completed',
   'cancelled',
   'no-show',
@@ -19,15 +20,16 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 // Legal status transitions (spec §8.4). Terminal states have no outgoing edges.
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   scheduled: ['checked-in', 'cancelled', 'no-show'],
-  'checked-in': ['in-consultation', 'completed', 'cancelled'],
-  'in-consultation': ['completed', 'cancelled'],
+  'checked-in': ['in-consultation', 'cancelled'],
+  'in-consultation': ['post-consultation', 'completed', 'cancelled'],
+  'post-consultation': ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
   'no-show': [],
 }
 
 // Statuses that occupy a doctor's slot for conflict detection.
-export const ACTIVE_STATUSES: AppointmentStatus[] = ['scheduled', 'checked-in', 'in-consultation']
+export const ACTIVE_STATUSES: AppointmentStatus[] = ['scheduled', 'checked-in', 'in-consultation', 'post-consultation']
 
 export const GENDERS = ['male', 'female', 'other'] as const
 

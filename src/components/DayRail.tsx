@@ -55,6 +55,7 @@ const BLOCK_STYLES: Record<AppointmentStatus, { bar: string; card: string }> = {
   scheduled: { bar: 'bg-primary', card: 'border-border bg-card hover:border-primary/40' },
   'checked-in': { bar: 'bg-blue', card: 'border-blue/25 bg-blue-soft/70 hover:border-blue/50' },
   'in-consultation': { bar: 'bg-purple', card: 'border-purple/25 bg-purple-soft/70 hover:border-purple/50' },
+  'post-consultation': { bar: 'bg-amber', card: 'border-amber/25 bg-amber-soft/70 hover:border-amber/50' },
   completed: {
     bar: 'bg-green-strong',
     card: 'border-green-strong/20 bg-green-soft/60 hover:border-green-strong/40',
@@ -67,6 +68,7 @@ const STATUS_DOTS: Record<AppointmentStatus, string> = {
   scheduled: 'bg-primary',
   'checked-in': 'bg-blue',
   'in-consultation': 'bg-purple',
+  'post-consultation': 'bg-amber',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
   'no-show': 'bg-amber',
@@ -75,7 +77,8 @@ const STATUS_DOTS: Record<AppointmentStatus, string> = {
 const NEXT_ACTION: Partial<Record<AppointmentStatus, { label: string; style: string }>> = {
   'checked-in': { label: 'Check in', style: btnPrimary },
   'in-consultation': { label: 'Start consult', style: btnPrimary },
-  completed: { label: 'Mark completed', style: btnPrimary },
+  'post-consultation': { label: 'Pharmacy & Billing', style: btnPrimary },
+  completed: { label: 'Complete & Discharge', style: btnPrimary },
   'no-show': { label: 'Mark no-show', style: btnGhost },
 }
 

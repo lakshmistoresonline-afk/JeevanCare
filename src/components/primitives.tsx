@@ -18,6 +18,7 @@ export const STATUS_BAR: Record<AppointmentStatus, string> = {
   scheduled: 'bg-primary',
   'checked-in': 'bg-blue',
   'in-consultation': 'bg-purple',
+  'post-consultation': 'bg-amber',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
   'no-show': 'bg-amber',
