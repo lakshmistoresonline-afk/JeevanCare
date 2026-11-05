@@ -16,7 +16,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { IconClock, IconStethoscope, IconCheck, IconCalendar, IconWhatsApp } from './icons'
 import { STATUS_TRANSITIONS, type AppointmentStatus } from '@/lib/constants'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
-import { QueueKanbanBoard } from './QueueKanbanBoard'
 import { DoctorStatusBadge } from './DoctorStatusBadge'
 import { VitalsModal } from './VitalsModal'
 
@@ -147,7 +146,7 @@ export function DayRail({
   /** Doctors/owners may record a consultation from the details sheet. */
   canRecordVisit?: boolean
 }) {
-  const [view, setView] = useState<'list' | 'rail' | 'kanban'>('list')
+  const [view, setView] = useState<'list' | 'rail'>('list')
   const [selected, setSelected] = useState<Block | null>(null)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -157,10 +156,10 @@ export function DayRail({
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('jeevancare-day-view') : null
-    if (saved === 'rail' || saved === 'list' || saved === 'kanban') setView(saved as any)
+    if (saved === 'rail' || saved === 'list') setView(saved as any)
   }, [])
 
-  const switchView = (v: 'list' | 'rail' | 'kanban') => {
+  const switchView = (v: 'list' | 'rail') => {
     setView(v)
     try {
       localStorage.setItem('jeevancare-day-view', v)
@@ -222,7 +221,6 @@ export function DayRail({
               [
                 { key: 'list', label: 'List' },
                 { key: 'rail', label: 'Timeline' },
-                { key: 'kanban', label: 'OPD Kanban' },
               ] as const
             ).map((opt) => (
               <button
@@ -257,15 +255,11 @@ export function DayRail({
         <p className="text-xs text-faint">
           {view === 'list'
             ? 'Today in order — tap Check in / Complete right on the row.'
-            : view === 'rail'
-            ? 'Each column is one doctor’s day. Click any card for actions.'
-            : 'Interactive OPD Kanban flow board — manage patient status transitions across columns.'}
+            : 'Each column is one doctor’s day. Click any card for actions.'}
         </p>
       </div>
 
-      {view === 'kanban' ? (
-        <QueueKanbanBoard columns={columns} />
-      ) : view === 'list' ? (
+      {view === 'list' ? (
         <QueueList
           columns={columns}
           nowMinutes={nowMinutes}
@@ -398,7 +392,9 @@ export function DayRail({
                         onClick={() => act(next)}
                       >
                         {pending && <Spinner />}
-                        {NEXT_ACTION[next]?.label ?? next}
+                        {next === 'in-consultation'
+                          ? (!canRecordVisit ? '📢 Call Patient to Doctor’s Room' : '🩺 Start Consult')
+                          : (NEXT_ACTION[next]?.label ?? next)}
                       </button>
                     ),
                   )}
