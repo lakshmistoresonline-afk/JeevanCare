@@ -122,6 +122,17 @@ export async function recordPatientVitals(
   const { user, payload, tenantID } = ctx
 
   try {
+    const appt = (await payload.findByID({
+      collection: 'appointments',
+      id: appointmentId,
+      depth: 0,
+      overrideAccess: true,
+    })) as any
+
+    const apptTenantID = relId(appt?.tenant) || tenantID
+    const patientID = relId(appt?.patient)
+    const doctorID = relId(appt?.doctor)
+
     const existingVisits = await payload.find({
       collection: 'visits',
       where: { appointment: { equals: appointmentId } },
@@ -141,8 +152,11 @@ export async function recordPatientVitals(
         collection: 'visits',
         overrideAccess: true,
         data: {
-          tenant: tenantID,
+          tenant: apptTenantID,
           appointment: appointmentId,
+          patient: patientID,
+          doctor: doctorID,
+          visitDate: new Date().toISOString(),
           vitals,
         } as never,
       })
