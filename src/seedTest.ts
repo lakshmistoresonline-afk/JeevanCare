@@ -18,6 +18,7 @@ import { getPayload } from 'payload'
 import config from './payload.config'
 import crypto from 'crypto'
 import { validateDatabaseUrlSafety, checkTestDatabaseSafety } from './lib/databaseSafety'
+import { relId } from './lib/utils'
 
 const PASSWORD = 'Test@123'
 const NO_TX = { req: { transactionID: null, overrideAccess: true } as any }
@@ -432,31 +433,38 @@ export async function seedTestUatData() {
     reason: 'General Checkup',
   })
 
-  // Ensure every single one of the 10 clinics has rich appointments scheduled for TODAY's date
+  // Ensure EVERY SINGLE PATIENT across ALL 10 clinics has an appointment scheduled for TODAY's date
   const now = new Date()
-  for (let i = 0; i < tenantDocs.length; i++) {
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9 + (i % 8), 0, 0)
+  for (let i = 0; i < patientDocs.length; i++) {
+    const pat = patientDocs[i]
+    const tenantID = relId(pat.tenant)
+    const clinicDoc = doctorDocs.find((d) => String(relId(d.tenant)) === String(tenantID)) || doctorDocs[i % doctorDocs.length]
+
+    const hour = 9 + Math.floor(i / 2)
+    const minute = (i % 2) * 30
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0)
+
+    const isCheckedIn = i % 2 === 0
     const appt = await nativeInsert('appointments', {
-      tenant: tenantDocs[i].id,
-      patient: patientDocs[i].id,
-      doctor: doctorDocs[i % doctorDocs.length].id,
+      tenant: tenantID,
+      patient: pat.id,
+      doctor: clinicDoc.id,
       start: todayStart.toISOString(),
       durationMins: 15,
-      status: i % 2 === 0 ? 'checked-in' : 'scheduled',
-      isWalkIn: i % 2 === 0,
-      tokenNumber: i % 2 === 0 ? `T-01` : undefined,
-      reason: `OPD Consultation — Thrissur Patient ${i + 1}`,
+      status: isCheckedIn ? 'checked-in' : 'scheduled',
+      isWalkIn: isCheckedIn,
+      tokenNumber: isCheckedIn ? `T-0${Math.floor(i / 2) + 1}` : undefined,
+      reason: `OPD Consultation — ${pat.name}`,
     }).catch(() => null)
 
-    // If checked-in, also seed paid invoice at reception
-    if (appt && i % 2 === 0) {
+    if (appt && isCheckedIn) {
       await nativeInsert('invoices', {
-        tenant: tenantDocs[i].id,
-        patient: patientDocs[i].id,
+        tenant: tenantID,
+        patient: pat.id,
         invoiceNumber: `INV-TH-${String(i + 1).padStart(4, '0')}`,
         currency: 'INR',
         lineItems: [
-          { description: 'Consultation Fee', quantity: 1, unitAmount: 800, amount: 800 },
+          { description: `Consultation Fee — ${clinicDoc.name}`, quantity: 1, unitAmount: 800, amount: 800 },
         ],
         totalAmount: 800,
         amountPaid: 800,
