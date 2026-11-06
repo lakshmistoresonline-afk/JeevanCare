@@ -258,11 +258,11 @@ export async function seedTestUatData() {
     doctorDocs.push(doctor)
   }
 
-  // 4. Test Patients & Portal Accounts (patient1@test.com to patient10@test.com)
+  // 4. Test Patients & Portal Accounts (20 patients across all 10 Thrissur Clinics)
   const patientDocs = []
   const patientUserDocs = []
 
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 20; i++) {
     const clinicSpec = clinics[(i - 1) % clinics.length]
     const tenant = tenantDocs[(i - 1) % clinics.length]
     const pat = await safeCreate(payload, {
@@ -271,7 +271,7 @@ export async function seedTestUatData() {
       data: {
         tenant: tenant.id,
         name: `Thrissur Patient ${i}`,
-        phone: `+91984755500${i}`,
+        phone: `+919847555${String(i).padStart(3, '0')}`,
         email: `patient${i}@test.com`,
         dateOfBirth: '1990-01-01',
         gender: i % 2 === 0 ? 'female' : 'male',
@@ -292,7 +292,7 @@ export async function seedTestUatData() {
         password: PASSWORD,
         role: 'patient',
         tenant: tenant.id,
-        phone: `+91984755500${i}`,
+        phone: `+919847555${String(i).padStart(3, '0')}`,
         patientProfile: pat.id,
         active: true,
         emailVerified: true,
@@ -432,17 +432,42 @@ export async function seedTestUatData() {
     reason: 'General Checkup',
   })
 
-  // Ensure every single one of the 10 clinics has at least one active appointment
+  // Ensure every single one of the 10 clinics has rich appointments scheduled for TODAY's date
+  const now = new Date()
   for (let i = 0; i < tenantDocs.length; i++) {
-    await nativeInsert('appointments', {
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9 + (i % 8), 0, 0)
+    const appt = await nativeInsert('appointments', {
       tenant: tenantDocs[i].id,
-      patient: patientDocs[i % patientDocs.length].id,
+      patient: patientDocs[i].id,
       doctor: doctorDocs[i % doctorDocs.length].id,
-      start: new Date(Date.now() + (i + 1) * 2 * 3600 * 1000).toISOString(),
+      start: todayStart.toISOString(),
       durationMins: 15,
-      status: 'scheduled',
-      reason: `Scheduled appointment for clinic #${i + 1}`,
-    }).catch(() => {})
+      status: i % 2 === 0 ? 'checked-in' : 'scheduled',
+      isWalkIn: i % 2 === 0,
+      tokenNumber: i % 2 === 0 ? `T-01` : undefined,
+      reason: `OPD Consultation — Thrissur Patient ${i + 1}`,
+    }).catch(() => null)
+
+    // If checked-in, also seed paid invoice at reception
+    if (appt && i % 2 === 0) {
+      await nativeInsert('invoices', {
+        tenant: tenantDocs[i].id,
+        patient: patientDocs[i].id,
+        invoiceNumber: `INV-TH-${String(i + 1).padStart(4, '0')}`,
+        currency: 'INR',
+        lineItems: [
+          { description: 'Consultation Fee', quantity: 1, unitAmount: 800, amount: 800 },
+        ],
+        totalAmount: 800,
+        amountPaid: 800,
+        balanceDue: 0,
+        paymentStatus: 'paid',
+        payments: [
+          { amount: 800, method: 'cash', receivedAt: todayStart.toISOString() },
+        ],
+        voided: false,
+      }).catch(() => {})
+    }
   }
 
   // 6. Seed National Essential Medicines Directory
