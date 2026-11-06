@@ -507,8 +507,37 @@ function QueueList({
 
   const doctorsWithCounts = columns.map((c) => ({ id: c.id, name: c.name, count: c.blocks.length }))
 
+  const currentlyInConsult = rows.find((b) => b.status === 'in-consultation')
+  const checkedInQueue = rows.filter((b) => b.status === 'checked-in')
+
   return (
     <div>
+      {currentlyInConsult && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-purple/30 bg-purple-soft/60 p-4 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-purple text-white font-bold text-xs animate-pulse">
+              🟢
+            </span>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-purple">Now Serving In Consultation</div>
+              <h3 className="font-display text-sm font-bold text-ink">
+                {currentlyInConsult.token || 'Walk-in'} — {currentlyInConsult.patientName}
+              </h3>
+              <p className="text-xs text-muted-foreground">Doctor: {currentlyInConsult.doctorName}</p>
+            </div>
+          </div>
+          {canRecordVisit && (
+            <Link
+              href={`/dashboard/visits/new?appointment=${currentlyInConsult.id}`}
+              className={btnPrimary}
+            >
+              <IconStethoscope size={15} />
+              Open EMR Workspace
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Doctor filter chips */}
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <FilterChip
@@ -546,6 +575,7 @@ function QueueList({
               const closed = b.status === 'cancelled' || b.status === 'no-show'
               const step = QUICK_STEP[b.status]
               const busy = quickId === b.id && pending
+              const queueIndex = b.status === 'checked-in' ? checkedInQueue.findIndex((q) => q.id === b.id) : -1
               return (
                 <li
                   key={b.id}
@@ -614,7 +644,11 @@ function QueueList({
                       ) : (
                         <StatusBadge status={b.status} className="hidden sm:inline-flex" />
                       )}
-                      {step && (
+                      {b.status === 'checked-in' && queueIndex > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                          ⏳ Waiting (#{queueIndex + 1})
+                        </span>
+                      ) : step && (
                         <button
                           onClick={() => {
                             if (b.status === 'scheduled' || b.status === 'in-consultation') {
@@ -636,7 +670,7 @@ function QueueList({
                               {step.doing}
                             </>
                           ) : b.status === 'checked-in' ? (
-                            !canRecordVisit ? '📢 Call Patient' : '🩺 Start Consult'
+                            !canRecordVisit ? '📢 Call Next Patient' : '🩺 Start Consult'
                           ) : (
                             step.label
                           )}

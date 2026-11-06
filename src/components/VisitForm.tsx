@@ -117,8 +117,13 @@ export function VisitForm({
         prescription: rows.filter((r) => r.medicine.trim()).map((r) => ({ ...r, durationDays: r.durationDays ? Number(r.durationDays) : undefined })),
         followUpDate: followUp || undefined,
       })
-      if (res.ok) router.refresh()
-      else setError(res.message)
+      if (res.ok) {
+        if ((res.data as any)?.invoiceId) {
+          router.push(`/dashboard/invoices/${(res.data as any).invoiceId}`)
+        } else {
+          router.push('/dashboard/appointments')
+        }
+      } else setError(res.message)
     })
   }
 

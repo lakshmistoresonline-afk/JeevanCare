@@ -57,7 +57,7 @@ export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] a
 // --- v2: clinical loop ---
 
 // Appointment statuses on which a Visit (consultation) may be recorded.
-export const VISIT_ALLOWED_APPOINTMENT_STATUSES: AppointmentStatus[] = ['checked-in', 'in-consultation', 'completed']
+export const VISIT_ALLOWED_APPOINTMENT_STATUSES: AppointmentStatus[] = ['checked-in', 'in-consultation', 'post-consultation', 'completed']
 
 // Prescription dosing frequencies (standard medical shorthand). `other` reveals a note.
 export const PRESCRIPTION_FREQUENCIES = [

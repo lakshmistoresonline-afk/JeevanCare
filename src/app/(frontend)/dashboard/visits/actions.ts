@@ -31,7 +31,7 @@ export type VisitInput = {
 }
 
 /** Record a consultation against an appointment. */
-export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id: string }>> {
+export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id: string; invoiceId?: string }>> {
   const user = await getCurrentUser()
   if (!user || user.role === 'superAdmin' || user.role === 'receptionist' || (user.role as string) === 'patient') {
     return { ok: false, code: 'FORBIDDEN', message: "Only attending doctors and clinic owners can record visits." }
@@ -120,8 +120,18 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
     }).catch(() => {})
 
     revalidatePath('/dashboard/appointments')
+    revalidatePath('/dashboard/invoices')
     revalidatePath('/dashboard')
-    return { ok: true, data: { id: String(visit.id) } }
+
+    const existingInvoices = await payload.find({
+      collection: 'invoices',
+      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID } },
+      sort: '-createdAt',
+      limit: 1,
+      overrideAccess: true,
+    })
+    const createdInvoiceId = existingInvoices.docs.length > 0 ? String(existingInvoices.docs[0].id) : undefined
+    return { ok: true, data: { id: String(visit.id), invoiceId: createdInvoiceId } }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }
