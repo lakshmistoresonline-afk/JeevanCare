@@ -433,8 +433,10 @@ export async function seedTestUatData() {
     reason: 'General Checkup',
   })
 
-  // Ensure EVERY SINGLE PATIENT across ALL 10 clinics has an appointment scheduled for TODAY's date
-  const now = new Date()
+  // Ensure EVERY SINGLE PATIENT across ALL 10 clinics has an appointment scheduled for 06/11/2026
+  const targetYear = 2026
+  const targetMonth = 10 // November (0-indexed 10 = Nov)
+  const targetDay = 6 // 6th November
   for (let i = 0; i < patientDocs.length; i++) {
     const pat = patientDocs[i]
     const tenantID = relId(pat.tenant)
@@ -442,7 +444,7 @@ export async function seedTestUatData() {
 
     const hour = 9 + Math.floor(i / 2)
     const minute = (i % 2) * 30
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0)
+    const todayStart = new Date(Date.UTC(targetYear, targetMonth, targetDay, hour, minute, 0))
 
     const isCheckedIn = i % 2 === 0
     const appt = await nativeInsert('appointments', {
