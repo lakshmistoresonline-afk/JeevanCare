@@ -384,14 +384,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           overrideAccess: true,
         })
 
-        const targetPatEmail = row.patient_email.toLowerCase()
-        const matchedPat = patRes.docs.find(
-          (p: any) => p.email && p.email.toLowerCase() === targetPatEmail
+        const targetPatEmail = row.patient_email ? row.patient_email.toLowerCase() : ''
+        const targetPatName = (row.patient_name || '').trim().toLowerCase()
+
+        // 1. Match patient in clinic by name
+        let matchedPat = patRes.docs.find(
+          (p: any) => targetPatName && p.name && p.name.trim().toLowerCase() === targetPatName
         )
 
-        if (matchedPat) {
-          patientID = String(matchedPat.id)
-        } else {
+        // 2. Fallback: match via user profile email or name
+        if (!matchedPat) {
           const userPatRes = await payload.find({
             collection: 'users',
             where: { tenant: { equals: targetTenantID }, role: { equals: 'patient' } },
@@ -399,15 +401,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             overrideAccess: true,
           })
           const matchedUser = userPatRes.docs.find(
-            (u: any) => u.email && u.email.toLowerCase() === targetPatEmail
+            (u: any) =>
+              (targetPatEmail && u.email && u.email.toLowerCase() === targetPatEmail) ||
+              (targetPatName && u.name && u.name.trim().toLowerCase() === targetPatName)
           )
           if (matchedUser && (matchedUser as any).patientProfile) {
-            patientID = String(relId((matchedUser as any).patientProfile))
+            const profId = relId((matchedUser as any).patientProfile)
+            matchedPat = patRes.docs.find((p: any) => String(p.id) === String(profId))
           }
         }
 
-        // Auto-register patient in clinic if not existing yet
-        if (!patientID) {
+        if (matchedPat) {
+          patientID = String(matchedPat.id)
+        } else {
+          // Auto-register patient in clinic if not existing yet
           const patientName = row.patient_name || targetPatEmail.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Patient'
           const newPat = await payload.create({
             collection: 'patients',
@@ -421,22 +428,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             } as never,
           })
           patientID = String(newPat.id)
-
-          await payload.create({
-            collection: 'users',
-            overrideAccess: true,
-            data: {
-              name: patientName,
-              email: targetPatEmail,
-              password: 'Test@123',
-              role: 'patient',
-              tenant: targetTenantID,
-              phone: `+9198470${Math.floor(100000 + Math.random() * 900000)}`,
-              patientProfile: newPat.id,
-              active: true,
-              emailVerified: true,
-            } as never,
-          }).catch(() => {})
         }
 
         const docRes = await payload.find({
