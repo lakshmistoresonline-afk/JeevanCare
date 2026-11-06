@@ -122,6 +122,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const errors: { row: number; reason: string }[] = []
     const tenantPatientsCache = new Map<string, any[]>()
     const tenantDoctorsCache = new Map<string, any[]>()
+    const tenantApptsCache = new Map<string, any[]>()
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -443,22 +444,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const duration = row.durationmins ? Number(row.durationmins) : 15
         const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
 
-        try {
-          const existingAppts = await payload.find({
+        if (!tenantApptsCache.has(targetTenantID)) {
+          const apptsRes = await payload.find({
             collection: 'appointments',
-            where: {
-              tenant: { equals: targetTenantID },
-              doctor: { equals: matchedDoc.id },
-              start: { equals: startDate.toISOString() },
-            },
-            limit: 1,
+            where: { tenant: { equals: targetTenantID } },
+            limit: 300,
             overrideAccess: true,
           })
+          tenantApptsCache.set(targetTenantID, apptsRes.docs)
+        }
+        const clinicAppts = tenantApptsCache.get(targetTenantID) || []
 
-          if (existingAppts.docs.length > 0) {
+        const matchedAppt = clinicAppts.find(
+          (a: any) =>
+            String(relId(a.doctor)) === String(matchedDoc.id) &&
+            new Date(a.start).toISOString() === startDate.toISOString()
+        )
+
+        try {
+          if (matchedAppt) {
             await payload.update({
               collection: 'appointments',
-              id: existingAppts.docs[0].id,
+              id: matchedAppt.id,
               overrideAccess: true,
               data: {
                 patient: patientID,
@@ -468,7 +475,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
               } as never,
             })
           } else {
-            await payload.create({
+            const newAppt = await payload.create({
               collection: 'appointments',
               overrideAccess: true,
               data: {
@@ -481,6 +488,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 reason: row.reason || 'General Consultation',
               } as never,
             })
+            clinicAppts.push(newAppt)
           }
           importedCount++
         } catch (err: any) {
