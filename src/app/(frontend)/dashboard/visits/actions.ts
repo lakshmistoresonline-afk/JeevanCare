@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { relId } from '@/lib/utils'
+import type { User } from '@/payload-types'
 
 export type PrescriptionRowInput = {
   medicine: string
@@ -119,9 +120,7 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
       data: { status: 'post-consultation' } as never,
     }).catch(() => {})
 
-    revalidatePath('/dashboard/appointments')
-    revalidatePath('/dashboard/invoices')
-    revalidatePath('/dashboard')
+    let finalInvoiceId: string | undefined = undefined
 
     const existingInvoices = await payload.find({
       collection: 'invoices',
@@ -130,8 +129,53 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
       limit: 1,
       overrideAccess: true,
     })
-    const createdInvoiceId = existingInvoices.docs.length > 0 ? String(existingInvoices.docs[0].id) : undefined
-    return { ok: true, data: { id: String(visit.id), invoiceId: createdInvoiceId } }
+
+    if (existingInvoices.docs.length > 0) {
+      finalInvoiceId = String(existingInvoices.docs[0].id)
+      if (!existingInvoices.docs[0].visit) {
+        await payload.update({
+          collection: 'invoices',
+          id: existingInvoices.docs[0].id,
+          overrideAccess: true,
+          data: { visit: String(visit.id) } as never,
+        }).catch(() => {})
+      }
+    } else {
+      // Auto-create unpaid invoice for the visit if patient did not pay at reception
+      const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User : null
+      const fee = typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800
+
+      const newInv = await payload.create({
+        collection: 'invoices',
+        overrideAccess: true,
+        data: {
+          tenant: apptTenantID,
+          patient: patientID,
+          visit: String(visit.id),
+          lineItems: [
+            {
+              description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
+              quantity: 1,
+              unitAmount: fee,
+              amount: fee,
+            },
+          ],
+          totalAmount: fee,
+          amountPaid: 0,
+          balanceDue: fee,
+          paymentStatus: 'unpaid',
+          voided: false,
+        } as never,
+      }).catch(() => null)
+
+      if (newInv) finalInvoiceId = String(newInv.id)
+    }
+
+    revalidatePath('/dashboard/appointments')
+    revalidatePath('/dashboard/invoices')
+    revalidatePath('/dashboard')
+
+    return { ok: true, data: { id: String(visit.id), invoiceId: finalInvoiceId } }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }
