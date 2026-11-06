@@ -454,19 +454,44 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
 
         try {
-          await payload.create({
+          const existingAppts = await payload.find({
             collection: 'appointments',
+            where: {
+              tenant: { equals: targetTenantID },
+              doctor: { equals: matchedDoc.id },
+              start: { equals: startDate.toISOString() },
+            },
+            limit: 1,
             overrideAccess: true,
-            data: {
-              tenant: targetTenantID,
-              patient: patientID,
-              doctor: matchedDoc.id,
-              start: startDate.toISOString(),
-              durationMins: duration,
-              status: status as any,
-              reason: row.reason || 'General Consultation',
-            } as never,
           })
+
+          if (existingAppts.docs.length > 0) {
+            await payload.update({
+              collection: 'appointments',
+              id: existingAppts.docs[0].id,
+              overrideAccess: true,
+              data: {
+                patient: patientID,
+                durationMins: duration,
+                status: status as any,
+                reason: row.reason || 'General Consultation',
+              } as never,
+            })
+          } else {
+            await payload.create({
+              collection: 'appointments',
+              overrideAccess: true,
+              data: {
+                tenant: targetTenantID,
+                patient: patientID,
+                doctor: matchedDoc.id,
+                start: startDate.toISOString(),
+                durationMins: duration,
+                status: status as any,
+                reason: row.reason || 'General Consultation',
+              } as never,
+            })
+          }
           importedCount++
         } catch (err: any) {
           errors.push({ row: i, reason: err.message || 'Failed to create appointment record.' })
