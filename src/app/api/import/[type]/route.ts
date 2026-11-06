@@ -120,6 +120,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     })
     let importedCount = 0
     const errors: { row: number; reason: string }[] = []
+    const tenantPatientsCache = new Map<string, any[]>()
+    const tenantDoctorsCache = new Map<string, any[]>()
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -375,46 +377,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        // Robust multi-tier patient resolution
-        let patientID: string | null = null
-        const patRes = await payload.find({
-          collection: 'patients',
-          where: { tenant: { equals: targetTenantID } },
-          limit: 100,
-          overrideAccess: true,
-        })
+        if (!tenantPatientsCache.has(targetTenantID)) {
+          const patRes = await payload.find({
+            collection: 'patients',
+            where: { tenant: { equals: targetTenantID } },
+            limit: 200,
+            overrideAccess: true,
+          })
+          tenantPatientsCache.set(targetTenantID, patRes.docs)
+        }
+
+        if (!tenantDoctorsCache.has(targetTenantID)) {
+          const docRes = await payload.find({
+            collection: 'users',
+            where: { tenant: { equals: targetTenantID }, role: { equals: 'doctor' } },
+            limit: 100,
+            overrideAccess: true,
+          })
+          tenantDoctorsCache.set(targetTenantID, docRes.docs)
+        }
+
+        const clinicPatients = tenantPatientsCache.get(targetTenantID) || []
+        const clinicDoctors = tenantDoctorsCache.get(targetTenantID) || []
 
         const targetPatEmail = row.patient_email ? row.patient_email.toLowerCase() : ''
         const targetPatName = (row.patient_name || '').trim().toLowerCase()
 
-        // 1. Match patient in clinic by name
-        let matchedPat = patRes.docs.find(
+        let matchedPat = clinicPatients.find(
           (p: any) => targetPatName && p.name && p.name.trim().toLowerCase() === targetPatName
         )
 
-        // 2. Fallback: match via user profile email or name
-        if (!matchedPat) {
-          const userPatRes = await payload.find({
-            collection: 'users',
-            where: { tenant: { equals: targetTenantID }, role: { equals: 'patient' } },
-            limit: 100,
-            overrideAccess: true,
-          })
-          const matchedUser = userPatRes.docs.find(
-            (u: any) =>
-              (targetPatEmail && u.email && u.email.toLowerCase() === targetPatEmail) ||
-              (targetPatName && u.name && u.name.trim().toLowerCase() === targetPatName)
-          )
-          if (matchedUser && (matchedUser as any).patientProfile) {
-            const profId = relId((matchedUser as any).patientProfile)
-            matchedPat = patRes.docs.find((p: any) => String(p.id) === String(profId))
-          }
-        }
+        let patientID: string | null = matchedPat ? String(matchedPat.id) : null
 
-        if (matchedPat) {
-          patientID = String(matchedPat.id)
-        } else {
-          // Auto-register patient in clinic if not existing yet
+        if (!patientID) {
           const patientName = row.patient_name || targetPatEmail.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Patient'
           const newPat = await payload.create({
             collection: 'patients',
@@ -428,16 +423,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             } as never,
           })
           patientID = String(newPat.id)
+          clinicPatients.push(newPat)
         }
 
-        const docRes = await payload.find({
-          collection: 'users',
-          where: { tenant: { equals: targetTenantID }, role: { equals: 'doctor' } },
-          limit: 100,
-          overrideAccess: true,
-        })
         const targetDocEmail = row.doctor_email.toLowerCase()
-        const matchedDoc = docRes.docs.find((d: any) => d.email && d.email.toLowerCase() === targetDocEmail) || docRes.docs[0]
+        const matchedDoc = clinicDoctors.find((d: any) => d.email && d.email.toLowerCase() === targetDocEmail) || clinicDoctors[0]
 
         if (!matchedDoc) {
           errors.push({ row: i, reason: `Doctor with email '${row.doctor_email}' not found in clinic.` })

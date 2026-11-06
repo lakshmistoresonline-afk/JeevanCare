@@ -33,7 +33,14 @@ export default function ImportView() {
         })
       }
 
-      const data = await res.json()
+      const text = await res.text()
+      let data: any
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error('Server error or timeout. Please check your file and try again.')
+      }
+
       if (!res.ok) {
         throw new Error(data.error || 'Import failed.')
       }
