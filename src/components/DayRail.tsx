@@ -571,7 +571,6 @@ function QueueList({
         ) : (
           <ul className="divide-y divide-border">
             {rows.map((b) => {
-              const isNext = b.id === nextId
               const closed = b.status === 'cancelled' || b.status === 'no-show'
               const step = QUICK_STEP[b.status]
               const busy = quickId === b.id && pending
@@ -579,11 +578,8 @@ function QueueList({
               return (
                 <li
                   key={b.id}
-                  className={`relative transition-colors ${
-                    isNext ? 'bg-secondary/35' : 'hover:bg-background/70'
-                  } ${closed ? 'opacity-55' : ''}`}
+                  className={`relative transition-colors hover:bg-background/70 ${closed ? 'opacity-55' : ''}`}
                 >
-                  {isNext && <span className="absolute inset-y-0 start-0 w-[3px] bg-primary" />}
                   <div className="flex items-center gap-2.5 px-3 py-3 sm:gap-4 sm:px-5">
                     {/* time */}
                     <button onClick={() => onOpen(b)} className="w-[58px] shrink-0 text-start sm:w-[74px]">
@@ -616,14 +612,9 @@ function QueueList({
                           >
                             {b.patientName}
                           </span>
-                          {b.isWalkIn && (
+                          {b.token && (
                             <span className="shrink-0 rounded bg-blue-soft px-1.5 py-px text-[10px] font-bold text-blue">
-                              {b.token || 'Walk-in'}
-                            </span>
-                          )}
-                          {isNext && (
-                            <span className="shrink-0 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-white">
-                              Next
+                              {b.token}
                             </span>
                           )}
                         </span>
