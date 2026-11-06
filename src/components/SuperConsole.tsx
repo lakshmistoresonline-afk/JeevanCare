@@ -9,6 +9,7 @@ import { MetricCard } from './MetricCard'
 import { DashboardWidgetError } from './DashboardWidgetError'
 import { IconPlus, IconBuilding, IconLogout, IconUsers, IconCalendar } from './icons'
 import { PasswordField } from './PasswordField'
+import { QueueAutoRefresher } from './QueueAutoRefresher'
 
 const TENANTS_PAGE_SIZE = 10
 import { createClinic, setClinicStatus, resolveUpgradeRequest } from '@/app/(frontend)/super/actions'
@@ -398,6 +399,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
           </Card>
         </DashboardWidgetError>
       )}
+      <QueueAutoRefresher intervalMs={4000} />
     </div>
   )
 }

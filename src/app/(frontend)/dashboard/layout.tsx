@@ -7,6 +7,7 @@ import { logoutAction } from '@/app/(frontend)/login/actions'
 import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 import { OfflineSyncBanner } from '@/components/OfflineSyncBanner'
 import { NotificationDrawer } from '@/components/NotificationDrawer'
+import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant } = await requireDashboardSession()
@@ -64,6 +65,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <JeevanCareFooterCredit />
           </footer>
         </main>
+        <QueueAutoRefresher intervalMs={4000} />
       </div>
     </div>
   )
