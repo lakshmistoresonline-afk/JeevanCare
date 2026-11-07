@@ -29,6 +29,12 @@ function parseCSVLine(textLine: string): string[] {
 }
 
 async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: Record<string, string>, rowIndex?: number): Promise<string | null> {
+  // Non-superadmin staff are strictly bound to their own authenticated session tenant ID
+  if (!isSuper) {
+    const actorTenant = getTenantID(actor)
+    return actorTenant ? String(actorTenant) : null
+  }
+
   const rawClinicKey = row.clinic_name || row['clinic name'] || row.clinic || row.tenantid || row.clinic_id || ''
 
   if (rawClinicKey) {

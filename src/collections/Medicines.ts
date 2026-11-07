@@ -8,9 +8,9 @@ export const Medicines: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => Boolean(user),
-    update: ({ req: { user } }) => Boolean(user),
-    delete: ({ req: { user } }) => Boolean(user),
+    create: ({ req: { user } }) => Boolean(user && (user as any).role !== 'patient'),
+    update: ({ req: { user } }) => Boolean(user && (user as any).role !== 'patient'),
+    delete: ({ req: { user } }) => Boolean(user && ((user as any).role === 'superAdmin' || (user as any).role === 'owner')),
   },
   fields: [
     {

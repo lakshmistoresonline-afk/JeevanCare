@@ -75,6 +75,7 @@ export interface Config {
     invoices: Invoice;
     auditLogs: AuditLog;
     'medical-documents': MedicalDocument;
+    medicines: Medicine;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,6 +91,7 @@ export interface Config {
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     auditLogs: AuditLogsSelect<false> | AuditLogsSelect<true>;
     'medical-documents': MedicalDocumentsSelect<false> | MedicalDocumentsSelect<true>;
+    medicines: MedicinesSelect<false> | MedicinesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -337,7 +339,7 @@ export interface Appointment {
   durationMins: number;
   end?: string | null;
   reason?: string | null;
-  status: 'scheduled' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
+  status: 'scheduled' | 'checked-in' | 'in-consultation' | 'post-consultation' | 'completed' | 'cancelled' | 'no-show';
   isWalkIn?: boolean | null;
   /**
    * Auto-assigned per clinic per day for walk-ins.
@@ -423,7 +425,7 @@ export interface Invoice {
   payments?:
     | {
         amount: number;
-        method: 'cash' | 'card' | 'bank-transfer' | 'other';
+        method: 'cash' | 'upi' | 'card' | 'bank-transfer' | 'other';
         receivedAt?: string | null;
         receivedBy?: (string | null) | User;
         id?: string | null;
@@ -543,6 +545,22 @@ export interface MedicalDocument {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medicines".
+ */
+export interface Medicine {
+  id: string;
+  brandName: string;
+  genericName: string;
+  category?: string | null;
+  formulation?: string | null;
+  strength?: string | null;
+  defaultFrequency?: string | null;
+  defaultDurationDays?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -596,6 +614,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'medical-documents';
         value: string | MedicalDocument;
+      } | null)
+    | ({
+        relationTo: 'medicines';
+        value: string | Medicine;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -890,6 +912,21 @@ export interface MedicalDocumentsSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "medicines_select".
+ */
+export interface MedicinesSelect<T extends boolean = true> {
+  brandName?: T;
+  genericName?: T;
+  category?: T;
+  formulation?: T;
+  strength?: T;
+  defaultFrequency?: T;
+  defaultDurationDays?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

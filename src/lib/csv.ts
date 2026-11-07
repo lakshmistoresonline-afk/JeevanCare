@@ -9,7 +9,11 @@ const BOM = '﻿'
 
 export function csvEscape(value: CsvValue): string {
   if (value === null || value === undefined) return ''
-  const s = String(value)
+  let s = String(value)
+  // Prevent Excel / LibreOffice CSV Formula Injection (spec §A.2)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`
+  }
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 

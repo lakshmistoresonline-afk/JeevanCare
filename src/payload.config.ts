@@ -71,16 +71,16 @@ export default buildConfig({
         // (it would conflict with the partial unique index below).
         const existing = await native.indexes().catch(() => [] as any[])
         const stale = existing.find(
-          (i: any) => i.name === 'tenant_1_doctor_1_start_1' && !i.unique,
+          (i: any) => i.name === 'uniq_active_slot' || (i.name === 'tenant_1_doctor_1_start_1' && !i.unique),
         )
-        if (stale) await native.dropIndex('tenant_1_doctor_1_start_1').catch(() => {})
+        if (stale) await native.dropIndex(stale.name).catch(() => {})
 
         await native.createIndex(
           { tenant: 1, doctor: 1, start: 1 },
           {
             unique: true,
             name: 'uniq_active_slot',
-            partialFilterExpression: { status: { $in: ['scheduled', 'checked-in'] } },
+            partialFilterExpression: { status: { $in: ['scheduled', 'checked-in', 'in-consultation', 'post-consultation'] } },
           },
         )
       }
