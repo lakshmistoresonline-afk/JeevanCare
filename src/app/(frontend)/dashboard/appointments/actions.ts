@@ -245,6 +245,40 @@ export async function checkInAndCollectPayment(input: {
   }
 }
 
+export async function rescheduleAppointment(
+  appointmentId: string,
+  newDate: string,
+  newTime: string,
+): Promise<ActionResult<{ id: string }>> {
+  const ctx = await resolveActorTenantInternal()
+  if (!ctx || (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to reschedule appointments." }
+  }
+  const { user, payload, tenant } = ctx
+
+  try {
+    const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+    const startUTC = wallTimeToUTC(tz, newDate, newTime)
+
+    await payload.update({
+      collection: 'appointments',
+      id: appointmentId,
+      user,
+      overrideAccess: true,
+      data: {
+        start: startUTC.toISOString(),
+        status: 'scheduled',
+      } as never,
+    })
+
+    try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard') } catch {}
+    return { ok: true, data: { id: appointmentId } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
 /** Exported Server Action — ALWAYS derives caller identity strictly from server request session */
 export async function getAvailableSlots(
   doctorId: string,

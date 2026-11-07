@@ -19,6 +19,7 @@ import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments
 import { DoctorStatusBadge } from './DoctorStatusBadge'
 import { VitalsModal } from './VitalsModal'
 import { CheckInModal } from './CheckInModal'
+import { RescheduleModal } from './RescheduleModal'
 import { QueueAutoRefresher } from './QueueAutoRefresher'
 
 export type Block = {
@@ -224,6 +225,7 @@ export function DayRail({
 
   const [vitalsOpen, setVitalsOpen] = useState(false)
   const [checkInOpen, setCheckInOpen] = useState(false)
+  const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const allBlocks = columns.flatMap((c) => c.blocks)
   const statusCounts = allBlocks.reduce<Partial<Record<AppointmentStatus, number>>>((acc, b) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1
@@ -374,6 +376,16 @@ export function DayRail({
                   </a>
                 )}
 
+                {selected.status !== 'completed' && selected.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleOpen(true)}
+                    className={`${btnGhost} mt-2 w-full text-xs font-semibold`}
+                  >
+                    📅 Reschedule Appointment
+                  </button>
+                )}
+
                 {error && (
                   <p className="mt-4 rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-sm text-red">
                     {error}
@@ -454,6 +466,12 @@ export function DayRail({
                     prev ? { ...prev, status: 'checked-in', token: token || prev.token } : null
                   )
                 }}
+              />
+              <RescheduleModal
+                appointmentId={selected.id}
+                patientName={selected.patientName}
+                isOpen={rescheduleOpen}
+                onClose={() => setRescheduleOpen(false)}
               />
             </>
           )}
