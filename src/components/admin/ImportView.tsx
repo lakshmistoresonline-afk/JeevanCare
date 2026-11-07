@@ -80,24 +80,31 @@ export default function ImportView() {
           </select>
         </div>
 
-        {importType !== 'medicines' && (
-          <div>
-            <label className="block text-xs font-semibold uppercase text-muted-foreground mb-2">CSV File (.csv)</label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-            />
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-semibold uppercase text-muted-foreground mb-2">CSV File (.csv)</label>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+          />
+          {file && (
+            <p className="mt-1 text-xs text-primary font-medium">Selected file: {file.name}</p>
+          )}
+        </div>
 
         <button
           type="submit"
           disabled={loading || (importType !== 'medicines' && !file)}
           className="w-full h-10 rounded-lg bg-primary text-primary-foreground font-semibold text-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          {loading ? 'Processing Import...' : importType === 'medicines' ? 'Populate Indian Medicine Catalog' : 'Upload & Import Data'}
+          {loading
+            ? 'Processing Import...'
+            : file
+              ? `Upload & Import ${importType === 'medicines' ? 'Medicines' : importType} CSV`
+              : importType === 'medicines'
+                ? 'Populate Indian Medicine Catalog (1-Click)'
+                : 'Upload & Import Data'}
         </button>
       </form>
 
