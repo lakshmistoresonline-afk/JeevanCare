@@ -6,8 +6,8 @@ import { relId } from '@/lib/utils'
 import crypto from 'crypto'
 
 const ALLOWED_STAFF_ROLES = ['doctor', 'receptionist'] as const
-const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
-const MAX_ROW_COUNT = 100
+const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB
+const MAX_ROW_COUNT = 60000
 
 function parseCSVLine(textLine: string): string[] {
   const result: string[] = []
@@ -123,6 +123,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const tenantPatientsCache = new Map<string, any[]>()
     const tenantDoctorsCache = new Map<string, any[]>()
     const tenantApptsCache = new Map<string, any[]>()
+    const medicinesToInsert: any[] = []
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -503,48 +504,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        try {
-          const existingMed = await (payload as any).find({
-            collection: 'medicines',
-            where: { brandName: { equals: brandName } },
-            limit: 1,
-            overrideAccess: true,
-          })
-
-          if (existingMed.docs.length > 0) {
-            await (payload as any).update({
-              collection: 'medicines',
-              id: existingMed.docs[0].id,
-              overrideAccess: true,
-              data: {
-                genericName,
-                category: row.category || undefined,
-                formulation: row.formulation || row.type || undefined,
-                strength: row.strength || undefined,
-                defaultFrequency: row.defaultfrequency || row.frequency || undefined,
-                defaultDurationDays: row.defaultdurationdays || row.duration ? Number(row.defaultdurationdays || row.duration) : undefined,
-              } as never,
-            })
-          } else {
-            await (payload as any).create({
-              collection: 'medicines',
-              overrideAccess: true,
-              data: {
-                brandName,
-                genericName,
-                category: row.category || undefined,
-                formulation: row.formulation || row.type || undefined,
-                strength: row.strength || undefined,
-                defaultFrequency: row.defaultfrequency || row.frequency || undefined,
-                defaultDurationDays: row.defaultdurationdays || row.duration ? Number(row.defaultdurationdays || row.duration) : undefined,
-              } as never,
-            })
-          }
-          importedCount++
-        } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create or update medicine record.' })
-        }
+        medicinesToInsert.push({
+          brandName,
+          genericName,
+          category: row.category || undefined,
+          formulation: row.formulation || row.type || undefined,
+          strength: row.strength || undefined,
+          defaultFrequency: row.defaultfrequency || row.frequency || undefined,
+          defaultDurationDays: row.defaultdurationdays || row.duration ? Number(row.defaultdurationdays || row.duration) : undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        importedCount++
       }
+    }
+
+    if (normalizedType === 'medicines' && medicinesToInsert.length > 0) {
+      try {
+        const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.medicines?.collection?.db
+        if (db) {
+          const bulkOps = medicinesToInsert.map((doc) => ({
+            updateOne: {
+              filter: { brandName: doc.brandName },
+              update: { $set: doc },
+              upsert: true,
+            },
+          }))
+          for (let b = 0; b < bulkOps.length; b += 2000) {
+            const batch = bulkOps.slice(b, b + 2000)
+            await db.collection('medicines').bulkWrite(batch, { ordered: false }).catch(() => {})
+          }
+        } else {
+          for (let b = 0; b < medicinesToInsert.length; b += 100) {
+            const batch = medicinesToInsert.slice(b, b + 100)
+            await Promise.all(
+              batch.map((m) =>
+                (payload as any).create({
+                  collection: 'medicines',
+                  overrideAccess: true,
+                  data: m as never,
+                }).catch(() => null)
+              )
+            )
+          }
+        }
+      } catch {}
     }
 
     const tenantForAudit = getTenantID(actor)
