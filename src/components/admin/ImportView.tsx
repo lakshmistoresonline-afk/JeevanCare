@@ -21,12 +21,13 @@ export default function ImportView() {
 
     try {
       let res: Response
-      if (importType === 'medicines') {
+      const endpointType = (importType === 'doctors' || importType === 'receptionists') ? 'staff' : importType
+      const formData = new FormData()
+      if (file) formData.append('file', file)
+
+      if (importType === 'medicines' && !file) {
         res = await fetch('/api/import/medicines', { method: 'POST' })
       } else {
-        const endpointType = (importType === 'doctors' || importType === 'receptionists') ? 'staff' : importType
-        const formData = new FormData()
-        if (file) formData.append('file', file)
         res = await fetch(`/api/import/${endpointType}`, {
           method: 'POST',
           body: formData,

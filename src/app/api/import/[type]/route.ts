@@ -70,7 +70,7 @@ async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: 
 export async function POST(req: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
   const normalizedType = type === 'clinics' ? 'tenants' : type
-  if (!['tenants', 'staff', 'patients', 'appointments'].includes(normalizedType)) {
+  if (!['tenants', 'staff', 'patients', 'appointments', 'medicines'].includes(normalizedType)) {
     return Response.json({ error: 'Unknown or unsupported import type.' }, { status: 404 })
   }
 
@@ -493,6 +493,56 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           importedCount++
         } catch (err: any) {
           errors.push({ row: i, reason: err.message || 'Failed to create appointment record.' })
+        }
+      } else if (normalizedType === 'medicines') {
+        const brandName = row.brandname || row['brand name'] || row.brand || row.name
+        const genericName = row.genericname || row['generic name'] || row.generic || row.composition || brandName
+
+        if (!brandName) {
+          errors.push({ row: i, reason: 'Missing required brand name or medicine name.' })
+          continue
+        }
+
+        try {
+          const existingMed = await (payload as any).find({
+            collection: 'medicines',
+            where: { brandName: { equals: brandName } },
+            limit: 1,
+            overrideAccess: true,
+          })
+
+          if (existingMed.docs.length > 0) {
+            await (payload as any).update({
+              collection: 'medicines',
+              id: existingMed.docs[0].id,
+              overrideAccess: true,
+              data: {
+                genericName,
+                category: row.category || undefined,
+                formulation: row.formulation || row.type || undefined,
+                strength: row.strength || undefined,
+                defaultFrequency: row.defaultfrequency || row.frequency || undefined,
+                defaultDurationDays: row.defaultdurationdays || row.duration ? Number(row.defaultdurationdays || row.duration) : undefined,
+              } as never,
+            })
+          } else {
+            await (payload as any).create({
+              collection: 'medicines',
+              overrideAccess: true,
+              data: {
+                brandName,
+                genericName,
+                category: row.category || undefined,
+                formulation: row.formulation || row.type || undefined,
+                strength: row.strength || undefined,
+                defaultFrequency: row.defaultfrequency || row.frequency || undefined,
+                defaultDurationDays: row.defaultdurationdays || row.duration ? Number(row.defaultdurationdays || row.duration) : undefined,
+              } as never,
+            })
+          }
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Failed to create or update medicine record.' })
         }
       }
     }

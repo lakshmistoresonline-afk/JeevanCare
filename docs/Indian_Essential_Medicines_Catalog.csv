@@ -1,0 +1,21 @@
+brandname,genericname,category,formulation,strength,defaultfrequency,defaultdurationdays
+"Dolo 650 / Crocin","Paracetamol","Analgesic / Antipyretic","Tablet","650 mg","tds",3
+"Augmentin 625","Amoxicillin + Clavulanic Acid","Antibiotic","Tablet","625 mg","bd",5
+"Pan 40","Pantoprazole","Proton Pump Inhibitor / Antacid","Tablet","40 mg","od",7
+"Cetzine 10","Cetirizine","Antihistamine / Allergy","Tablet","10 mg","od",5
+"Azithral 500","Azithromycin","Antibiotic","Tablet","500 mg","od",3
+"Glycomet 500","Metformin","Antidiabetic","Tablet","500 mg","bd",30
+"Telma 40","Telmisartan","Antihypertensive","Tablet","40 mg","od",30
+"Avas 10","Atorvastatin","Lipid Lowering / Statin","Tablet","10 mg","od",30
+"Combiflam","Ibuprofen + Paracetamol","Analgesic / Anti-inflammatory","Tablet","400 mg + 325 mg","bd",3
+"Becosules","Vitamin B-Complex + Vitamin C","Multivitamin","Capsule","Standard","od",10
+"Sporidex 500","Cephalexin","Antibiotic","Capsule","500 mg","bd",5
+"Amoxyclav 625","Amoxicillin + Clavulanate","Antibiotic","Tablet","625 mg","bd",5
+"Ecosprin 75","Aspirin","Antiplatelet","Tablet","75 mg","od",30
+"Clavam 625","Amoxicillin + Clavulanic Acid","Antibiotic","Tablet","625 mg","bd",5
+"Montair LC","Montelukast + Levocetirizine","Antiasthmatic / Anti-allergy","Tablet","10 mg + 5 mg","od",10
+"Deriphyllin","Theophylline + Etofylline","Bronchodilator","Tablet","150 mg","bd",7
+"Pantocid 40","Pantoprazole","Antacid","Tablet","40 mg","od",14
+"Eldoper","Loperamide","Antidiarrheal","Capsule","2 mg","sos",2
+"Ascoril LS","Levosalbutamol + Ambroxol + Guaiphenesin","Cough Syrup","Syrup","100 ml","tds",5
+"Benadryl","Diphenhydramine Cough Formula","Cough Syrup","Syrup","100 ml","tds",5
