@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import { ObjectId } from 'mongodb'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -77,7 +76,12 @@ export async function internalIssuePatientActivationToken(
     let updateSuccess = false
 
     if (db) {
-      const mongoId = typeof (patient as any)._id === 'object' && (patient as any)._id?.toHexString ? (patient as any)._id : new ObjectId(String(patient.id || (patient as any)._id))
+      const rawPatId = (patient as any)._id || patient.id
+      const mongoId = (rawPatId && typeof rawPatId === 'object' && (rawPatId as any).toHexString)
+        ? rawPatId
+        : (payload.db as any)?.connection?.models?.patients?.base?.Types?.ObjectId
+          ? new (payload.db as any).connection.models.patients.base.Types.ObjectId(String(rawPatId))
+          : String(rawPatId)
       const updateRes = await db.collection('patients').updateOne(
         { _id: mongoId },
         {

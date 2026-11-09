@@ -2,7 +2,6 @@
 
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
-import { ObjectId } from 'mongodb'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { normalizePhone } from '@/lib/phone'
@@ -147,7 +146,12 @@ export async function patientRegisterAction(
 
       const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
 
-      const mongoId = typeof existingPatient._id === 'object' && existingPatient._id?.toHexString ? existingPatient._id : new ObjectId(String(existingPatient.id || existingPatient._id))
+      const rawPatId = existingPatient._id || existingPatient.id
+      const mongoId = (rawPatId && typeof rawPatId === 'object' && (rawPatId as any).toHexString)
+        ? rawPatId
+        : (payload.db as any)?.connection?.models?.patients?.base?.Types?.ObjectId
+          ? new (payload.db as any).connection.models.patients.base.Types.ObjectId(String(rawPatId))
+          : String(rawPatId)
 
       if (!isVerified) {
         // Atomic increment of activation attempts counter on failed claim
