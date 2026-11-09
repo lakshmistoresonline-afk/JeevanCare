@@ -56,7 +56,9 @@ export async function getPatientTimeline(
   patientID: string,
   limit = 20,
 ): Promise<TimelineEvent[]> {
-  const base = { tenant: { equals: tenantID }, patient: { equals: patientID } }
+  const tid = typeof tenantID === 'object' ? String((tenantID as any).id) : String(tenantID)
+  const pid = typeof patientID === 'object' ? String((patientID as any).id) : String(patientID)
+  const base = { tenant: { equals: tid }, patient: { equals: pid } }
 
   const [visitsRes, invoicesRes, apptsRes, docsRes] = await Promise.all([
     payload.find({

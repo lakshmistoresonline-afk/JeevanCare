@@ -20,7 +20,7 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 // Legal status transitions (spec §8.4). Terminal states have no outgoing edges.
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   scheduled: ['checked-in', 'cancelled', 'no-show'],
-  'checked-in': ['in-consultation', 'cancelled'],
+  'checked-in': ['in-consultation', 'post-consultation', 'completed', 'cancelled'],
   'in-consultation': ['post-consultation', 'completed', 'cancelled'],
   'post-consultation': ['completed', 'cancelled'],
   completed: [],

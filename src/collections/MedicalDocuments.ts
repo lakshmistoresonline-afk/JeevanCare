@@ -46,9 +46,9 @@ export const MedicalDocuments: CollectionConfig = {
   slug: 'medical-documents',
   labels: { singular: 'Medical Document', plural: 'Medical Documents' },
   upload: {
-    staticDir: 'media',
+    staticDir: 'private_media',
     mimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-    adminThumbnail: 'thumbnail',
+    adminThumbnail: undefined,
   },
   admin: {
     useAsTitle: 'title',
@@ -109,7 +109,7 @@ export const MedicalDocuments: CollectionConfig = {
           }
         }
 
-        const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
+        const tenantID = data.tenant ? String(relId(data.tenant)) : String(getTenantID(req.user) || '')
         if (!tenantID) {
           throw new APIError('Tenant is required.', 400, { code: ERROR_CODES.VALIDATION })
         }

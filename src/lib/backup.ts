@@ -24,15 +24,36 @@ export async function runTenantBackup(tenantId?: string): Promise<BackupResult> 
     const fullBackupData: Record<string, any[]> = {}
 
     for (const col of BACKUP_COLLECTIONS) {
-      const where: any = tenantId ? { tenant: { equals: tenantId } } : {}
-      const res = await (payload as any).find({
-        collection: col,
-        where,
-        limit: 10_000,
-        overrideAccess: true,
-      })
-      summary.push({ name: col, count: res.totalDocs })
-      fullBackupData[col] = res.docs
+      let where: any = {}
+      if (tenantId) {
+        if (col === 'tenants') {
+          where = { id: { equals: tenantId } }
+        } else if (col === 'medicines') {
+          where = {}
+        } else {
+          where = { tenant: { equals: tenantId } }
+        }
+      }
+      let page = 1
+      let docs: any[] = []
+      let totalDocs = 0
+
+      while (true) {
+        const res = await (payload as any).find({
+          collection: col,
+          where,
+          page,
+          limit: 500,
+          overrideAccess: true,
+        })
+        docs.push(...res.docs)
+        totalDocs = res.totalDocs
+        if (!res.hasNextPage) break
+        page++
+      }
+
+      summary.push({ name: col, count: totalDocs })
+      fullBackupData[col] = docs
     }
 
     const backupDir = path.resolve(process.cwd(), 'backups')

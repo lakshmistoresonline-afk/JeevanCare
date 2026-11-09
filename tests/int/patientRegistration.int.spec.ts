@@ -50,6 +50,9 @@ describe('Patient Identity Model & Self-Registration Hardening Suite', () => {
     })
     if (loginRes.token) {
       mockCookieStore.set('payload-token', loginRes.token)
+      mockCookieStore.set('payload-token-staff', loginRes.token)
+      mockCookieStore.set('payload-token-super', loginRes.token)
+      mockCookieStore.set('payload-token-patient', loginRes.token)
     }
   }
 

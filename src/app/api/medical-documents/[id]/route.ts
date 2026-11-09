@@ -57,18 +57,39 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    const safeFilename = sanitizePathFilename(rawFilename)
-    const filePath = path.resolve(process.cwd(), 'media', safeFilename)
+    let fileBuffer: Buffer | null = null
 
-    // Ensure path resolves inside the media directory
-    const mediaDir = path.resolve(process.cwd(), 'media')
-    if (!filePath.startsWith(mediaDir)) {
-      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+    // Check doctor local PC storage if localStoragePath is present
+    if (doc.localStoragePath) {
+      const { readFromLocalDoctorPC } = await import('@/lib/localDocAgent')
+      const localRes = await readFromLocalDoctorPC(doc.localStoragePath)
+      if (localRes.ok && localRes.buffer) {
+        fileBuffer = localRes.buffer
+      }
     }
 
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
+    if (!fileBuffer) {
+      const safeFilename = sanitizePathFilename(rawFilename)
+      let filePath = path.resolve(process.cwd(), 'private_media', safeFilename)
+      let mediaDir = path.resolve(process.cwd(), 'private_media')
+
+      if (!fs.existsSync(filePath)) {
+        filePath = path.resolve(process.cwd(), 'media', safeFilename)
+        mediaDir = path.resolve(process.cwd(), 'media')
+      }
+
+      if (!filePath.startsWith(mediaDir) && !filePath.startsWith(path.resolve(process.cwd(), 'private_media'))) {
+        return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+      }
+
+      if (!fs.existsSync(filePath)) {
+        return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
+      }
+
+      fileBuffer = fs.readFileSync(filePath)
     }
+
+    const safeFilename = rawFilename ? sanitizePathFilename(rawFilename) : 'document.pdf'
 
     // Log download audit event
     const tenantID = typeof doc.tenant === 'object' ? String(doc.tenant.id) : String(doc.tenant)
@@ -80,7 +101,6 @@ export async function GET(
       summary: `Downloaded medical document: ${doc.title} (${safeFilename})`,
     }).catch(() => {})
 
-    const fileBuffer = fs.readFileSync(filePath)
     const mimeType = doc.mimeType || 'application/octet-stream'
 
     return new NextResponse(fileBuffer, {

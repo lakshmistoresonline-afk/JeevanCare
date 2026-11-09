@@ -80,9 +80,14 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
 
     let visit: any
     if (existingVisits.docs.length > 0) {
+      const existingDoc = existingVisits.docs[0] as any
+      const isCompletedVisit = Boolean(existingDoc.diagnosis || (existingDoc.prescription && existingDoc.prescription.length > 0))
+      if (isCompletedVisit) {
+        return { ok: false, code: 'FORBIDDEN', message: 'A visit record has already been recorded for this appointment.' }
+      }
       visit = await payload.update({
         collection: 'visits',
-        id: existingVisits.docs[0].id,
+        id: existingDoc.id,
         overrideAccess: true,
         data: {
           symptoms: input.symptoms || undefined,

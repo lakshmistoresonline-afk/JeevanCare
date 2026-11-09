@@ -1,0 +1,11 @@
+{
+  "name": "jeevancare-doctor-agent",
+  "version": "1.0.4",
+  "description": "JeevanCare Windows Doctor PC Local Storage Companion Agent",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js --test"
+  },
+  "dependencies": {}
+}

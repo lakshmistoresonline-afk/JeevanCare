@@ -16,7 +16,7 @@ function parseCookie(cookieHeader: string, name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-export const getCurrentUser = cache(async (workspaceScope?: 'super' | 'staff' | 'patient'): Promise<User | null> => {
+export async function getCurrentUser(workspaceScope?: 'super' | 'staff' | 'patient'): Promise<User | null> {
   const payload = await getPayloadClient()
   const reqHeaders = await nextHeaders()
   const cookieHeader = reqHeaders.get('cookie') || ''
@@ -34,15 +34,17 @@ export const getCurrentUser = cache(async (workspaceScope?: 'super' | 'staff' | 
     activeToken = parseCookie(cookieHeader, 'payload-token')
   }
 
-  const customHeaders = new Headers(reqHeaders)
+  const customHeaders = new Headers()
+  if (cookieHeader) customHeaders.set('cookie', cookieHeader)
   if (activeToken) {
     customHeaders.set('cookie', `payload-token=${activeToken}`)
+    customHeaders.set('authorization', `JWT ${activeToken}`)
   }
 
-  const { user } = await payload.auth({ headers: customHeaders })
+  const { user } = await payload.auth({ headers: customHeaders }).catch(() => ({ user: null }))
   if (!user || (user as User).active === false) return null
   return (user as User) ?? null
-})
+}
 
 export type Session = {
   user: User

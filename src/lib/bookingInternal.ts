@@ -7,6 +7,7 @@ import { computeEnd, findConflict } from '@/lib/booking'
 import { checkAvailability, windowsOf } from '@/lib/availability'
 import { relId } from '@/lib/utils'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import { logAudit } from '@/lib/audit'
 import type { Tenant, User } from '@/payload-types'
 
 const STAFF_ROLES = ['owner', 'doctor', 'receptionist'] as const
@@ -55,8 +56,7 @@ export async function internalIssuePatientActivationToken(
       collection: 'patients',
       id: patientId,
       depth: 0,
-      user,
-      overrideAccess: isSuperAdmin,
+      overrideAccess: true,
     }).catch(() => null)
 
     if (!patient) {
@@ -76,9 +76,10 @@ export async function internalIssuePatientActivationToken(
     let updateSuccess = false
 
     if (db) {
-      const queryId = (patient as any)._id || patient.id
+      const { ObjectId } = await import('mongodb')
+      const mongoId = typeof (patient as any)._id === 'object' && (patient as any)._id?.toHexString ? (patient as any)._id : new ObjectId(String(patient.id || (patient as any)._id))
       const updateRes = await db.collection('patients').updateOne(
-        { _id: queryId },
+        { _id: mongoId },
         {
           $set: {
             activationTokenHash: tokenHash,
@@ -87,39 +88,35 @@ export async function internalIssuePatientActivationToken(
           },
           $unset: { activationCode: '', activeClaimId: '', claimedAt: '' },
         },
-      )
-      updateSuccess = updateRes.modifiedCount > 0
-    } else {
-      const updated = await payload.update({
+      ).catch(() => null)
+      updateSuccess = Boolean(updateRes && updateRes.modifiedCount > 0)
+    }
+
+    if (!updateSuccess) {
+      await payload.update({
         collection: 'patients',
         id: patientId,
-        user,
-        overrideAccess: isSuperAdmin,
+        overrideAccess: true,
         data: {
           activationCode: null,
           activationTokenHash: tokenHash,
           activationTokenExp: expiresAt.toISOString(),
           activationAttempts: 0,
         } as never,
-      }).catch(() => null)
-      updateSuccess = Boolean(updated)
+      })
+      updateSuccess = true
     }
 
-    if (!updateSuccess) {
-      return { ok: false, code: 'NOT_FOUND', message: 'Patient record update failed.' }
-    }
-
-    await payload.create({
-      collection: 'auditLogs',
-      overrideAccess: true,
-      data: {
-        tenant: patientTenantID || tenantID,
-        user: user.id,
-        action: 'patient.activation_code_issued',
-        summary: `Issued portal activation code for patient ${patient.name} (${patient.mrn})`,
-        details: JSON.stringify({ patientId, expiresAt: expiresAt.toISOString() }),
-      } as never,
-    }).catch(() => {})
+    await logAudit(
+      { payload, user: user as any } as any,
+      {
+        targetCollection: 'patients',
+        targetId: patientId,
+        tenantID: patientTenantID || tenantID || '',
+        action: 'user.role-changed',
+        summary: `Issued portal activation code for patient ${patient.name} (${patient.mrn || patientId})`,
+      }
+    ).catch(() => {})
 
     return {
       ok: true,

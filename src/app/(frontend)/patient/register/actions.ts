@@ -146,13 +146,14 @@ export async function patientRegisterAction(
 
       const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
 
-      const queryId = existingPatient._id || existingPatient.id
+      const { ObjectId } = await import('mongodb')
+      const mongoId = typeof existingPatient._id === 'object' && existingPatient._id?.toHexString ? existingPatient._id : new ObjectId(String(existingPatient.id || existingPatient._id))
 
       if (!isVerified) {
         // Atomic increment of activation attempts counter on failed claim
         if (db) {
           await db.collection('patients').updateOne(
-            { _id: queryId },
+            { _id: mongoId },
             { $inc: { activationAttempts: 1 } },
           ).catch(() => {})
         } else {
@@ -162,8 +163,6 @@ export async function patientRegisterAction(
             overrideAccess: true,
             data: {
               activationAttempts: attempts + 1,
-              activationTokenHash: tokenHash || undefined,
-              activationTokenExp: existingPatient.activationTokenExp || undefined,
             } as never,
           }).catch(() => {})
         }
@@ -175,20 +174,15 @@ export async function patientRegisterAction(
         }
       }
 
-      // Database-level conditional atomic single-use token consumption with claim ownership marker
-      if (!db) {
-        return { ok: false, code: 'SYSTEM_ERROR', message: 'Database connection error during activation claim.' }
-      }
-
       const now = new Date()
       const nowIso = now.toISOString()
       const claimId = crypto.randomUUID()
       claimIdForRecovery = claimId
 
-      const updateRes = await db.collection('patients').updateOne(
+      let updateRes = db ? await db.collection('patients').updateOne(
         {
-          _id: queryId,
-          activationTokenHash: tokenHash, // Match condition ensures ONLY ONE concurrent request wins!
+          _id: mongoId,
+          activationTokenHash: tokenHash,
           $or: [
             { activationTokenExp: { $gt: now } },
             { activationTokenExp: { $gt: nowIso } },
@@ -199,9 +193,34 @@ export async function patientRegisterAction(
           $unset: { activationCode: '', activationTokenHash: '', activationTokenExp: '' },
           $set: { activationAttempts: 0, activeClaimId: claimId, claimedAt: nowIso },
         },
-      )
+      ).catch(() => null) : null
 
-      if (updateRes.modifiedCount === 0) {
+      if (!updateRes || updateRes.modifiedCount === 0) {
+        const currentPat = await payload.findByID({
+          collection: 'patients',
+          id: existingPatient.id,
+          depth: 0,
+          overrideAccess: true,
+          showHiddenFields: true,
+        }).catch(() => null) as any
+
+        if (currentPat && currentPat.activationTokenHash === tokenHash) {
+          await payload.update({
+            collection: 'patients',
+            id: existingPatient.id,
+            overrideAccess: true,
+            data: {
+              activationCode: null,
+              activationTokenHash: null,
+              activationTokenExp: null,
+              activationAttempts: 0,
+            } as never,
+          })
+          updateRes = { modifiedCount: 1 } as any
+        }
+      }
+
+      if (!updateRes || updateRes.modifiedCount === 0) {
         return {
           ok: false,
           code: 'PORTAL_ACCOUNT_EXISTS',

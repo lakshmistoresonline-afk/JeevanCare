@@ -16,6 +16,7 @@ import { MedicalDocuments } from './collections/MedicalDocuments'
 import { Medicines } from './collections/Medicines'
 
 import { validateProductionSecret } from './lib/secretValidation'
+import { initializeAppointmentIndexes } from './lib/appointmentIndex'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -59,30 +60,15 @@ export default buildConfig({
   sharp,
   plugins: [],
   onInit: async (payload) => {
-    // Deterministic backstop for the double-booking race: a partial UNIQUE index
-    // on (tenant, doctor, start) limited to slot-occupying statuses. Two concurrent
-    // bookings for the exact same slot can't both insert — one hits a duplicate key
-    // and aborts. Terminal statuses are excluded, so rebooking a cancelled slot works.
     try {
+      const isProdOrStaging = process.env.NODE_ENV === 'production' || process.env.STAGING === 'true'
       const model = payload.db.collections?.appointments
-      if (model) {
-        const native = model.collection
-        // Drop a stale non-unique index with the same key pattern if present
-        // (it would conflict with the partial unique index below).
-        const existing = await native.indexes().catch(() => [] as any[])
-        const stale = existing.find(
-          (i: any) => i.name === 'uniq_active_slot' || (i.name === 'tenant_1_doctor_1_start_1' && !i.unique),
-        )
-        if (stale) await native.dropIndex(stale.name).catch(() => {})
-
-        await native.createIndex(
-          { tenant: 1, doctor: 1, start: 1 },
-          {
-            unique: true,
-            name: 'uniq_active_slot',
-            partialFilterExpression: { status: { $in: ['scheduled', 'checked-in', 'in-consultation', 'post-consultation'] } },
-          },
-        )
+      if (!model || !model.collection) {
+        if (isProdOrStaging) {
+          throw new Error('CRITICAL DATABASE INTEGRITY ERROR: Appointments collection is missing or uninitialized.')
+        }
+      } else {
+        await initializeAppointmentIndexes(model.collection, isProdOrStaging)
       }
 
       // Unique partial index: At most ONE active patient portal user account per patient record
@@ -122,6 +108,9 @@ export default buildConfig({
       }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create database indexes')
+      if (process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') {
+        throw err
+      }
     }
   },
 })

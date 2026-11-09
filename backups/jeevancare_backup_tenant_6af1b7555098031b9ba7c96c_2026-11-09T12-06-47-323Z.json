@@ -1,0 +1,265 @@
+{
+  "version": "1.0",
+  "platform": "JeevanCare Enterprise",
+  "timestamp": "2026-11-09T12:06:47.323Z",
+  "tenantId": "6af1b7555098031b9ba7c96c",
+  "summary": [
+    {
+      "name": "tenants",
+      "count": 1
+    },
+    {
+      "name": "users",
+      "count": 3
+    },
+    {
+      "name": "patients",
+      "count": 1
+    },
+    {
+      "name": "appointments",
+      "count": 0
+    },
+    {
+      "name": "visits",
+      "count": 0
+    },
+    {
+      "name": "invoices",
+      "count": 0
+    },
+    {
+      "name": "auditLogs",
+      "count": 0
+    },
+    {
+      "name": "medical-documents",
+      "count": 0
+    },
+    {
+      "name": "medicines",
+      "count": 0
+    }
+  ],
+  "data": {
+    "tenants": [
+      {
+        "createdAt": "2026-11-09T12:06:45.815Z",
+        "updatedAt": "2026-11-09T12:06:45.815Z",
+        "name": "Clinic A",
+        "slug": "clinic-a",
+        "phone": "03001234567",
+        "city": "Testville",
+        "district": "Thrissur",
+        "state": "Kerala",
+        "country": "India",
+        "status": "active",
+        "plan": "plus",
+        "upgradeRequest": {},
+        "onboardingSource": "manual",
+        "settings": {
+          "appointmentDurationMins": 15,
+          "openTime": "09:00",
+          "closeTime": "21:00",
+          "currency": "INR",
+          "timezone": "Asia/Kolkata"
+        },
+        "id": "6af1b7555098031b9ba7c96c"
+      }
+    ],
+    "users": [
+      {
+        "createdAt": "2026-11-09T12:06:46.510Z",
+        "updatedAt": "2026-11-09T12:06:46.510Z",
+        "name": "Receptionist A",
+        "role": "receptionist",
+        "tenant": {
+          "createdAt": "2026-11-09T12:06:45.815Z",
+          "updatedAt": "2026-11-09T12:06:45.815Z",
+          "name": "Clinic A",
+          "slug": "clinic-a",
+          "phone": "03001234567",
+          "city": "Testville",
+          "district": "Thrissur",
+          "state": "Kerala",
+          "country": "India",
+          "status": "active",
+          "plan": "plus",
+          "upgradeRequest": {},
+          "onboardingSource": "manual",
+          "settings": {
+            "appointmentDurationMins": 15,
+            "openTime": "09:00",
+            "closeTime": "21:00",
+            "currency": "INR",
+            "timezone": "Asia/Kolkata"
+          },
+          "id": "6af1b7555098031b9ba7c96c"
+        },
+        "active": true,
+        "emailVerified": true,
+        "stateMedicalCouncil": "Travancore Cochin Medical Council",
+        "availabilityType": "regular",
+        "availableDays": [
+          "sun",
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat"
+        ],
+        "availableFrom": "09:00",
+        "availableTo": "17:00",
+        "email": "recept-a@clinic.test",
+        "id": "6af1b7565098031b9ba7c978",
+        "collection": "users",
+        "sessions": []
+      },
+      {
+        "createdAt": "2026-11-09T12:06:46.281Z",
+        "updatedAt": "2026-11-09T12:06:46.282Z",
+        "name": "Doctor A",
+        "role": "doctor",
+        "tenant": {
+          "createdAt": "2026-11-09T12:06:45.815Z",
+          "updatedAt": "2026-11-09T12:06:45.815Z",
+          "name": "Clinic A",
+          "slug": "clinic-a",
+          "phone": "03001234567",
+          "city": "Testville",
+          "district": "Thrissur",
+          "state": "Kerala",
+          "country": "India",
+          "status": "active",
+          "plan": "plus",
+          "upgradeRequest": {},
+          "onboardingSource": "manual",
+          "settings": {
+            "appointmentDurationMins": 15,
+            "openTime": "09:00",
+            "closeTime": "21:00",
+            "currency": "INR",
+            "timezone": "Asia/Kolkata"
+          },
+          "id": "6af1b7555098031b9ba7c96c"
+        },
+        "active": true,
+        "emailVerified": true,
+        "qualification": "MBBS, MD",
+        "specialty": "General Medicine",
+        "medicalRegistrationNumber": "KMC-2026-A",
+        "stateMedicalCouncil": "Travancore Cochin Medical Council",
+        "consultationFee": 500,
+        "availabilityType": "regular",
+        "availableDays": [
+          "sun",
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat"
+        ],
+        "availableFrom": "09:00",
+        "availableTo": "17:00",
+        "email": "doctor-a@clinic.test",
+        "id": "6af1b7565098031b9ba7c974",
+        "collection": "users",
+        "sessions": []
+      },
+      {
+        "createdAt": "2026-11-09T12:06:46.043Z",
+        "updatedAt": "2026-11-09T12:06:46.043Z",
+        "name": "Owner A",
+        "role": "owner",
+        "tenant": {
+          "createdAt": "2026-11-09T12:06:45.815Z",
+          "updatedAt": "2026-11-09T12:06:45.815Z",
+          "name": "Clinic A",
+          "slug": "clinic-a",
+          "phone": "03001234567",
+          "city": "Testville",
+          "district": "Thrissur",
+          "state": "Kerala",
+          "country": "India",
+          "status": "active",
+          "plan": "plus",
+          "upgradeRequest": {},
+          "onboardingSource": "manual",
+          "settings": {
+            "appointmentDurationMins": 15,
+            "openTime": "09:00",
+            "closeTime": "21:00",
+            "currency": "INR",
+            "timezone": "Asia/Kolkata"
+          },
+          "id": "6af1b7555098031b9ba7c96c"
+        },
+        "active": true,
+        "emailVerified": true,
+        "stateMedicalCouncil": "Travancore Cochin Medical Council",
+        "availabilityType": "regular",
+        "availableDays": [
+          "sun",
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat"
+        ],
+        "availableFrom": "09:00",
+        "availableTo": "17:00",
+        "email": "owner-a@clinic.test",
+        "id": "6af1b7565098031b9ba7c96f",
+        "collection": "users",
+        "sessions": []
+      }
+    ],
+    "patients": [
+      {
+        "createdAt": "2026-11-09T12:06:46.567Z",
+        "updatedAt": "2026-11-09T12:06:46.567Z",
+        "tenant": {
+          "createdAt": "2026-11-09T12:06:45.815Z",
+          "updatedAt": "2026-11-09T12:06:45.815Z",
+          "name": "Clinic A",
+          "slug": "clinic-a",
+          "phone": "03001234567",
+          "city": "Testville",
+          "district": "Thrissur",
+          "state": "Kerala",
+          "country": "India",
+          "status": "active",
+          "plan": "plus",
+          "upgradeRequest": {},
+          "onboardingSource": "manual",
+          "settings": {
+            "appointmentDurationMins": 15,
+            "openTime": "09:00",
+            "closeTime": "21:00",
+            "currency": "INR",
+            "timezone": "Asia/Kolkata"
+          },
+          "id": "6af1b7555098031b9ba7c96c"
+        },
+        "mrn": "P-0001",
+        "name": "Patient A",
+        "phone": "0300000000",
+        "gender": "female",
+        "ageYears": 30,
+        "city": "Thrissur",
+        "district": "Thrissur",
+        "state": "Kerala",
+        "id": "6af1b7565098031b9ba7c97c"
+      }
+    ],
+    "appointments": [],
+    "visits": [],
+    "invoices": [],
+    "auditLogs": [],
+    "medical-documents": [],
+    "medicines": []
+  }
+}

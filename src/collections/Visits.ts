@@ -65,16 +65,20 @@ export const Visits: CollectionConfig = {
         }
 
         // One visit per appointment (friendly guard; a unique index backstops it).
-        const existing = await req.payload.count({
-          collection: 'visits',
-          where: { appointment: { equals: appointmentID } },
-          req,
-          overrideAccess: true,
-        })
-        if (existing.totalDocs > 0) {
-          throw new APIError('A visit has already been recorded for this appointment.', 409, {
-            code: ERROR_CODES.VISIT_EXISTS,
+        if (operation === 'create') {
+          const existing = await req.payload.find({
+            collection: 'visits',
+            where: { appointment: { equals: String(appointmentID) } },
+            limit: 1,
+            depth: 0,
+            req,
+            overrideAccess: true,
           })
+          if (existing.docs.length > 0) {
+            throw new APIError('A visit has already been recorded for this appointment.', 409, {
+              code: ERROR_CODES.VISIT_EXISTS,
+            })
+          }
         }
 
         // Denormalise from the appointment; default the visit date to now.
