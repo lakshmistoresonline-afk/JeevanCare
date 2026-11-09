@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
+import { ObjectId } from 'mongodb'
 import { getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { normalizePhone } from '@/lib/phone'
@@ -146,7 +147,6 @@ export async function patientRegisterAction(
 
       const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.patients?.collection?.db
 
-      const { ObjectId } = await import('mongodb')
       const mongoId = typeof existingPatient._id === 'object' && existingPatient._id?.toHexString ? existingPatient._id : new ObjectId(String(existingPatient.id || existingPatient._id))
 
       if (!isVerified) {
