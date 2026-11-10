@@ -1,25 +1,18 @@
-// src/lib/fonts.ts — JeevanCare typography (replaces Inter entirely)
-//
-// Wire-up in src/app/(frontend)/layout.tsx:
-//
-//   import { figtree, bricolage } from '@/lib/fonts'
-//   <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
-//
-// globals.css already maps --font-figtree / --font-bricolage to
-// --font-sans / --font-display. Remove every import/reference to Inter.
-
+// src/lib/fonts.ts — JeevanCare typography
 import { Bricolage_Grotesque, Figtree } from 'next/font/google'
 
 export const figtree = Figtree({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-figtree',
   display: 'swap',
+  adjustFontFallback: false,
 })
 
 export const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['600', '700'],
+  weight: ['600', '700', '800'],
   variable: '--font-bricolage',
   display: 'swap',
+  adjustFontFallback: false,
 })
