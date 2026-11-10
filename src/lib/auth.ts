@@ -93,6 +93,7 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
   let patient: any = null
   let tenantID = getTenantID(user)
 
+  // 1. Try to find linked patientProfile by ID
   const patientProfile = (user as any).patientProfile
   if (patientProfile) {
     const pid = relId(patientProfile)
@@ -106,9 +107,51 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
     }
   }
 
-  // Infer tenantID from patient.tenant if user.tenant is missing
+  // 2. Fallback: Search patients collection by user.email if patientProfile reference wasn't linked
+  if (!patient && user.email) {
+    const pRes = await payload.find({
+      collection: 'patients',
+      where: { email: { equals: user.email } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => ({ docs: [] }))
+    if (pRes.docs.length > 0) {
+      patient = pRes.docs[0]
+    }
+  }
+
+  // 3. Fallback: Search patients collection by user.phone if patientProfile wasn't linked
+  if (!patient && (user as any).phone) {
+    const pRes = await payload.find({
+      collection: 'patients',
+      where: { phone: { equals: (user as any).phone } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => ({ docs: [] }))
+    if (pRes.docs.length > 0) {
+      patient = pRes.docs[0]
+    }
+  }
+
+  // 4. Infer tenantID from patient.tenant if user.tenant is missing
   if (patient && patient.tenant) {
     tenantID = tenantID || relId(patient.tenant)
+  }
+
+  // 5. If tenantID is still missing, fallback to first active tenant
+  if (!tenantID) {
+    const defaultTenantRes = await payload.find({
+      collection: 'tenants',
+      where: { status: { equals: 'active' } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => ({ docs: [] }))
+    if (defaultTenantRes.docs.length > 0) {
+      tenantID = String(defaultTenantRes.docs[0].id)
+    }
   }
 
   if (!tenantID) redirect('/login?error=no_clinic_tenant')
@@ -124,7 +167,30 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
     redirect('/login?error=clinic_inactive')
   }
 
-  if (!patient || (patient.tenant && String(relId(patient.tenant)) !== String(tenantID))) {
+  // 6. Auto-create patient document if patient record does not exist yet
+  if (!patient && tenant) {
+    patient = await payload.create({
+      collection: 'patients',
+      data: {
+        tenant: tenant.id,
+        name: user.name || 'Patient User',
+        email: user.email,
+        phone: (user as any).phone || '+919847000000',
+      } as any,
+      overrideAccess: true,
+    }).catch(() => null)
+
+    if (patient) {
+      await payload.update({
+        collection: 'users',
+        id: user.id,
+        data: { patientProfile: patient.id, tenant: tenant.id } as any,
+        overrideAccess: true,
+      }).catch(() => {})
+    }
+  }
+
+  if (!patient) {
     redirect('/login?error=no_patient_profile')
   }
 

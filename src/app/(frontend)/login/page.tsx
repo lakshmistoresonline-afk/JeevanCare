@@ -27,6 +27,18 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [activeUser, setActiveUser] = useState<{ active: boolean; name?: string; email?: string; role?: string } | null>(null)
 
+  const urlError = params.get('error')
+  const urlErrorMsg =
+    urlError === 'account_deactivated'
+      ? 'Your account has been deactivated. Please contact support.'
+      : urlError === 'clinic_inactive'
+        ? 'The clinic workspace is currently inactive.'
+        : urlError === 'no_patient_profile'
+          ? 'Could not link patient profile. Please try logging in again.'
+          : urlError === 'no_clinic_tenant'
+            ? 'No clinic tenant associated with this account.'
+            : urlError
+
   useEffect(() => {
     getActiveSessionUser().then((res) => {
       if (res) setActiveUser(res)
@@ -55,6 +67,12 @@ function LoginForm() {
         <p className="mt-1 text-sm text-muted-foreground">
           Sign in to your account for clinic workspace or patient portal.
         </p>
+
+        {urlErrorMsg && (
+          <div className="mt-4 rounded-xl border border-red/25 bg-red-soft p-3.5 text-xs font-medium text-red animate-fade-in">
+            ⚠️ {urlErrorMsg}
+          </div>
+        )}
 
         {activeUser && activeUser.active && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-primary/30 bg-primary-soft/50 px-4 py-3 text-xs animate-fade-in">
