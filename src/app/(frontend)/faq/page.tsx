@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { JeevanCareHeader } from '@/components/JeevanCareHeader'
 import { btnPrimary } from '@/components/primitives'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Frequently Asked Questions — JeevanCare',
   description: 'Verified answers about JeevanCare clinic registration, OPD tokens, doctor limits, CSV imports, patient portal, and pricing.',

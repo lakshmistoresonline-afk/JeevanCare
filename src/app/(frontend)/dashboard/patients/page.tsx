@@ -64,6 +64,16 @@ export default async function PatientsPage({
     limit,
     page,
     sort: '-createdAt',
+    select: {
+      name: true,
+      mrn: true,
+      phone: true,
+      dateOfBirth: true,
+      ageYears: true,
+      gender: true,
+      allergies: true,
+      city: true,
+    },
     overrideAccess: true,
   })
   const patients = res.docs as Patient[]

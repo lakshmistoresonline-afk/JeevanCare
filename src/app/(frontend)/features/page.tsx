@@ -12,6 +12,8 @@ import {
   IconCheck,
 } from '@/components/icons'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Complete Feature Catalogue — JeevanCare',
   description: 'Explore JeevanCare OPD queue, EMR, prescriptions, medical documents, UPI billing, and clinic administration tools.',

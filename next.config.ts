@@ -9,6 +9,9 @@ const dirname = path.dirname(__filename)
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
   experimental: {
     optimizePackageImports: [
       'lucide-react',

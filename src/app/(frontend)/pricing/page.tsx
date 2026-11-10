@@ -3,6 +3,8 @@ import { JeevanCareHeader } from '@/components/JeevanCareHeader'
 import { btnPrimary, btnGhost } from '@/components/primitives'
 import { IconCheck, IconX } from '@/components/icons'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Simple, Transparent Pricing — JeevanCare',
   description: 'Explore verified subscription plans for JeevanCare. Free Starter, Clinic Plan, and Plus Plan with no lock-ins.',

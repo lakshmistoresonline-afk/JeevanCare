@@ -4,6 +4,10 @@ import { searchMedicines } from '@/lib/medicineDirectory'
 
 export const dynamic = 'force-dynamic'
 
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -39,14 +43,14 @@ export async function GET(request: Request) {
           defaultFrequency: m.defaultFrequency || 'bd',
           defaultDurationDays: m.defaultDurationDays || 5,
         }))
-        return NextResponse.json({ ok: true, medicines: meds })
+        return NextResponse.json({ ok: true, medicines: meds }, { headers: CACHE_HEADERS })
       }
     } catch (_) {
       // Fallback to static directory if db is unseeded or offline
     }
 
     const fallbackMeds = searchMedicines(q)
-    return NextResponse.json({ ok: true, medicines: fallbackMeds })
+    return NextResponse.json({ ok: true, medicines: fallbackMeds }, { headers: CACHE_HEADERS })
   } catch (err) {
     return NextResponse.json({ ok: false, medicines: [] }, { status: 500 })
   }
