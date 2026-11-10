@@ -34,7 +34,7 @@ export async function loginAction(
     const payload = await getPayloadClient()
     let loginEmail = input
 
-    // If input is a phone number, resolve linked user account email
+    // If input is a phone number, resolve linked user account email for ANY role
     const isPhone = /^\+?[0-9\s-]{7,15}$/.test(input)
     if (isPhone) {
       const normalized = normalizePhone(input)
@@ -42,7 +42,6 @@ export async function loginAction(
       const userRes = await payload.find({
         collection: 'users',
         where: {
-          role: { equals: 'patient' },
           or: [
             { phone: { equals: normalized } },
             { phone: { equals: `+${digitsOnly}` } },
