@@ -11,6 +11,26 @@ export function formatDoctorName(name?: string | null): string {
   return `Dr. ${clean}`
 }
 
+export function formatGreetingName(user?: { name?: string | null; role?: string } | null): string {
+  if (!user || !user.name) return 'there'
+  const clean = user.name.trim()
+
+  if (user.role === 'doctor') {
+    const nameWithoutDr = clean.replace(/^(dr\.?\s*)+/i, '').trim()
+    if (!nameWithoutDr) return 'Doctor'
+    const parts = nameWithoutDr.split(/\s+/)
+    return `Dr. ${parts[0]}`
+  }
+
+  const parts = clean.split(/\s+/)
+  const firstWord = parts[0].replace(/\.$/, '')
+  if (firstWord.toLowerCase() === 'dr' && parts.length > 1) {
+    return `Dr. ${parts[1]}`
+  }
+
+  return parts[0] || 'there'
+}
+
 export function relId(value: unknown): string {
   if (!value) return ''
   if (typeof value === 'string') return value

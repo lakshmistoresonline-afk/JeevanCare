@@ -3,6 +3,7 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { getDashboardData, getRevenueData, startOfDayInTz } from '@/lib/reports'
 import { formatTime, formatMoney } from '@/lib/format'
+import { formatGreetingName } from '@/lib/utils'
 import { windowOf, weekdayInTz } from '@/lib/availability'
 import { StatusBadge, EmptyState } from '@/components/ui-kit'
 import { btnPrimary, Avatar } from '@/components/primitives'
@@ -131,7 +132,7 @@ export default async function DashboardHome({
     month: 'long',
     timeZone: tz,
   })
-  const firstName = user.name?.split(/\s+/)[0] ?? 'there'
+  const greetingName = formatGreetingName(user)
 
   const currentAppt = data.upcoming[0]
   const currentPatient = (currentAppt?.patient as Patient)?.name
@@ -146,7 +147,7 @@ export default async function DashboardHome({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 px-5 py-4">
             <div>
               <h2 className="font-display text-lg font-semibold text-primary">
-                Welcome to JeevanCare, {firstName} 👋
+                Welcome to JeevanCare, {greetingName} 👋
               </h2>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
                 Your clinic is ready — we&rsquo;ve added sample data to explore.
@@ -194,7 +195,7 @@ export default async function DashboardHome({
         <div>
           <p className="text-[13px] font-medium text-muted-foreground">{today}</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">
-            {greetingFor(tz)}, {firstName}
+            {greetingFor(tz)}, {greetingName}
           </h1>
         </div>
         <Link href="/dashboard/appointments/new" className={btnPrimary}>

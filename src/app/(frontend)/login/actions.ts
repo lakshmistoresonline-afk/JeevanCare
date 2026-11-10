@@ -78,6 +78,12 @@ export async function loginAction(
       expires: result.exp ? new Date(result.exp * 1000) : undefined,
     }
 
+    // Invalidate old session cookies when signing into a new account
+    cookieStore.delete('payload-token')
+    cookieStore.delete('payload-token-staff')
+    cookieStore.delete('payload-token-super')
+    cookieStore.delete('payload-token-patient')
+
     cookieStore.set('payload-token', result.token, cookieOpts)
 
     if (userRole === 'superAdmin') {
