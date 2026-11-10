@@ -29,8 +29,12 @@ export function GoogleTranslateScript() {
     if (!document.getElementById('google-translate-script')) {
       const script = document.createElement('script')
       script.id = 'google-translate-script'
-      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
+      script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
       script.async = true
+      script.onerror = (e) => {
+        // Silently handle offline/blocked network failure without uncaught console syntax errors
+        console.warn('Google Translate script failed to load (offline or network restricted).')
+      }
       document.body.appendChild(script)
     }
   }, [])

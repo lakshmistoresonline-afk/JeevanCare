@@ -1,16 +1,16 @@
 {
-  "name": "JeevanCare Healthcare Platform",
+  "name": "JeevanCare Clinic & Healthcare Platform",
   "short_name": "JeevanCare",
-  "description": "Connected OPD queue, EMR, prescriptions, and UPI billing for Indian clinics.",
+  "description": "Simple, connected healthcare for patients, doctors, and clinics.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8f9fa",
+  "background_color": "#ffffff",
   "theme_color": "#0d6e60",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩺</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
     }
   ]
 }
