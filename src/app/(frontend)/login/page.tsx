@@ -36,19 +36,15 @@ function LoginForm() {
   useEffect(() => {
     if (state?.ok) {
       const role = state.data.role
+      let target = '/dashboard'
       if (role === 'superAdmin') {
-        router.push('/super')
+        target = '/super'
       } else if (role === 'patient') {
-        if (doctorId) {
-          router.push(`/patient/appointments/book?doctor=${doctorId}`)
-        } else {
-          router.push('/patient/dashboard')
-        }
-      } else {
-        router.push('/dashboard')
+        target = doctorId ? `/patient/appointments/book?doctor=${doctorId}` : '/patient/dashboard'
       }
+      window.location.href = target
     }
-  }, [state, router, doctorId])
+  }, [state, doctorId])
 
   return (
     <AuthLayout>

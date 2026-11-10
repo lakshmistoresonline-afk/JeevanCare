@@ -78,12 +78,21 @@ export async function loginAction(
       expires: result.exp ? new Date(result.exp * 1000) : undefined,
     }
 
-    // Invalidate old session cookies when signing into a new account
-    cookieStore.delete('payload-token')
-    cookieStore.delete('payload-token-staff')
-    cookieStore.delete('payload-token-super')
-    cookieStore.delete('payload-token-patient')
+    const clearOpts = {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax' as const,
+      secure: process.env.NODE_ENV === 'production',
+      expires: new Date(0),
+      maxAge: 0,
+    }
 
+    // Completely clear all old role-specific session token cookies
+    cookieStore.set('payload-token-super', '', clearOpts)
+    cookieStore.set('payload-token-staff', '', clearOpts)
+    cookieStore.set('payload-token-patient', '', clearOpts)
+
+    // Set active session cookies for the newly authenticated account
     cookieStore.set('payload-token', result.token, cookieOpts)
 
     if (userRole === 'superAdmin') {
@@ -106,10 +115,18 @@ export async function loginAction(
 
 export async function logoutAction() {
   const cookieStore = await cookies()
-  cookieStore.delete('payload-token')
-  cookieStore.delete('payload-token-super')
-  cookieStore.delete('payload-token-staff')
-  cookieStore.delete('payload-token-patient')
+  const clearOpts = {
+    httpOnly: true,
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    expires: new Date(0),
+    maxAge: 0,
+  }
+  cookieStore.set('payload-token', '', clearOpts)
+  cookieStore.set('payload-token-super', '', clearOpts)
+  cookieStore.set('payload-token-staff', '', clearOpts)
+  cookieStore.set('payload-token-patient', '', clearOpts)
   redirect('/login')
 }
 
