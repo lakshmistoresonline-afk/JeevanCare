@@ -86,25 +86,13 @@ export type PatientSession = {
 
 export const requirePatientSession = cache(async (): Promise<PatientSession> => {
   const user = await getCurrentUser('patient')
-  if (!user || user.active === false) redirect('/patient/login?error=account_deactivated')
+  if (!user || user.active === false) redirect('/login?error=account_deactivated')
   if ((user as any).role !== 'patient') redirect('/dashboard')
 
-  const tenantID = getTenantID(user)
-  if (!tenantID) redirect('/patient/login')
-
   const payload = await getPayloadClient()
-  const tenant = await payload.findByID({
-    collection: 'tenants',
-    id: tenantID,
-    depth: 0,
-    overrideAccess: true,
-  }).catch(() => null)
-
-  if (!tenant || tenant.status !== 'active') {
-    redirect('/patient/login?error=clinic_inactive')
-  }
-
   let patient: any = null
+  let tenantID = getTenantID(user)
+
   const patientProfile = (user as any).patientProfile
   if (patientProfile) {
     const pid = relId(patientProfile)
@@ -118,8 +106,26 @@ export const requirePatientSession = cache(async (): Promise<PatientSession> => 
     }
   }
 
-  if (!patient || String(relId(patient.tenant)) !== String(tenantID)) {
-    redirect('/patient/login?error=no_patient_profile')
+  // Infer tenantID from patient.tenant if user.tenant is missing
+  if (patient && patient.tenant) {
+    tenantID = tenantID || relId(patient.tenant)
+  }
+
+  if (!tenantID) redirect('/login?error=no_clinic_tenant')
+
+  const tenant = await payload.findByID({
+    collection: 'tenants',
+    id: tenantID,
+    depth: 0,
+    overrideAccess: true,
+  }).catch(() => null)
+
+  if (!tenant || tenant.status !== 'active') {
+    redirect('/login?error=clinic_inactive')
+  }
+
+  if (!patient || (patient.tenant && String(relId(patient.tenant)) !== String(tenantID))) {
+    redirect('/login?error=no_patient_profile')
   }
 
   return { user, patient, tenant }

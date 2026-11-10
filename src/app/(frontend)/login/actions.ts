@@ -86,20 +86,21 @@ export async function loginAction(
       maxAge: 0,
     }
 
-    // Completely clear all old role-specific session token cookies
-    cookieStore.set('payload-token-super', '', clearOpts)
-    cookieStore.set('payload-token-staff', '', clearOpts)
-    cookieStore.set('payload-token-patient', '', clearOpts)
-
-    // Set active session cookies for the newly authenticated account
+    // Set active session token for global Payload auth
     cookieStore.set('payload-token', result.token, cookieOpts)
 
     if (userRole === 'superAdmin') {
       cookieStore.set('payload-token-super', result.token, cookieOpts)
+      cookieStore.set('payload-token-staff', '', clearOpts)
+      cookieStore.set('payload-token-patient', '', clearOpts)
     } else if (userRole === 'patient') {
       cookieStore.set('payload-token-patient', result.token, cookieOpts)
+      cookieStore.set('payload-token-staff', '', clearOpts)
+      cookieStore.set('payload-token-super', '', clearOpts)
     } else {
       cookieStore.set('payload-token-staff', result.token, cookieOpts)
+      cookieStore.set('payload-token-patient', '', clearOpts)
+      cookieStore.set('payload-token-super', '', clearOpts)
     }
 
     return { ok: true, data: { role: userRole } }
