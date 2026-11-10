@@ -8,7 +8,19 @@ const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  compress: true,
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@base-ui/react',
+      'recharts',
+      'date-fns',
+      'sonner',
+    ],
+  },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     localPatterns: [
       { pathname: '/api/media/file/**' },
       { pathname: '/images/**' },
