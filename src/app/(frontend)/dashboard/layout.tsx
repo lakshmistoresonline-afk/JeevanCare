@@ -1,13 +1,15 @@
 import React from 'react'
+import dynamic from 'next/dynamic'
 import { requireDashboardSession } from '@/lib/auth'
 import { Sidebar } from '@/components/Sidebar'
 import { CommandPalette } from '@/components/CommandPalette'
-import { ReceptionQrModal } from '@/components/ReceptionQrModal'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 import { OfflineSyncBanner } from '@/components/OfflineSyncBanner'
 import { NotificationDrawer } from '@/components/NotificationDrawer'
 import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
+
+const ReceptionQrModal = dynamic(() => import('@/components/ReceptionQrModal').then((m) => m.ReceptionQrModal))
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant } = await requireDashboardSession()

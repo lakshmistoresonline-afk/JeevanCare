@@ -51,6 +51,15 @@ export default async function AppointmentsPage({
       limit: 50,
       overrideAccess: true,
       sort: 'name',
+      select: {
+        id: true,
+        name: true,
+        specialty: true,
+        availabilityType: true,
+        availableDays: true,
+        workingHoursFrom: true,
+        workingHoursTo: true,
+      },
     }),
     payload.find({
       collection: 'appointments',
@@ -62,6 +71,18 @@ export default async function AppointmentsPage({
       depth: 1,
       overrideAccess: true,
       sort: 'start',
+      select: {
+        id: true,
+        start: true,
+        end: true,
+        status: true,
+        doctor: true,
+        patient: true,
+        isWalkIn: true,
+        tokenNumber: true,
+        reasonForVisit: true,
+        checkedInAt: true,
+      },
     }),
   ])
 

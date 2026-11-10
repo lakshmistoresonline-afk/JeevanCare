@@ -37,15 +37,30 @@ const STATUS_LABELS: Record<string, string> = {
   voided: 'Voided',
 }
 
+const STATUS_DOT_STYLES: Record<string, string> = {
+  scheduled: 'bg-primary',
+  'checked-in': 'bg-blue',
+  'in-consultation': 'bg-purple',
+  completed: 'bg-green-strong',
+  cancelled: 'bg-muted-foreground',
+  'no-show': 'bg-amber',
+  paid: 'bg-green-strong',
+  partial: 'bg-amber',
+  unpaid: 'bg-muted-foreground',
+  voided: 'bg-destructive',
+}
+
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
+  const dotColor = STATUS_DOT_STYLES[status] ?? 'bg-muted-foreground'
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
         STATUS_STYLES[status] ?? 'bg-muted text-muted-foreground',
         className,
       )}
     >
+      <span className={cn('size-1.5 rounded-full shrink-0', dotColor)} aria-hidden="true" />
       {STATUS_LABELS[status] ?? status}
     </span>
   )

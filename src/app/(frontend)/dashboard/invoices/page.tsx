@@ -20,6 +20,17 @@ export default async function InvoicesPage() {
     limit: 100,
     depth: 1,
     overrideAccess: true,
+    select: {
+      id: true,
+      invoiceNumber: true,
+      patient: true,
+      createdAt: true,
+      totalAmount: true,
+      amountPaid: true,
+      balanceDue: true,
+      status: true,
+      currency: true,
+    },
   })
 
   const invoices = res.docs as Invoice[]

@@ -219,11 +219,20 @@ export function Field({
 
 // ---- Table primitives — 44px rows, 12px cell padding, 11px uppercase headers (§4) ----
 
-export function Th({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
+export function Th({
+  children,
+  className = '',
+  density = 'comfortable',
+}: {
+  children?: React.ReactNode
+  className?: string
+  density?: 'compact' | 'comfortable'
+}) {
   return (
     <th
       className={cn(
-        'h-10 px-3 text-start align-middle text-[11px] font-medium tracking-wide uppercase text-muted-foreground',
+        'sticky top-0 z-10 text-start align-middle font-medium tracking-wide uppercase text-muted-foreground bg-canvas/95 backdrop-blur-xs transition-all',
+        density === 'compact' ? 'h-8 px-2.5 text-[10px]' : 'h-10 px-3 text-[11px]',
         className,
       )}
     >
@@ -232,6 +241,24 @@ export function Th({ children, className = '' }: { children?: React.ReactNode; c
   )
 }
 
-export function Td({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
-  return <td className={cn('h-11 px-3 py-1.5 align-middle', className)}>{children}</td>
+export function Td({
+  children,
+  className = '',
+  density = 'comfortable',
+}: {
+  children?: React.ReactNode
+  className?: string
+  density?: 'compact' | 'comfortable'
+}) {
+  return (
+    <td
+      className={cn(
+        'align-middle transition-all',
+        density === 'compact' ? 'h-8 px-2.5 py-1 text-xs' : 'h-11 px-3 py-1.5 text-sm',
+        className,
+      )}
+    >
+      {children}
+    </td>
+  )
 }

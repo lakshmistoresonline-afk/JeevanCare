@@ -62,10 +62,12 @@ export function Sidebar({
   const renderItem = (item: NavItem) => {
     const active = isActive(item.href)
     const Icon = item.icon
+    const shouldPrefetch = item.href === '/dashboard' || item.href === '/dashboard/appointments'
     return (
       <Link
         key={item.href}
         href={item.href}
+        prefetch={shouldPrefetch}
         aria-current={active ? 'page' : undefined}
         className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors duration-150 ${
           active

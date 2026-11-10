@@ -111,6 +111,23 @@ export default buildConfig({
           )
         }
       }
+
+      // Performance compound indexes for tenant data access scaling
+      const patientsModel = payload.db.collections?.patients
+      if (patientsModel?.collection) {
+        await patientsModel.collection.createIndex(
+          { tenant: 1, createdAt: -1 },
+          { name: 'idx_patients_tenant_created' },
+        )
+      }
+
+      const invoicesModel = payload.db.collections?.invoices
+      if (invoicesModel?.collection) {
+        await invoicesModel.collection.createIndex(
+          { tenant: 1, voided: 1, createdAt: -1 },
+          { name: 'idx_invoices_tenant_voided_created' },
+        )
+      }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create database indexes')
       if (process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') {

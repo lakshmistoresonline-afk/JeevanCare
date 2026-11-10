@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
       'recharts',
       'date-fns',
       'sonner',
+      'react-day-picker',
+      'clsx',
+      'tailwind-merge',
     ],
   },
   images: {

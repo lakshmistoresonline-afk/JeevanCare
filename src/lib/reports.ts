@@ -131,6 +131,16 @@ export async function getDashboardData(
       limit: 8,
       depth: 1,
       overrideAccess: true,
+      select: {
+        id: true,
+        start: true,
+        end: true,
+        status: true,
+        doctor: true,
+        patient: true,
+        isWalkIn: true,
+        tokenNumber: true,
+      },
     }),
   ])
 
@@ -145,6 +155,9 @@ export async function getDashboardData(
     limit: 5000,
     depth: 0,
     overrideAccess: true,
+    select: {
+      start: true,
+    },
   })
 
   const dayStartsMs = Array.from({ length: 14 }, (_, i) => startOfDayInTz(tz, -(13 - i)).getTime())
@@ -220,6 +233,15 @@ export async function getRevenueData(
     limit: 1000,
     depth: 1,
     overrideAccess: true,
+    select: {
+      id: true,
+      invoiceNumber: true,
+      payments: true,
+      balanceDue: true,
+      currency: true,
+      patient: true,
+      createdAt: true,
+    },
   })
   const invoices = res.docs as Invoice[]
 
@@ -351,6 +373,11 @@ export async function getMonthlyReport(
       limit: 5000,
       depth: 0,
       overrideAccess: true,
+      select: {
+        id: true,
+        status: true,
+        doctor: true,
+      },
     }),
     // All non-voided invoices, not just the month's: a payment received this month
     // may sit on an invoice created earlier. depth 1 populates the visit, whose
@@ -361,6 +388,13 @@ export async function getMonthlyReport(
       limit: 1000,
       depth: 1,
       overrideAccess: true,
+      select: {
+        id: true,
+        visit: true,
+        payments: true,
+        createdAt: true,
+        balanceDue: true,
+      },
     }),
     payload.find({
       collection: 'users',
@@ -368,6 +402,10 @@ export async function getMonthlyReport(
       limit: 100,
       depth: 0,
       overrideAccess: true,
+      select: {
+        id: true,
+        name: true,
+      },
     }),
     payload
       .count({
