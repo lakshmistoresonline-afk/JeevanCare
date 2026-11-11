@@ -27,6 +27,9 @@ import { RevenueChart } from '@/components/RevenueChart'
 import { DoctorPaceBanner } from '@/components/DoctorPaceBanner'
 import { MobileQuickActionFab } from '@/components/MobileQuickActionFab'
 import { DashboardLayoutCustomizer } from '@/components/DashboardLayoutCustomizer'
+import { PatientSlideOver } from '@/components/PatientSlideOver'
+import { ShiftProgressRing } from '@/components/ShiftProgressRing'
+import { SpecialtyFilterChips } from '@/components/SpecialtyFilterChips'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Patient, User } from '@/payload-types'
 
@@ -218,17 +221,20 @@ export default async function DashboardHome({
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[13px] font-medium text-muted-foreground">{today}</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">
             {greetingFor(tz)}, {greetingName}
           </h1>
         </div>
-        <Link href="/dashboard/appointments/new" className={btnPrimary}>
-          <IconPlus className="size-4" strokeWidth={1.75} />
-          New appointment
-        </Link>
+        <div className="flex items-center gap-3">
+          <ShiftProgressRing completed={data.completedToday} total={data.todayCount} />
+          <Link href="/dashboard/appointments/new" className={btnPrimary}>
+            <IconPlus className="size-4" strokeWidth={1.75} />
+            New appointment
+          </Link>
+        </div>
       </div>
 
       {/* Live Queue Status Ticker */}
@@ -379,8 +385,15 @@ export default async function DashboardHome({
                       >
                         <Avatar name={patient?.name ?? 'Patient'} size="sm" />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-semibold">
-                            {patient?.name ?? 'Patient'}
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-semibold">
+                              {patient?.name ?? 'Patient'}
+                            </span>
+                            {patient?.allergies && (
+                              <span className="shrink-0 rounded-full bg-red-soft px-2 py-0.5 text-[10px] font-bold text-red border border-red/20" title={`Allergies: ${patient.allergies}`}>
+                                🔴 {patient.allergies}
+                              </span>
+                            )}
                           </span>
                           <span className="block truncate text-xs text-muted-foreground">
                             {doctor?.name}
@@ -404,14 +417,25 @@ export default async function DashboardHome({
       {/* Doctors today & Quick actions & Recent patients */}
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         <DashboardWidgetError title="Doctors On Duty">
-          <section className="card-flat overflow-hidden backdrop-blur-md bg-card/85">
+          <section className="card-flat overflow-hidden backdrop-blur-md bg-card/85 space-y-2">
             <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
               <h2 className="font-display text-lg font-semibold">Doctors today</h2>
               <span className="tabular text-xs font-semibold text-primary">
                 {doctors.filter((d) => d.onToday).length} on duty
               </span>
             </div>
-            <ul className="divide-y divide-border/80">
+            <div className="px-5">
+              <SpecialtyFilterChips
+                specialties={Array.from(
+                  doctors.reduce((acc, d) => {
+                    const spec = d.specialty || 'General Medicine'
+                    acc.set(spec, (acc.get(spec) ?? 0) + 1)
+                    return acc
+                  }, new Map<string, number>()),
+                ).map(([name, count]) => ({ name, count }))}
+              />
+            </div>
+            <ul className="divide-y divide-border/80 pt-1">
               {doctors.map((d) => (
                 <li key={d.id} className={`flex items-center gap-3 px-5 py-2.5 ${d.onToday ? '' : 'opacity-60'}`}>
                   <div className="relative">
@@ -537,22 +561,19 @@ export default async function DashboardHome({
           ) : (
             <ul className="divide-y divide-border/80">
               {recentPatients.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    href={`/dashboard/patients/${p.id}`}
-                    className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-secondary/40"
-                  >
+                <li key={p.id} className="flex items-center justify-between px-5 py-2.5 transition-colors hover:bg-secondary/40">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Avatar name={p.name} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-semibold">{p.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <PatientSlideOver patient={p} />
                       <span className="tabular block truncate text-xs text-muted-foreground">
                         {p.phone}
                       </span>
-                    </span>
-                    <span className="tabular shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                      {p.mrn}
-                    </span>
-                  </Link>
+                    </div>
+                  </div>
+                  <span className="tabular shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                    {p.mrn}
+                  </span>
                 </li>
               ))}
             </ul>
