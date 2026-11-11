@@ -24,6 +24,9 @@ import {
 } from '@/components/icons'
 import { BarChart } from '@/components/BarChart'
 import { RevenueChart } from '@/components/RevenueChart'
+import { DoctorPaceBanner } from '@/components/DoctorPaceBanner'
+import { MobileQuickActionFab } from '@/components/MobileQuickActionFab'
+import { DashboardLayoutCustomizer } from '@/components/DashboardLayoutCustomizer'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Patient, User } from '@/payload-types'
 
@@ -233,6 +236,18 @@ export default async function DashboardHome({
         currentPatient={currentPatient}
         currentDoctor={currentDoctorName}
         waitingCount={waitingCount}
+      />
+
+      {/* Live Doctor Pace & Wait-Times Banner */}
+      <DoctorPaceBanner
+        doctors={doctors.map((d) => ({
+          id: d.id,
+          name: d.name,
+          onToday: d.onToday,
+          waitingCount: d.count,
+          avgConsultMinutes: 12,
+          delayMinutes: d.count > 4 ? 10 : 0,
+        }))}
       />
 
       {/* Primary KPI Metrics Row */}
@@ -544,6 +559,16 @@ export default async function DashboardHome({
           )}
         </section>
       </div>
+
+      {/* Customizable Dashboard Layout Settings (Owner/Admin) */}
+      {user.role === 'owner' && (
+        <section className="pt-2">
+          <DashboardLayoutCustomizer />
+        </section>
+      )}
+
+      {/* Floating Speed-Dial Quick Action Button (Mobile Viewports < 640px) */}
+      <MobileQuickActionFab />
     </div>
   )
 }
