@@ -398,8 +398,16 @@ export default async function DashboardHome({
             </div>
             <ul className="divide-y divide-border/80">
               {doctors.map((d) => (
-                <li key={d.id} className={`flex items-center gap-3 px-5 py-2.5 ${d.onToday ? '' : 'opacity-50'}`}>
-                  <Avatar name={d.name} size="sm" />
+                <li key={d.id} className={`flex items-center gap-3 px-5 py-2.5 ${d.onToday ? '' : 'opacity-60'}`}>
+                  <div className="relative">
+                    <Avatar name={d.name} size="sm" />
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full ring-2 ring-card ${
+                        d.onToday ? 'bg-primary' : 'bg-muted-foreground'
+                      }`}
+                      title={d.onToday ? 'Active & On Duty Today' : 'Off Duty Today'}
+                    />
+                  </div>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-semibold">{d.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">
@@ -407,11 +415,22 @@ export default async function DashboardHome({
                       {d.note}
                     </span>
                   </span>
-                  {d.count > 0 && (
-                    <span className="tabular shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-primary">
-                      {d.count} appts
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {d.count > 0 && (
+                      <span className="tabular rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-primary">
+                        {d.count} appts
+                      </span>
+                    )}
+                    {d.onToday && (
+                      <Link
+                        href={`/dashboard/appointments/new?doctor=${d.id}`}
+                        className="rounded-lg bg-primary-soft px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors"
+                        title={`Book appointment with ${d.name}`}
+                      >
+                        + Book
+                      </Link>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
