@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 
 const WORKFLOW_STEPS = [
   { label: 'Book', desc: 'Real slots' },
@@ -85,16 +86,21 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/15 pt-4 text-xs text-white/50">
-            <span>Your clinic, organized.</span>
-            <span>+91 · ₹ INR · UPI · Asia/Kolkata</span>
+          <div className="flex flex-col gap-2 border-t border-white/15 pt-4 text-xs text-white/60">
+            <div className="flex items-center justify-between">
+              <span>Your clinic, organized.</span>
+              <span>+91 · ₹ INR · UPI · Asia/Kolkata</span>
+            </div>
+            <div className="text-center text-[11px] text-white/70">
+              Designed &amp; Developed by <span className="font-bold text-white">Subramanian T S</span>, <span className="font-semibold text-sidebar-accent">WebCraft Digital Solutions</span>.
+            </div>
           </div>
         </div>
       </aside>
 
       {/* Right Content Form Panel — Constrained Width */}
-      <section className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8">
-        <div className="w-full max-w-[440px] animate-fade-up">
+      <section className="flex flex-1 flex-col items-center justify-between px-4 py-10 sm:px-8 min-h-screen">
+        <div className="my-auto w-full max-w-[440px] animate-fade-up">
           <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-white">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="size-3.5" aria-hidden>
@@ -105,6 +111,10 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {children}
+        </div>
+
+        <div className="pt-8">
+          <JeevanCareFooterCredit />
         </div>
       </section>
     </main>
