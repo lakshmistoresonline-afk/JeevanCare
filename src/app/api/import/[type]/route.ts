@@ -452,16 +452,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           }
 
           const duration = row.durationmins ? Number(row.durationmins) : 15
+          const endDate = new Date(startDate.getTime() + duration * 60 * 1000)
           const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
 
           const tokenDay = startDate.toISOString().slice(0, 10)
           const isWalkIn = i % 5 === 0
-          let tokenNumber: number | undefined = undefined
+          let tokenNumber: string | undefined = undefined
           if (isWalkIn) {
             const trackerKey = `${targetTenantID}_${tokenDay}`
             const nextTok = (walkInTokenTracker.get(trackerKey) || 0) + 1
             walkInTokenTracker.set(trackerKey, nextTok)
-            tokenNumber = nextTok
+            tokenNumber = `T-${String(nextTok).padStart(2, '0')}`
           }
 
           appointmentsToInsert.push({
@@ -469,6 +470,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
             patient: patientID,
             doctor: String(matchedDoc.id),
             start: startDate, // BSON Date
+            end: endDate, // BSON Date
             durationMins: duration,
             status: status as any,
             reason: row.reason || 'General Consultation',
