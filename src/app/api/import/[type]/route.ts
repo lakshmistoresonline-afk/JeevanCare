@@ -138,6 +138,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     })
     const cachedTenantsDocs = cachedTenantsRes.docs
 
+    const allPatientsRes = await payload.find({
+      collection: 'patients',
+      limit: 1000,
+      overrideAccess: true,
+    })
+    const globalPatients = allPatientsRes.docs
+
+    const allDoctorsRes = await payload.find({
+      collection: 'users',
+      where: { role: { equals: 'doctor' } },
+      limit: 200,
+      overrideAccess: true,
+    })
+    const globalDoctors = allDoctorsRes.docs
+
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
       const row: Record<string, string> = {}
@@ -381,108 +396,78 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           errors.push({ row: i, reason: err.message || 'Failed to create or update patient record.' })
         }
       } else if (normalizedType === 'appointments') {
-        if (!row.patient_email || !row.doctor_email || !row.start) {
-          errors.push({ row: i, reason: 'Missing required patient_email, doctor_email, or start time.' })
-          continue
-        }
+        try {
+          if (!row.patient_email || !row.doctor_email || !row.start) {
+            errors.push({ row: i, reason: 'Missing required patient_email, doctor_email, or start time.' })
+            continue
+          }
 
-        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
-        if (!targetTenantID) {
-          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
-          continue
-        }
+          const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
+          if (!targetTenantID) {
+            errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
+            continue
+          }
 
-        if (!tenantPatientsCache.has(targetTenantID)) {
-          const patRes = await payload.find({
-            collection: 'patients',
-            where: { tenant: { equals: targetTenantID } },
-            limit: 200,
-            overrideAccess: true,
+          const targetPatEmail = (row.patient_email || '').trim().toLowerCase()
+          const targetPatName = (row.patient_name || '').trim().toLowerCase()
+
+          let matchedPat = globalPatients.find(
+            (p: any) =>
+              (targetPatName && p.name && p.name.trim().toLowerCase() === targetPatName) ||
+              (targetPatEmail && p.email && p.email.trim().toLowerCase() === targetPatEmail)
+          )
+
+          let patientID: string | null = matchedPat ? String(matchedPat.id) : globalPatients[0] ? String(globalPatients[0].id) : null
+          if (!patientID) {
+            errors.push({ row: i, reason: 'No patient profiles available in database.' })
+            continue
+          }
+
+          const targetDocEmail = (row.doctor_email || '').trim().toLowerCase()
+          let matchedDoc = globalDoctors.find((d: any) => d.email && d.email.trim().toLowerCase() === targetDocEmail) || globalDoctors[0]
+
+          if (!matchedDoc) {
+            errors.push({ row: i, reason: `Doctor with email '${row.doctor_email}' not found.` })
+            continue
+          }
+
+          const startDate = new Date(row.start)
+          if (isNaN(startDate.getTime())) {
+            errors.push({ row: i, reason: `Invalid start time format '${row.start}'.` })
+            continue
+          }
+
+          const duration = row.durationmins ? Number(row.durationmins) : 15
+          const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
+
+          const tokenDay = startDate.toISOString().slice(0, 10)
+          const isWalkIn = i % 5 === 0
+          let tokenNumber: number | undefined = undefined
+          if (isWalkIn) {
+            const trackerKey = `${targetTenantID}_${tokenDay}`
+            const nextTok = (walkInTokenTracker.get(trackerKey) || 0) + 1
+            walkInTokenTracker.set(trackerKey, nextTok)
+            tokenNumber = nextTok
+          }
+
+          appointmentsToInsert.push({
+            tenant: targetTenantID,
+            patient: patientID,
+            doctor: String(matchedDoc.id),
+            start: startDate, // BSON Date
+            durationMins: duration,
+            status: status as any,
+            reason: row.reason || 'General Consultation',
+            isWalkIn,
+            tokenNumber,
+            tokenDay: isWalkIn ? tokenDay : undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           })
-          tenantPatientsCache.set(targetTenantID, patRes.docs)
+          importedCount++
+        } catch (err: any) {
+          errors.push({ row: i, reason: err.message || 'Error processing appointment row.' })
         }
-
-        if (!tenantDoctorsCache.has(targetTenantID)) {
-          const docRes = await payload.find({
-            collection: 'users',
-            where: { tenant: { equals: targetTenantID }, role: { equals: 'doctor' } },
-            limit: 100,
-            overrideAccess: true,
-          })
-          tenantDoctorsCache.set(targetTenantID, docRes.docs)
-        }
-
-        const clinicPatients = tenantPatientsCache.get(targetTenantID) || []
-        const clinicDoctors = tenantDoctorsCache.get(targetTenantID) || []
-
-        const targetPatEmail = row.patient_email ? row.patient_email.toLowerCase() : ''
-        const targetPatName = (row.patient_name || '').trim().toLowerCase()
-
-        let matchedPat = clinicPatients.find(
-          (p: any) => targetPatName && p.name && p.name.trim().toLowerCase() === targetPatName
-        )
-
-        let patientID: string | null = matchedPat ? String(matchedPat.id) : null
-
-        if (!patientID) {
-          const patientName = row.patient_name || targetPatEmail.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Patient'
-          const newPat = await payload.create({
-            collection: 'patients',
-            overrideAccess: true,
-            data: {
-              tenant: targetTenantID,
-              name: patientName,
-              phone: `+9198470${Math.floor(100000 + Math.random() * 900000)}`,
-              gender: 'other',
-              ageYears: 30,
-            } as never,
-          })
-          patientID = String(newPat.id)
-          clinicPatients.push(newPat)
-        }
-
-        const targetDocEmail = row.doctor_email.toLowerCase()
-        const matchedDoc = clinicDoctors.find((d: any) => d.email && d.email.toLowerCase() === targetDocEmail) || clinicDoctors[0]
-
-        if (!matchedDoc) {
-          errors.push({ row: i, reason: `Doctor with email '${row.doctor_email}' not found in clinic.` })
-          continue
-        }
-
-        const startDate = new Date(row.start)
-        if (isNaN(startDate.getTime())) {
-          errors.push({ row: i, reason: `Invalid start time format '${row.start}'. Use ISO format (e.g. 2026-03-30T10:00:00.000Z).` })
-          continue
-        }
-
-        const duration = row.durationmins ? Number(row.durationmins) : 15
-        const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
-
-        const tokenDay = startDate.toISOString().slice(0, 10)
-        const isWalkIn = i % 5 === 0
-        let tokenNumber: number | undefined = undefined
-        if (isWalkIn) {
-          const trackerKey = `${targetTenantID}_${tokenDay}`
-          const nextTok = (walkInTokenTracker.get(trackerKey) || 0) + 1
-          walkInTokenTracker.set(trackerKey, nextTok)
-          tokenNumber = nextTok
-        }
-
-        appointmentsToInsert.push({
-          tenant: targetTenantID,
-          patient: patientID,
-          doctor: String(matchedDoc.id),
-          start: startDate, // BSON Date
-          durationMins: duration,
-          status: status as any,
-          reason: row.reason || 'General Consultation',
-          isWalkIn,
-          tokenNumber,
-          tokenDay: isWalkIn ? tokenDay : undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        importedCount++
       } else if (normalizedType === 'medicines') {
         const brandName = row.brandname || row['brand name'] || row.brand || row.name
         const genericName = row.genericname || row['generic name'] || row.generic || row.composition || brandName
