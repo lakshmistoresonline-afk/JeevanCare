@@ -130,6 +130,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const tenantDoctorsCache = new Map<string, any[]>()
     const tenantApptsCache = new Map<string, any[]>()
     const medicinesToInsert: any[] = []
+    const appointmentsToInsert: any[] = []
+    const walkInTokenTracker = new Map<string, number>()
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -451,56 +453,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         const duration = row.durationmins ? Number(row.durationmins) : 15
         const status = ['scheduled', 'checked-in', 'completed', 'cancelled', 'no-show'].includes(row.status) ? row.status : 'scheduled'
 
-        if (!tenantApptsCache.has(targetTenantID)) {
-          const apptsRes = await payload.find({
-            collection: 'appointments',
-            where: { tenant: { equals: targetTenantID } },
-            limit: 300,
-            overrideAccess: true,
-          })
-          tenantApptsCache.set(targetTenantID, apptsRes.docs)
+        const tokenDay = startDate.toISOString().slice(0, 10)
+        const isWalkIn = i % 5 === 0
+        let tokenNumber: number | undefined = undefined
+        if (isWalkIn) {
+          const trackerKey = `${targetTenantID}_${tokenDay}`
+          const nextTok = (walkInTokenTracker.get(trackerKey) || 0) + 1
+          walkInTokenTracker.set(trackerKey, nextTok)
+          tokenNumber = nextTok
         }
-        const clinicAppts = tenantApptsCache.get(targetTenantID) || []
 
-        const matchedAppt = clinicAppts.find(
-          (a: any) =>
-            String(relId(a.doctor)) === String(matchedDoc.id) &&
-            new Date(a.start).toISOString() === startDate.toISOString()
-        )
-
-        try {
-          if (matchedAppt) {
-            await payload.update({
-              collection: 'appointments',
-              id: matchedAppt.id,
-              overrideAccess: true,
-              data: {
-                patient: patientID,
-                durationMins: duration,
-                status: status as any,
-                reason: row.reason || 'General Consultation',
-              } as never,
-            })
-          } else {
-            const newAppt = await payload.create({
-              collection: 'appointments',
-              overrideAccess: true,
-              data: {
-                tenant: targetTenantID,
-                patient: patientID,
-                doctor: matchedDoc.id,
-                start: startDate.toISOString(),
-                durationMins: duration,
-                status: status as any,
-                reason: row.reason || 'General Consultation',
-              } as never,
-            })
-            clinicAppts.push(newAppt)
-          }
-          importedCount++
-        } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create appointment record.' })
-        }
+        appointmentsToInsert.push({
+          tenant: targetTenantID,
+          patient: patientID,
+          doctor: String(matchedDoc.id),
+          start: startDate, // BSON Date
+          durationMins: duration,
+          status: status as any,
+          reason: row.reason || 'General Consultation',
+          isWalkIn,
+          tokenNumber,
+          tokenDay: isWalkIn ? tokenDay : undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        importedCount++
       } else if (normalizedType === 'medicines') {
         const brandName = row.brandname || row['brand name'] || row.brand || row.name
         const genericName = row.genericname || row['generic name'] || row.generic || row.composition || brandName
@@ -552,6 +529,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
                 }).catch(() => null)
               )
             )
+          }
+        }
+      } catch {}
+    }
+
+    if (normalizedType === 'appointments' && appointmentsToInsert.length > 0) {
+      try {
+        const db = (payload.db as any)?.connection?.db
+        if (db) {
+          const col = db.collection('appointments')
+          for (let b = 0; b < appointmentsToInsert.length; b += 1000) {
+            const batch = appointmentsToInsert.slice(b, b + 1000)
+            await col.insertMany(batch, { ordered: false }).catch(() => {})
           }
         }
       } catch {}
