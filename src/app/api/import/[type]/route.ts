@@ -4,10 +4,25 @@ import { isSuperAdmin, getTenantID } from '@/access'
 import type { User } from '@/payload-types'
 import { relId } from '@/lib/utils'
 import crypto from 'crypto'
+import { ObjectId } from 'mongodb'
+
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 const ALLOWED_STAFF_ROLES = ['doctor', 'receptionist'] as const
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB
 const MAX_ROW_COUNT = 60000
+
+function safeObjectId(idVal: any): any {
+  if (!idVal) return null
+  const idStr = String(idVal)
+  if (/^[0-9a-fA-F]{24}$/.test(idStr)) {
+    try {
+      return new ObjectId(idStr)
+    } catch {}
+  }
+  return idStr
+}
 
 function parseCSVLine(textLine: string): string[] {
   const result: string[] = []
@@ -466,9 +481,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           }
 
           appointmentsToInsert.push({
-            tenant: targetTenantID,
-            patient: patientID,
-            doctor: String(matchedDoc.id),
+            tenant: safeObjectId(targetTenantID),
+            patient: safeObjectId(patientID),
+            doctor: safeObjectId(matchedDoc.id),
             start: startDate, // BSON Date
             end: endDate, // BSON Date
             durationMins: duration,
