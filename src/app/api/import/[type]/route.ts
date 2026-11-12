@@ -28,6 +28,20 @@ function parseCSVLine(textLine: string): string[] {
   return result
 }
 
+function getMongoDbInstance(payload: any): any {
+  if (!payload || !payload.db) return null
+  const db = payload.db
+  return (
+    db.connection?.db ||
+    db.mongoose?.connection?.db ||
+    db.collections?.appointments?.collection?.db ||
+    db.collections?.users?.collection?.db ||
+    db.models?.appointments?.collection?.db ||
+    db.client?.db() ||
+    null
+  )
+}
+
 async function resolveTenantID(
   payload: any,
   isSuper: boolean,
@@ -526,15 +540,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
 
     if (normalizedType === 'appointments' && appointmentsToInsert.length > 0) {
       try {
-        const db = (payload.db as any)?.connection?.db
-        if (db) {
-          const col = db.collection('appointments')
-          for (let b = 0; b < appointmentsToInsert.length; b += 1000) {
-            const batch = appointmentsToInsert.slice(b, b + 1000)
+        const rawDb = getMongoDbInstance(payload)
+        if (rawDb) {
+          const col = rawDb.collection('appointments')
+          const CHUNK_SIZE = 500
+          for (let b = 0; b < appointmentsToInsert.length; b += CHUNK_SIZE) {
+            const batch = appointmentsToInsert.slice(b, b + CHUNK_SIZE)
             await col.insertMany(batch, { ordered: false }).catch(() => {})
           }
+        } else {
+          const CHUNK_SIZE = 50
+          for (let b = 0; b < appointmentsToInsert.length; b += CHUNK_SIZE) {
+            const batch = appointmentsToInsert.slice(b, b + CHUNK_SIZE)
+            await Promise.all(
+              batch.map((doc) =>
+                payload.create({
+                  collection: 'appointments',
+                  overrideAccess: true,
+                  data: doc as never,
+                }).catch(() => null)
+              )
+            )
+          }
         }
-      } catch {}
+      } catch (err: any) {
+        console.error('Appointments insertion error:', err)
+      }
     }
 
     const tenantForAudit = getTenantID(actor)
