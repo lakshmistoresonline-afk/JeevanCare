@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JeevanCare — Complete System Architecture & Operational Workflow Documentation</title>
+  <style>
+    :root {
+      --primary: #0d6e60;
+      --primary-dark: #094d43;
+      --primary-soft: #e6f4f1;
+      --bg: #f8faf9;
+      --card-bg: #ffffff;
+      --text: #182320;
+      --muted: #5f716c;
+      --border: #e2e8f0;
+      --accent: #2dd4bf;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    header {
+      border-bottom: 2px solid var(--primary-soft);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: var(--primary);
+      margin: 0 0 0.5rem 0;
+      font-size: 2.2rem;
+    }
+    .brand-meta {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .brand-credit {
+      margin-top: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--primary-soft);
+      border-radius: 8px;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    h2 {
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-top: 2.5rem;
+      font-size: 1.5rem;
+    }
+    h3 {
+      color: var(--text);
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+    }
+    .img-card {
+      margin: 1.5rem 0 2rem 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .img-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .img-caption {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .stepper-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .step-item {
+      background: var(--primary-soft);
+      border: 1px solid rgba(13, 110, 96, 0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .step-num {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .step-title {
+      font-weight: bold;
+      color: var(--primary);
+      margin: 0.5rem 0 0.2rem 0;
+      font-size: 0.95rem;
+    }
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: bold;
+    }
+    footer {
+      margin-top: 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>JeevanCare Platform — Complete Operational Workflow Documentation</h1>
+      <div class="brand-meta">
+        Platform Name: <strong>JeevanCare — Your Trusted Healthcare Companion</strong><br>
+        Brand Identity: <strong>Simple, connected healthcare for patients, doctors, and clinics.</strong>
+      </div>
+      <div class="brand-credit">
+        Designed &amp; Developed by Subramanian T S, WebCraft Digital Solutions.
+      </div>
+    </header>
+
+    <section>
+      <h2>1. Executive Summary &amp; Platform Overview</h2>
+      <p>JeevanCare is a modern, multi-tenant healthcare SaaS application specifically built for Indian clinics, nursing homes, and outpatient departments (OPD). The platform connects five core user roles—<strong>Clinic Owners</strong>, <strong>Doctors</strong>, <strong>Receptionists / Front-Desk Staff</strong>, <strong>Patients</strong>, and <strong>Super Administrators</strong>—into a single, highly synchronized workspace.</p>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_01_landing.png" alt="JeevanCare Landing Page &amp; Brand Overview">
+        <div class="img-caption">Figure 1.1: JeevanCare Landing Page &amp; Brand Value Proposition Overview</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Authentication, Quick Login &amp; Clinic Registration</h2>
+      <p>JeevanCare provides a 1-click Quick Login toolbar for instant role switching during demonstration and daily operations, along with a self-serve clinic onboarding wizard.</p>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_02_login.png" alt="Authentication Screen with 1-Click Quick Login Toolbar">
+        <div class="img-caption">Figure 2.1: Authentication Screen featuring Configurable 1-Click Quick Login Toolbar</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_03_signup.png" alt="Self-Serve Clinic Registration Signup Wizard">
+        <div class="img-caption">Figure 2.2: Self-Serve Clinic Onboarding Registration Wizard</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. End-to-End Complete Care Workflow (5-Stage Engine)</h2>
+
+      <div class="stepper-box">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-title">1. Book</div>
+          <div class="step-desc">Doctor Schedules &amp; Walk-In Tokens</div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-title">2. Check-in</div>
+          <div class="step-desc">Front-Desk OPD Queue &amp; Lobby TV</div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-title">3. Consult</div>
+          <div class="step-desc">Vitals, Voice EMR &amp; ICD-10 Search</div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">4</span>
+          <div class="step-title">4. Prescribe</div>
+          <div class="step-desc">1-Tap Dosage Kits &amp; A5/A4 Print</div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">5</span>
+          <div class="step-title">5. Bill</div>
+          <div class="step-desc">Dynamic UPI QR Code (upi://pay)</div>
+        </div>
+      </div>
+
+      <h3>Stage 1: Public Doctor Finder &amp; Appointment Booking</h3>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_04_clinics.png" alt="Public Doctor Directory &amp; Clinic Search">
+        <div class="img-caption">Figure 3.1: Public Doctor Finder &amp; Clinic Search Directory</div>
+      </div>
+
+      <h3>Stage 2: Primary Dashboard &amp; OPD Live Queue Management</h3>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_05_dashboard.png" alt="Primary Clinic Workspace Dashboard Overview">
+        <div class="img-caption">Figure 3.2: Primary Dashboard Overview with OPD Stepper Rail &amp; Doctor Pace Banner</div>
+      </div>
+
+      <h3>Stage 3: Multi-Doctor Day Rail Schedule &amp; Appointment Booking</h3>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_06_appointments.png" alt="Multi-Doctor Day Rail Schedule View">
+        <div class="img-caption">Figure 3.3: Multi-Doctor Day Rail Schedule Timeline View</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_07_new_appointment.png" alt="New Appointment &amp; Walk-In Token Allocation Form">
+        <div class="img-caption">Figure 3.4: New Appointment Booking &amp; Walk-In Token Allocation Form</div>
+      </div>
+
+      <h3>Stage 4: Patient Roster, Registration &amp; EMR Consultations</h3>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_08_patients.png" alt="Patient Roster Directory Interface">
+        <div class="img-caption">Figure 3.5: Searchable Patient Roster Directory &amp; Slide-Over Drawer</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_09_new_patient.png" alt="Register New Patient Form Interface">
+        <div class="img-caption">Figure 3.6: Quick Patient Registration Form</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_06_appointments.png" alt="Clinical OPD Appointments Queue &amp; Visit Creator">
+        <div class="img-caption">Figure 3.7: Clinical OPD Appointments Queue &amp; Consultation Visit Creator</div>
+      </div>
+
+      <h3>Stage 5: Invoices, Dynamic UPI QR Payments &amp; Lobby TV Display</h3>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_11_invoices.png" alt="Invoices &amp; Financial Summary Dashboard">
+        <div class="img-caption">Figure 3.8: Invoices &amp; Financial Summary Dashboard with Dynamic UPI QR</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_12_queue_display.png" alt="Waiting Room Lobby TV Queue Display Screen">
+        <div class="img-caption">Figure 3.9: Waiting Room Lobby TV Display Screen with Patient Callouts</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>4. Clinic Administration, Reports &amp; Staff Management</h2>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_13_reports.png" alt="Monthly Financial Reports &amp; Analytics View">
+        <div class="img-caption">Figure 4.1: Owner Monthly Financial Reports &amp; Doctor Revenue Breakdown</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_14_staff.png" alt="Staff Directory &amp; Doctor Timings Management">
+        <div class="img-caption">Figure 4.2: Staff Directory &amp; Doctor Working Hours Configuration</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_15_settings.png" alt="Clinic Workspace Settings &amp; Subscription Plan Panel">
+        <div class="img-caption">Figure 4.3: Clinic Workspace Settings, Timezone &amp; Subscription Plans</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>5. Patient Portal &amp; Super Admin Workflows</h2>
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_16_patient_dashboard.png" alt="Patient Portal Personal Dashboard Interface">
+        <div class="img-caption">Figure 5.1: Patient Portal Personal Dashboard Interface</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_17_patient_book.png" alt="Patient Online Appointment Slot Booking Interface">
+        <div class="img-caption">Figure 5.2: Patient Online Slot Booking Interface</div>
+      </div>
+
+      <div class="img-card">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_05_dashboard.png" alt="Multi-Tenant Workspace Administration Console">
+        <div class="img-caption">Figure 5.3: Multi-Tenant Workspace Administration Console</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>6. Technical Specifications</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Subsystem</th>
+            <th>Specification &amp; Technology</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Framework</td>
+            <td>Next.js 16 (App Router) + React 19 + TypeScript 5.7</td>
+          </tr>
+          <tr>
+            <td>Database &amp; CMS</td>
+            <td>Payload CMS 3.85 + MongoDB (Mongoose Adapter)</td>
+          </tr>
+          <tr>
+            <td>Styling &amp; UI System</td>
+            <td>Tailwind CSS v4 + Base UI + Lucide React + Recharts</td>
+          </tr>
+          <tr>
+            <td>Performance</td>
+            <td>Field projections (select), package tree-shaking, compound DB indexes</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      <strong>JeevanCare Platform</strong> · Your Trusted Healthcare Companion<br>
+      Designed &amp; Developed by <strong>Subramanian T S</strong>, <strong>WebCraft Digital Solutions</strong>.
+    </footer>
+  </div>
+</body>
+</html>
