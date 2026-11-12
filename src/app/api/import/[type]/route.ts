@@ -28,7 +28,14 @@ function parseCSVLine(textLine: string): string[] {
   return result
 }
 
-async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: Record<string, string>, rowIndex?: number): Promise<string | null> {
+async function resolveTenantID(
+  payload: any,
+  isSuper: boolean,
+  actor: any,
+  row: Record<string, string>,
+  rowIndex?: number,
+  cachedTenantsDocs?: any[],
+): Promise<string | null> {
   // Non-superadmin staff are strictly bound to their own authenticated session tenant ID
   if (!isSuper) {
     const actorTenant = getTenantID(actor)
@@ -37,34 +44,25 @@ async function resolveTenantID(payload: any, isSuper: boolean, actor: any, row: 
 
   const rawClinicKey = row.clinic_name || row['clinic name'] || row.clinic || row.tenantid || row.clinic_id || ''
 
-  if (rawClinicKey) {
-    if (/^[0-9a-fA-F]{24}$/.test(rawClinicKey)) {
-      try {
-        const exists = await payload.findByID({ collection: 'tenants', id: rawClinicKey, depth: 0, overrideAccess: true }).catch(() => null)
-        if (exists) return String(exists.id)
-      } catch {}
-    }
-
-    const targetName = rawClinicKey.trim().toLowerCase()
-    const allTenants = await payload.find({
+  const allTenantsDocs = cachedTenantsDocs || (
+    await payload.find({
       collection: 'tenants',
       limit: 100,
       overrideAccess: true,
     })
-    const matched = allTenants.docs.find((t: any) => t.name.trim().toLowerCase() === targetName)
+  ).docs
+
+  if (rawClinicKey) {
+    const targetName = rawClinicKey.trim().toLowerCase()
+    const matched = allTenantsDocs.find((t: any) => String(t.id) === rawClinicKey || t.name.trim().toLowerCase() === targetName)
     if (matched) {
       return String(matched.id)
     }
   }
 
-  const allTenants = await payload.find({
-    collection: 'tenants',
-    limit: 100,
-    overrideAccess: true,
-  })
-  if (allTenants.docs.length > 0) {
-    const index = (rowIndex !== undefined ? rowIndex : 0) % allTenants.docs.length
-    return String(allTenants.docs[index].id)
+  if (allTenantsDocs.length > 0) {
+    const index = (rowIndex !== undefined ? rowIndex : 0) % allTenantsDocs.length
+    return String(allTenantsDocs[index].id)
   }
 
   const actorTenant = getTenantID(actor)
@@ -132,6 +130,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const medicinesToInsert: any[] = []
     const appointmentsToInsert: any[] = []
     const walkInTokenTracker = new Map<string, number>()
+
+    const cachedTenantsRes = await payload.find({
+      collection: 'tenants',
+      limit: 100,
+      overrideAccess: true,
+    })
+    const cachedTenantsDocs = cachedTenantsRes.docs
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -231,7 +236,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
         if (!targetTenantID) {
           errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
           continue
@@ -295,7 +300,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
         if (!targetTenantID) {
           errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
           continue
@@ -381,7 +386,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           continue
         }
 
-        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i)
+        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
         if (!targetTenantID) {
           errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}.` })
           continue
