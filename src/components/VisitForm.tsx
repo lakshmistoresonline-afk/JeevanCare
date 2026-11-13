@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { btnPrimary, btnGhost, inputClass, textareaClass, Card, Field, Avatar, AllergyBanner, Spinner } from './primitives'
 import { AppSelect } from './AppSelect'
 import { DatePicker } from './DatePicker'
@@ -118,6 +119,7 @@ export function VisitForm({
         followUpDate: followUp || undefined,
       })
       if (res.ok) {
+        toast.success('Consultation record saved successfully!')
         if ((res.data as any)?.invoiceId) {
           router.push(`/dashboard/invoices/${(res.data as any).invoiceId}`)
         } else {
@@ -126,6 +128,37 @@ export function VisitForm({
       } else setError(res.message)
     })
   }
+
+  // Doctor Keyboard Shortcuts (Alt+N = Add Rx, Alt+S = Save, Alt+V = Vitals, Alt+D = Diagnosis, Alt+P = Rx Tab)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey || e.metaKey) {
+        const key = e.key.toLowerCase()
+        if (key === 'n') {
+          e.preventDefault()
+          addRow()
+          toast.info('Added new prescription line (Alt+N)')
+        } else if (key === 's') {
+          e.preventDefault()
+          submit()
+        } else if (key === 'v') {
+          e.preventDefault()
+          setActiveStep('vitals')
+          toast.info('Switched to Vitals (Alt+V)')
+        } else if (key === 'd') {
+          e.preventDefault()
+          setActiveStep('diagnosis')
+          toast.info('Switched to Diagnosis (Alt+D)')
+        } else if (key === 'p') {
+          e.preventDefault()
+          setActiveStep('prescriptions')
+          toast.info('Switched to Prescriptions (Alt+P)')
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [rows, bpS, bpD, temp, weight, pulse, symptoms, diagnosis, notes, followUp])
 
   return (
     <div className={focusMode ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-6 md:p-10 space-y-6 shadow-2xl' : 'space-y-5'}>
@@ -652,6 +685,30 @@ export function VisitForm({
             </div>
           </div>
         )}
+
+        {/* Doctor Keyboard Hotkey Legend Bar */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-2.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 font-bold text-primary">
+            <span>⌨️ Keyboard Shortcuts:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 border border-border">
+              <kbd className="font-mono font-bold text-ink">Alt + N</kbd> Add Medicine
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 border border-border">
+              <kbd className="font-mono font-bold text-ink">Alt + S</kbd> Complete &amp; Save
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 border border-border">
+              <kbd className="font-mono font-bold text-ink">Alt + V</kbd> Vitals
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 border border-border">
+              <kbd className="font-mono font-bold text-ink">Alt + D</kbd> Diagnosis
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-card px-2 py-0.5 border border-border">
+              <kbd className="font-mono font-bold text-ink">Alt + P</kbd> Rx Prescriptions
+            </span>
+          </div>
+        </div>
       </Card>
     </div>
   )

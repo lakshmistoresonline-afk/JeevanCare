@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition, useOptimistic } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -160,6 +160,16 @@ export function DayRail({
   // id of the row whose inline quick action is running
   const [quickId, setQuickId] = useState<string | null>(null)
 
+  // React 19 useOptimistic for instant 0ms perceived latency on OPD Queue transitions
+  const [optimisticColumns, setOptimisticColumns] = useOptimistic(
+    columns,
+    (currentCols, update: { id: string; status: AppointmentStatus }) =>
+      currentCols.map((col) => ({
+        ...col,
+        blocks: col.blocks.map((b) => (b.id === update.id ? { ...b, status: update.status } : b)),
+      })),
+  )
+
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('jeevancare-day-view') : null
     if (saved === 'rail' || saved === 'list') setView(saved as any)
@@ -177,8 +187,10 @@ export function DayRail({
   const act = (status: AppointmentStatus, reason?: string) => {
     if (!selected) return
     setError(null)
+    const targetId = selected.id
+    setOptimisticColumns({ id: targetId, status })
     startTransition(async () => {
-      const res = await updateAppointmentStatus(selected.id, status, reason)
+      const res = await updateAppointmentStatus(targetId, status, reason)
       if (res.ok) {
         setSelected(null)
         router.refresh()
@@ -190,6 +202,7 @@ export function DayRail({
 
   const handleStartConsult = (appointmentId: string) => {
     setError(null)
+    setOptimisticColumns({ id: appointmentId, status: 'in-consultation' })
     startTransition(async () => {
       const res = await updateAppointmentStatus(appointmentId, 'in-consultation')
       if (res.ok) {
@@ -203,6 +216,7 @@ export function DayRail({
 
   const quickAct = (b: Block, to: AppointmentStatus) => {
     setQuickId(b.id)
+    setOptimisticColumns({ id: b.id, status: to })
     startTransition(async () => {
       await updateAppointmentStatus(b.id, to)
       setQuickId(null)
@@ -226,7 +240,7 @@ export function DayRail({
   const [vitalsOpen, setVitalsOpen] = useState(false)
   const [checkInOpen, setCheckInOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
-  const allBlocks = columns.flatMap((c) => c.blocks)
+  const allBlocks = optimisticColumns.flatMap((c) => c.blocks)
   const statusCounts = allBlocks.reduce<Partial<Record<AppointmentStatus, number>>>((acc, b) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1
     return acc
@@ -260,7 +274,7 @@ export function DayRail({
 
           {/* Doctor Status Badges summary */}
           <div className="hidden lg:flex items-center gap-2 border-l border-border pl-3">
-            {columns.map((c) => {
+            {optimisticColumns.map((c) => {
               const isOff = c.availabilityNote?.includes('Off')
               const status = isOff ? 'off-duty' : 'on-duty'
               return (
@@ -282,7 +296,7 @@ export function DayRail({
 
       {view === 'list' ? (
         <QueueList
-          columns={columns}
+          columns={optimisticColumns}
           nowMinutes={nowMinutes}
           quickId={quickId}
           pending={pending}
@@ -292,7 +306,7 @@ export function DayRail({
         />
       ) : (
         <Timeline
-          columns={columns}
+          columns={optimisticColumns}
           openMinutes={openMinutes}
           closeMinutes={closeMinutes}
           nowMinutes={nowMinutes}
