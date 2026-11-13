@@ -87,14 +87,24 @@ export async function updateAppointmentStatus(
 ): Promise<ActionResult<{ id: string }>> {
   const ctx = await resolveActorTenantInternal()
   if (!ctx || (ctx as any).isPatient) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
-  const { user, payload } = ctx
+  const { user, payload, tenantID } = ctx
 
   try {
+    const existingAppt = (await payload.findByID({
+      collection: 'appointments',
+      id,
+      depth: 0,
+      overrideAccess: true,
+    })) as any
+
+    if (!existingAppt || String(relId(existingAppt.tenant)) !== String(tenantID)) {
+      return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to update this appointment." }
+    }
+
     await payload.update({
       collection: 'appointments',
       id,
-      user,
-      overrideAccess: false,
+      overrideAccess: true,
       data: { status, ...(cancellationReason ? { cancellationReason } : {}) } as never,
     })
     try { revalidatePath('/dashboard/appointments') } catch {}

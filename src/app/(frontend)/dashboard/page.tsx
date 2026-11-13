@@ -46,6 +46,7 @@ function greetingFor(tz: string): string {
   return 'Good evening'
 }
 
+export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardHome({
