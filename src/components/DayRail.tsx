@@ -33,6 +33,7 @@ export type Block = {
   isWalkIn: boolean
   token?: string | null
   doctorName?: string
+  isPaid?: boolean
   /** Prefilled wa.me reminder link (v3 §6.2); null when the phone can't be dialled. */
   waHref?: string | null
 }
@@ -406,13 +407,20 @@ export function DayRail({
                   </p>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setCheckInOpen(true)}
-                  className={`${btnGhost} mt-3 w-full border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 font-bold`}
-                >
-                  💳 Collect Fee &amp; Generate Paid Receipt
-                </button>
+                {selected.isPaid ? (
+                  <div className="mt-3 flex items-center justify-between rounded-xl border border-green-strong/30 bg-green-soft/60 px-3.5 py-2.5 text-xs text-green-strong font-bold">
+                    <span>✓ Consultation Fee Paid</span>
+                    <span>Receipt Generated</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCheckInOpen(true)}
+                    className={`${btnGhost} mt-3 w-full border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 font-bold`}
+                  >
+                    💳 Collect Fee &amp; Generate Paid Receipt
+                  </button>
+                )}
 
                 {(selected.status === 'checked-in' || selected.status === 'scheduled') && (
                   <button

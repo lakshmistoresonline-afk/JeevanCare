@@ -45,7 +45,7 @@ export default async function AppointmentsPage({
   const dayStart = startOfDayInTz(tz, 0, new Date(Date.UTC(y, m - 1, d, 12)))
   const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
 
-  const [doctorsRes, apptsRes] = await Promise.all([
+  const [doctorsRes, apptsRes, invoicesRes] = await Promise.all([
     payload.find({
       collection: 'users',
       where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
@@ -85,7 +85,30 @@ export default async function AppointmentsPage({
         checkedInAt: true,
       },
     }),
+    payload.find({
+      collection: 'invoices',
+      where: { tenant: { equals: tenantID } },
+      limit: 500,
+      overrideAccess: true,
+      select: {
+        id: true,
+        patient: true,
+        visit: true,
+        amountPaid: true,
+        balanceDue: true,
+        paymentStatus: true,
+      },
+    }),
   ])
+
+  const paidPatientsSet = new Set<string>()
+  for (const inv of (invoicesRes?.docs || []) as any[]) {
+    const isPaid = inv.paymentStatus === 'paid' || ((inv.amountPaid ?? 0) > 0 && (inv.balanceDue ?? 0) <= 0)
+    if (isPaid) {
+      const pId = String((inv.patient as Patient)?.id ?? inv.patient ?? '')
+      if (pId) paidPatientsSet.add(pId)
+    }
+  }
 
   const openMinutes = hhmmToMinutes(tenant?.settings?.openTime || '09:00')
   const closeMinutes = hhmmToMinutes(tenant?.settings?.closeTime || '21:00')
@@ -141,6 +164,7 @@ export default async function AppointmentsPage({
           isWalkIn: Boolean(a.isWalkIn),
           token: (a as { tokenNumber?: string }).tokenNumber,
           doctorName: doc.name,
+          isPaid: paidPatientsSet.has(String((a.patient as Patient)?.id ?? a.patient)),
           waHref: waReminderLink({
             phone: (a.patient as Patient)?.phone,
             currency: tenant?.settings?.currency,
