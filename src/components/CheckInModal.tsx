@@ -64,9 +64,9 @@ export function CheckInModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-fade-up">
         <div>
-          <h3 className="font-display text-base font-bold text-ink">Front-Desk OPD Check-In &amp; Billing</h3>
+          <h3 className="font-display text-base font-bold text-ink">Front-Desk OPD Billing &amp; Payment Collection</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Check in <strong className="text-ink">{patientName}</strong> for <strong className="text-ink">{doctorName || 'Doctor'}</strong>
+            Collect consultation payment &amp; issue receipt for <strong className="text-ink">{patientName}</strong> ({doctorName || 'Doctor'})
           </p>
         </div>
 

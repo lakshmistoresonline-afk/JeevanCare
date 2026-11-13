@@ -406,6 +406,14 @@ export function DayRail({
                   </p>
                 )}
 
+                <button
+                  type="button"
+                  onClick={() => setCheckInOpen(true)}
+                  className={`${btnGhost} mt-3 w-full border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 font-bold`}
+                >
+                  💳 Collect Fee &amp; Generate Paid Receipt
+                </button>
+
                 {(selected.status === 'checked-in' || selected.status === 'scheduled') && (
                   <button
                     type="button"
