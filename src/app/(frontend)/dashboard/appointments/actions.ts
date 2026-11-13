@@ -315,6 +315,8 @@ export async function checkInAndCollectPayment(input: {
           id: invToUpdate.id,
           overrideAccess: true,
           data: {
+            tenant: apptTenantID,
+            patient: patientID,
             lineItems: currentLines,
             totalAmount: currentTotal,
             payments: updatedPayments,
@@ -324,39 +326,41 @@ export async function checkInAndCollectPayment(input: {
       } else {
         invoiceId = String(invToUpdate.id)
       }
-    } else if (fee > 0 && apptTenantID && existingInvoices.docs.length === 0) {
-      const inv = await payload.create({
-        collection: 'invoices',
-        overrideAccess: true,
-        data: {
-          tenant: apptTenantID,
-          patient: patientID,
-          lineItems: [
-            {
-              description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
-              quantity: 1,
-              unitAmount: fee,
-              amount: fee,
-            },
-          ],
-          totalAmount: fee,
-          amountPaid: payAmount,
-          balanceDue,
-          paymentStatus: isPaid ? 'paid' : 'unpaid',
-          payments: isPaid
-            ? [
-                {
-                  amount: payAmount,
-                  method: input.paymentMethod || 'cash',
-                  receivedAt: new Date().toISOString(),
-                  receivedBy: user.id,
-                },
-              ]
-            : [],
-          voided: false,
-        } as never,
-      })
-      invoiceId = String(inv.id)
+    } else if (fee > 0 && apptTenantID && (existingInvoices.docs.length === 0 || !isPaid)) {
+      if (existingInvoices.docs.length === 0) {
+        const inv = await payload.create({
+          collection: 'invoices',
+          overrideAccess: true,
+          data: {
+            tenant: apptTenantID,
+            patient: patientID,
+            lineItems: [
+              {
+                description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
+                quantity: 1,
+                unitAmount: fee,
+                amount: fee,
+              },
+            ],
+            totalAmount: fee,
+            amountPaid: payAmount,
+            balanceDue,
+            paymentStatus: isPaid ? 'paid' : 'unpaid',
+            payments: isPaid
+              ? [
+                  {
+                    amount: payAmount,
+                    method: input.paymentMethod || 'cash',
+                    receivedAt: new Date().toISOString(),
+                    receivedBy: user.id,
+                  },
+                ]
+              : [],
+            voided: false,
+          } as never,
+        })
+        invoiceId = String(inv.id)
+      }
     }
 
     try { revalidatePath('/dashboard/appointments') } catch {}
