@@ -278,8 +278,19 @@ export async function checkInAndCollectPayment(input: {
 
     if (existingInvoices.docs.length > 0 && isPaid) {
       const invToUpdate = existingInvoices.docs[0] as any
-      const currentPayments = (invToUpdate.payments ?? []) as any[]
 
+      // If invoice is already paid, return success without duplicate payment
+      if ((invToUpdate.balanceDue ?? 0) <= 0 && (invToUpdate.amountPaid ?? 0) > 0) {
+        return { ok: true, data: { id: String(appt.id), invoiceId: String(invToUpdate.id), token: (appt as any).tokenNumber } }
+      }
+
+      // Ensure lineItems and totalAmount are non-zero
+      const currentTotal = invToUpdate.totalAmount && invToUpdate.totalAmount > 0 ? invToUpdate.totalAmount : fee
+      const currentLines = (invToUpdate.lineItems && invToUpdate.lineItems.length > 0)
+        ? invToUpdate.lineItems
+        : [{ description: `Consultation — ${doctor?.name ?? 'Doctor'}`, quantity: 1, unitAmount: fee, amount: fee }]
+
+      const currentPayments = (invToUpdate.payments ?? []) as any[]
       const cleanOrigPayments = currentPayments.map((p: any) => ({
         amount: Number(p.amount ?? 0),
         method: String(p.method || 'cash'),
@@ -287,23 +298,32 @@ export async function checkInAndCollectPayment(input: {
         receivedBy: relId(p.receivedBy) || user.id,
       }))
 
-      const newPayment = {
-        amount: payAmount,
-        method: input.paymentMethod || 'cash',
-        receivedAt: new Date().toISOString(),
-        receivedBy: user.id,
-      }
-      const updatedPayments = [...cleanOrigPayments, newPayment]
+      const remainingNeeded = Math.max(0, currentTotal - (invToUpdate.amountPaid || 0))
+      const actualPayAmount = Math.min(payAmount, remainingNeeded > 0 ? remainingNeeded : payAmount)
 
-      const updatedInv = await payload.update({
-        collection: 'invoices',
-        id: invToUpdate.id,
-        overrideAccess: true,
-        data: {
-          payments: updatedPayments,
-        } as never,
-      })
-      invoiceId = String(updatedInv.id)
+      if (actualPayAmount > 0) {
+        const newPayment = {
+          amount: actualPayAmount,
+          method: input.paymentMethod || 'cash',
+          receivedAt: new Date().toISOString(),
+          receivedBy: user.id,
+        }
+        const updatedPayments = [...cleanOrigPayments, newPayment]
+
+        const updatedInv = await payload.update({
+          collection: 'invoices',
+          id: invToUpdate.id,
+          overrideAccess: true,
+          data: {
+            lineItems: currentLines,
+            totalAmount: currentTotal,
+            payments: updatedPayments,
+          } as never,
+        })
+        invoiceId = String(updatedInv.id)
+      } else {
+        invoiceId = String(invToUpdate.id)
+      }
     } else if (fee > 0 && apptTenantID && existingInvoices.docs.length === 0) {
       const inv = await payload.create({
         collection: 'invoices',
