@@ -235,14 +235,29 @@ export async function checkInAndCollectPayment(input: {
   const { user, payload, tenantID } = ctx
 
   try {
-    const appt = (await payload.update({
+    const existingAppt = (await payload.findByID({
       collection: 'appointments',
       id: input.appointmentId,
+      depth: 0,
       overrideAccess: true,
-      data: { status: 'checked-in' } as never,
-    })) as Appointment
+    })) as any
+
+    if (!existingAppt) {
+      return { ok: false, code: 'NOT_FOUND', message: 'Appointment record not found.' }
+    }
+
+    let appt = existingAppt
+    if (existingAppt.status === 'scheduled') {
+      appt = (await payload.update({
+        collection: 'appointments',
+        id: input.appointmentId,
+        overrideAccess: true,
+        data: { status: 'checked-in' } as never,
+      })) as Appointment
+    }
 
     const apptTenantID = relId(appt.tenant) || tenantID
+    const patientID = relId(appt.patient)
     const doctorID = relId(appt.doctor)
     const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User : null
     const fee = input.amount > 0 ? input.amount : (typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800)
@@ -252,13 +267,47 @@ export async function checkInAndCollectPayment(input: {
     const balanceDue = isPaid ? 0 : fee
 
     let invoiceId: string | undefined = undefined
-    if (fee > 0 && apptTenantID) {
+
+    const existingInvoices = await payload.find({
+      collection: 'invoices',
+      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID } },
+      sort: '-createdAt',
+      limit: 1,
+      overrideAccess: true,
+    })
+
+    if (existingInvoices.docs.length > 0 && isPaid) {
+      const invToUpdate = existingInvoices.docs[0] as any
+      const currentPayments = (invToUpdate.payments ?? []) as any[]
+      const newPayment = {
+        amount: payAmount,
+        method: input.paymentMethod || 'cash',
+        receivedAt: new Date().toISOString(),
+        receivedBy: user.id,
+      }
+      const updatedPayments = [...currentPayments, newPayment]
+      const newPaid = Math.min(invToUpdate.totalAmount || fee, (invToUpdate.amountPaid || 0) + payAmount)
+      const newBalance = Math.max(0, (invToUpdate.totalAmount || fee) - newPaid)
+
+      const updatedInv = await payload.update({
+        collection: 'invoices',
+        id: invToUpdate.id,
+        overrideAccess: true,
+        data: {
+          amountPaid: newPaid,
+          balanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? 'paid' : 'partial',
+          payments: updatedPayments,
+        } as never,
+      })
+      invoiceId = String(updatedInv.id)
+    } else if (fee > 0 && apptTenantID && existingInvoices.docs.length === 0) {
       const inv = await payload.create({
         collection: 'invoices',
         overrideAccess: true,
         data: {
           tenant: apptTenantID,
-          patient: relId(appt.patient),
+          patient: patientID,
           lineItems: [
             {
               description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
