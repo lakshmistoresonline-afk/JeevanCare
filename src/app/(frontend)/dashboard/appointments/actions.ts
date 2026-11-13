@@ -279,24 +279,27 @@ export async function checkInAndCollectPayment(input: {
     if (existingInvoices.docs.length > 0 && isPaid) {
       const invToUpdate = existingInvoices.docs[0] as any
       const currentPayments = (invToUpdate.payments ?? []) as any[]
+
+      const cleanOrigPayments = currentPayments.map((p: any) => ({
+        amount: Number(p.amount ?? 0),
+        method: String(p.method || 'cash'),
+        receivedAt: p.receivedAt ? new Date(p.receivedAt).toISOString() : new Date().toISOString(),
+        receivedBy: relId(p.receivedBy) || user.id,
+      }))
+
       const newPayment = {
         amount: payAmount,
         method: input.paymentMethod || 'cash',
         receivedAt: new Date().toISOString(),
         receivedBy: user.id,
       }
-      const updatedPayments = [...currentPayments, newPayment]
-      const newPaid = Math.min(invToUpdate.totalAmount || fee, (invToUpdate.amountPaid || 0) + payAmount)
-      const newBalance = Math.max(0, (invToUpdate.totalAmount || fee) - newPaid)
+      const updatedPayments = [...cleanOrigPayments, newPayment]
 
       const updatedInv = await payload.update({
         collection: 'invoices',
         id: invToUpdate.id,
         overrideAccess: true,
         data: {
-          amountPaid: newPaid,
-          balanceDue: newBalance,
-          paymentStatus: newBalance <= 0 ? 'paid' : 'partial',
           payments: updatedPayments,
         } as never,
       })
