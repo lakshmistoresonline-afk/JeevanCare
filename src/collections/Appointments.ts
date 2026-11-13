@@ -130,14 +130,16 @@ export const Appointments: CollectionConfig = {
             { upsert: true, returnDocument: 'after' },
           )
 
-          const seq = counterDoc?.seq ?? 1
+          const doc = (counterDoc as any)?.value ?? counterDoc
+          const seq = typeof doc?.seq === 'number' ? doc.seq : (typeof (counterDoc as any)?.seq === 'number' ? (counterDoc as any).seq : 1)
           data.tokenNumber = `T-${String(seq).padStart(2, '0')}`
           data.tokenDay = dayKey
         } else {
           const existing = await req.payload.count({
             collection: 'appointments',
-            where: { tenant: { equals: tenantID } },
+            where: { tenant: { equals: tenantID }, tokenDay: { equals: dayKey } },
             req,
+            overrideAccess: true,
           })
           data.tokenNumber = `T-${String(existing.totalDocs + 1).padStart(2, '0')}`
           data.tokenDay = dayKey

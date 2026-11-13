@@ -5,9 +5,21 @@ import { formatDateTime } from '@/lib/format'
 import { formatDoctorName } from '@/lib/utils'
 import { IconCalendar, IconPlus, IconReceipt, IconStethoscope, IconFileText, IconPill } from '@/components/icons'
 
+function greetingFor(tz: string): string {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(
+      new Date(),
+    ),
+  )
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default async function PatientDashboard() {
   const { patient, tenant } = await requirePatientSession()
   const payload = await getPayloadClient()
+  const tz = tenant?.settings?.timezone || 'Asia/Kolkata'
 
   const apptsRes = await payload.find({
     collection: 'appointments',
@@ -74,10 +86,10 @@ export default async function PatientDashboard() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-up">
-      {/* Header Banner (Matching Panel 11 in Reference Image) */}
+      {/* Header Banner */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <span className="text-xs font-bold text-primary uppercase tracking-wider">Good morning</span>
+          <span className="text-xs font-bold text-primary uppercase tracking-wider">{greetingFor(tz)}, {patient.name}</span>
           <h1 className="text-2xl font-bold font-display text-ink mt-0.5">Your health, our priority.</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{tenant.name} · Patient MRN: {patient.mrn}</p>
         </div>

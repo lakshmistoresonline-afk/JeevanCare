@@ -17,18 +17,10 @@ export function formatGreetingName(user?: { name?: string | null; role?: string 
 
   if (user.role === 'doctor') {
     const nameWithoutDr = clean.replace(/^(dr\.?\s*)+/i, '').trim()
-    if (!nameWithoutDr) return 'Doctor'
-    const parts = nameWithoutDr.split(/\s+/)
-    return `Dr. ${parts[0]}`
+    return nameWithoutDr ? `Dr. ${nameWithoutDr}` : 'Doctor'
   }
 
-  const parts = clean.split(/\s+/)
-  const firstWord = parts[0].replace(/\.$/, '')
-  if (firstWord.toLowerCase() === 'dr' && parts.length > 1) {
-    return `Dr. ${parts[1]}`
-  }
-
-  return parts[0] || 'there'
+  return clean || 'there'
 }
 
 export function relId(value: unknown): string {

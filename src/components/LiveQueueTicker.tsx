@@ -33,7 +33,7 @@ export function LiveQueueTicker({
               {currentPatient ? (
                 <>
                   Now Serving: <span className="text-primary font-bold">{currentPatient}</span>
-                  {currentDoctor ? ` with Dr. ${currentDoctor}` : ''}
+                  {currentDoctor ? ` with ${currentDoctor.startsWith('Dr.') ? currentDoctor : `Dr. ${currentDoctor}`}` : ''}
                 </>
               ) : (
                 'Live queue operational — consultations in progress.'
