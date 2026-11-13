@@ -27,90 +27,128 @@ export default async function QueueDisplayPage() {
       start: { greater_than_equal: todayStart.toISOString(), less_than: todayEnd.toISOString() },
     },
     sort: 'start',
-    limit: 50,
+    limit: 100,
     depth: 1,
     overrideAccess: true,
   })
 
-  // Patient currently inside doctor's room (in-consultation) or first checked-in patient
-  const inConsult = res.docs.find((a: any) => a.status === 'in-consultation')
-  const checkedIn = res.docs.filter((a: any) => a.status === 'checked-in')
+  // Group appointments by doctor
+  const doctorMap = new Map<string, { doctorName: string; current: any; upcoming: any[] }>()
 
-  const current = inConsult || checkedIn[0]
-  const upcoming = checkedIn.filter((a: any) => String(a.id) !== String(current?.id))
+  for (const appt of res.docs as any[]) {
+    const docObj = typeof appt.doctor === 'object' ? appt.doctor : null
+    const docId = docObj?.id ? String(docObj.id) : String(appt.doctor || 'default')
+    const docName = formatDoctorName(docObj?.name)
+
+    if (!doctorMap.has(docId)) {
+      doctorMap.set(docId, { doctorName: docName, current: null, upcoming: [] })
+    }
+
+    const entry = doctorMap.get(docId)!
+    if (appt.status === 'in-consultation' && !entry.current) {
+      entry.current = appt
+    } else if (appt.status === 'checked-in') {
+      if (!entry.current) {
+        entry.current = appt
+      } else {
+        entry.upcoming.push(appt)
+      }
+    }
+  }
+
+  const doctorGroups = Array.from(doctorMap.values())
+  const globalCurrent = res.docs.find((a: any) => a.status === 'in-consultation') || res.docs.find((a: any) => a.status === 'checked-in')
+  const globalUpcoming = res.docs.filter((a: any) => a.status === 'checked-in' && String(a.id) !== String(globalCurrent?.id))
 
   return (
-    <div className="flex min-h-screen flex-col bg-sidebar text-white p-8">
+    <div className="flex min-h-screen flex-col bg-sidebar text-white p-6 sm:p-8">
       <header className="flex items-center justify-between border-b border-white/15 pb-6">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">{tenant.name}</h1>
-          <p className="text-sm text-sidebar-foreground">Live OPD Waiting Room Queue · JeevanCare</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">{tenant.name}</h1>
+          <p className="text-xs sm:text-sm text-sidebar-foreground">Live OPD Waiting Room Queue · JeevanCare</p>
         </div>
         <div className="flex items-center gap-6">
           <QueueAudioAnnouncer
-            tokenNumber={(current as any)?.tokenNumber}
-            patientName={(current as any)?.patient?.name}
-            doctorName={formatDoctorName((current as any)?.doctor?.name)}
+            tokenNumber={(globalCurrent as any)?.tokenNumber}
+            patientName={(globalCurrent as any)?.patient?.name}
+            doctorName={formatDoctorName((globalCurrent as any)?.doctor?.name)}
           />
-          <div className="text-right">
-            <div className="tabular text-lg font-semibold">{new Date().toLocaleDateString('en-IN', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' })}</div>
+          <div className="text-right hidden sm:block">
+            <div className="tabular text-base font-semibold">{new Date().toLocaleDateString('en-IN', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' })}</div>
           </div>
         </div>
       </header>
 
-      <div className="my-12 grid gap-8 lg:grid-cols-2 flex-1 items-center">
-        {/* Now Serving */}
-        <div className="rounded-3xl border border-sidebar-accent/30 bg-sidebar-soft p-10 text-center shadow-2xl">
-          <div className="text-sm font-semibold tracking-widest text-sidebar-accent uppercase">Now Serving</div>
-          {current ? (
-            <div className="mt-6">
-              <div className="font-display text-7xl font-extrabold tracking-tight text-sidebar-active-fg">
-                {(current as any).tokenNumber || 'Walk-in'}
-              </div>
-              <div className="mt-4 text-2xl font-semibold text-white">
-                {(current as any).patient?.name || 'Patient'}
-              </div>
-              <div className="mt-1 text-sm text-sidebar-foreground">
-                {formatDoctorName((current as any).doctor?.name)}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-10 text-xl font-medium text-sidebar-foreground">
-              No patient currently called.
-            </div>
-          )}
-        </div>
-
-        {/* Up Next */}
-        <div className="rounded-3xl border border-white/10 bg-black/20 p-8">
-          <h2 className="text-lg font-semibold tracking-wide text-sidebar-accent uppercase mb-6">Up Next in Queue</h2>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-sidebar-foreground">No further patients waiting in queue.</p>
-          ) : (
-            <ul className="space-y-4">
-              {upcoming.map((u: any, idx: number) => (
-                <li key={u.id} className="flex items-center justify-between rounded-xl bg-white/5 p-4 border border-white/5">
-                  <div className="flex items-center gap-4">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-sidebar-accent/20 font-bold text-sidebar-accent">
-                      {u.tokenNumber || `#${idx + 2}`}
-                    </span>
-                    <div>
-                      <div className="font-semibold">{u.patient?.name || 'Patient'}</div>
-                      <div className="text-xs text-sidebar-foreground">{formatDoctorName(u.doctor?.name)}</div>
-                    </div>
+      {/* Main Grid: Per-Doctor Room Callout Cards */}
+      <div className="my-8 flex-1 space-y-8">
+        {doctorGroups.length === 0 ? (
+          <div className="my-16 rounded-3xl border border-white/10 bg-sidebar-soft p-12 text-center">
+            <div className="font-display text-2xl font-bold text-white">No active queue at the moment</div>
+            <p className="text-sm text-sidebar-foreground mt-2">Patients checked in at reception will appear live on this screen.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {doctorGroups.map((group, gIdx) => (
+              <div key={gIdx} className="rounded-3xl border border-sidebar-accent/30 bg-sidebar-soft p-8 shadow-2xl flex flex-col justify-between space-y-6">
+                {/* Doctor Room Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-sidebar-accent">Doctor Room</span>
+                    <h2 className="font-display text-xl font-bold text-white mt-0.5">{group.doctorName}</h2>
                   </div>
-                  <span className="rounded-full bg-blue-soft/20 px-3 py-1 text-xs font-semibold text-sidebar-accent">
-                    Waiting
+                  <span className="rounded-full bg-sidebar-accent/20 px-3 py-1 text-xs font-bold text-sidebar-accent">
+                    {group.upcoming.length + (group.current ? 1 : 0)} in OPD
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                </div>
+
+                {/* Now Serving Card */}
+                <div className="rounded-2xl border border-sidebar-accent/40 bg-black/40 p-6 text-center shadow-inner">
+                  <div className="text-xs font-extrabold uppercase tracking-widest text-sidebar-accent">Now Serving</div>
+                  {group.current ? (
+                    <div className="mt-3">
+                      <div className="font-display text-6xl font-extrabold tracking-tight text-sidebar-active-fg">
+                        {(group.current as any).tokenNumber || 'Walk-in'}
+                      </div>
+                      <div className="mt-2 text-xl font-bold text-white truncate">
+                        {(group.current as any).patient?.name || 'Patient'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 text-base font-medium text-sidebar-foreground">
+                      No patient in room.
+                    </div>
+                  )}
+                </div>
+
+                {/* Up Next in Queue */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-sidebar-foreground">Up Next in Queue</h3>
+                  {group.upcoming.length === 0 ? (
+                    <p className="text-xs text-sidebar-foreground italic">No further patients waiting for this doctor.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {group.upcoming.slice(0, 4).map((u: any, idx: number) => (
+                        <li key={u.id} className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-2.5 border border-white/5 text-xs">
+                          <div className="flex items-center gap-3">
+                            <span className="flex size-7 items-center justify-center rounded-md bg-sidebar-accent/20 font-bold text-sidebar-accent text-xs">
+                              {u.tokenNumber || `#${idx + 2}`}
+                            </span>
+                            <span className="font-semibold text-white">{u.patient?.name || 'Patient'}</span>
+                          </div>
+                          <span className="text-[11px] font-semibold text-sidebar-foreground">Waiting</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <footer className="border-t border-white/15 pt-4 text-center text-xs text-sidebar-foreground">
-        JeevanCare · Please listen for your token number.
+        JeevanCare · Please listen for your token callout.
       </footer>
 
       {/* Auto-refresh timer */}

@@ -124,8 +124,8 @@ export async function getDashboardData(
       collection: 'appointments',
       where: {
         ...base,
-        start: { greater_than_equal: new Date().toISOString(), less_than: tomorrowStart.toISOString() },
-        status: { in: ['scheduled', 'checked-in'] },
+        start: { greater_than_equal: todayStart.toISOString(), less_than: tomorrowStart.toISOString() },
+        status: { in: ['scheduled', 'checked-in', 'in-consultation'] },
       },
       sort: 'start',
       limit: 8,
