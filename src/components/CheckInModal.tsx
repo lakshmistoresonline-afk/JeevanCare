@@ -36,7 +36,10 @@ export function CheckInModal({
 
   const handleCheckInWithPayment = (collectFee: boolean) => {
     start(async () => {
-      const payAmount = collectFee ? Number(amount) : 0
+      const cleanAmountStr = String(amount || '').replace(/[^0-9.]/g, '')
+      const parsedNum = Number(cleanAmountStr)
+      const payAmount = collectFee ? (isNaN(parsedNum) ? (consultationFee || 800) : Math.max(0, parsedNum)) : 0
+
       const res = await checkInAndCollectPayment({
         appointmentId,
         amount: payAmount,
@@ -52,7 +55,7 @@ export function CheckInModal({
         onClose()
         router.refresh()
       } else {
-        toast.error(res.message || 'Failed to check in patient.')
+        toast.error(res.message || 'Failed to check in patient. Please check the details.')
       }
     })
   }

@@ -6,6 +6,7 @@ import { formatDoctorName } from '@/lib/utils'
 import { QueueAudioAnnouncer } from '@/components/QueueAudioAnnouncer'
 import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
 
+export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
 export default async function QueueDisplayPage() {
@@ -22,7 +23,7 @@ export default async function QueueDisplayPage() {
     collection: 'appointments',
     where: {
       tenant: { equals: tenant.id },
-      status: { in: ['checked-in', 'completed'] },
+      status: { in: ['checked-in', 'in-consultation'] },
       start: { greater_than_equal: todayStart.toISOString(), less_than: todayEnd.toISOString() },
     },
     sort: 'start',
@@ -31,9 +32,12 @@ export default async function QueueDisplayPage() {
     overrideAccess: true,
   })
 
+  // Patient currently inside doctor's room (in-consultation) or first checked-in patient
+  const inConsult = res.docs.find((a: any) => a.status === 'in-consultation')
   const checkedIn = res.docs.filter((a: any) => a.status === 'checked-in')
-  const current = checkedIn[0]
-  const upcoming = checkedIn.slice(1)
+
+  const current = inConsult || checkedIn[0]
+  const upcoming = checkedIn.filter((a: any) => String(a.id) !== String(current?.id))
 
   return (
     <div className="flex min-h-screen flex-col bg-sidebar text-white p-8">
