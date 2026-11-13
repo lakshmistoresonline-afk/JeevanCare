@@ -11,6 +11,7 @@ import { IconPlus, IconX, IconCheck, IconArrowRight, IconChevronLeft } from './i
 import { PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
 import { recordVisit, type PrescriptionRowInput } from '@/app/(frontend)/dashboard/visits/actions'
 import { MedicineDirectorySearch } from './MedicineDirectorySearch'
+import { saveDraftVisit, getDraftVisit, clearDraftVisit } from '@/lib/offlineDb'
 
 const FREQ_OPTIONS = PRESCRIPTION_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', durationDays: undefined, instructions: '' })
@@ -119,6 +120,7 @@ export function VisitForm({
         followUpDate: followUp || undefined,
       })
       if (res.ok) {
+        await clearDraftVisit(appointmentId)
         toast.success('Consultation record saved successfully!')
         if ((res.data as any)?.invoiceId) {
           router.push(`/dashboard/invoices/${(res.data as any).invoiceId}`)
@@ -128,6 +130,45 @@ export function VisitForm({
       } else setError(res.message)
     })
   }
+
+  // Restore draft consultation from IndexedDB on load
+  useEffect(() => {
+    getDraftVisit(appointmentId).then((draft) => {
+      if (draft) {
+        if (draft.symptoms) setSymptoms(draft.symptoms)
+        if (draft.diagnosis) setDiagnosis(draft.diagnosis)
+        if (draft.notes) setNotes(draft.notes)
+        if (draft.followUpDate) setFollowUp(draft.followUpDate)
+        if (draft.prescription && draft.prescription.length > 0) setRows(draft.prescription)
+        if (draft.vitals) {
+          if (draft.vitals.bpSystolic) setBpS(String(draft.vitals.bpSystolic))
+          if (draft.vitals.bpDiastolic) setBpD(String(draft.vitals.bpDiastolic))
+          if (draft.vitals.temperatureC) setTemp(String(draft.vitals.temperatureC))
+          if (draft.vitals.weightKg) setWeight(String(draft.vitals.weightKg))
+          if (draft.vitals.pulse) setPulse(String(draft.vitals.pulse))
+        }
+        toast.info('Restored offline consultation draft from IndexedDB buffer.')
+      }
+    })
+  }, [appointmentId])
+
+  // Auto-buffer draft consultation to IndexedDB on every edit
+  useEffect(() => {
+    const hasData = symptoms || diagnosis || notes || rows.some((r) => r.medicine.trim()) || bpS || bpD || temp || weight || pulse
+    if (hasData) {
+      saveDraftVisit({
+        appointmentId,
+        patientName,
+        symptoms,
+        diagnosis,
+        notes,
+        vitals: { bpSystolic: num(bpS), bpDiastolic: num(bpD), temperatureC: num(temp), weightKg: num(weight), pulse: num(pulse) },
+        prescription: rows,
+        followUpDate: followUp || undefined,
+        updatedAt: new Date().toISOString(),
+      })
+    }
+  }, [appointmentId, patientName, symptoms, diagnosis, notes, bpS, bpD, temp, weight, pulse, rows, followUp])
 
   // Doctor Keyboard Shortcuts (Alt+N = Add Rx, Alt+S = Save, Alt+V = Vitals, Alt+D = Diagnosis, Alt+P = Rx Tab)
   useEffect(() => {

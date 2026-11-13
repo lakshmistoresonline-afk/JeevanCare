@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { getDashboardData, getRevenueData, startOfDayInTz } from '@/lib/reports'
@@ -7,6 +8,7 @@ import { formatGreetingName } from '@/lib/utils'
 import { windowOf, weekdayInTz } from '@/lib/availability'
 import { StatusBadge, EmptyState } from '@/components/ui-kit'
 import { btnPrimary, Avatar } from '@/components/primitives'
+import { CardSkeleton, MetricCardSkeleton } from '@/components/ui/skeleton'
 import { MetricCard } from '@/components/MetricCard'
 import { LiveQueueTicker } from '@/components/LiveQueueTicker'
 import { DashboardWidgetError } from '@/components/DashboardWidgetError'
@@ -238,23 +240,27 @@ export default async function DashboardHome({
       </div>
 
       {/* Live Queue Status Ticker */}
-      <LiveQueueTicker
-        currentPatient={currentPatient}
-        currentDoctor={currentDoctorName}
-        waitingCount={waitingCount}
-      />
+      <Suspense fallback={<CardSkeleton />}>
+        <LiveQueueTicker
+          currentPatient={currentPatient}
+          currentDoctor={currentDoctorName}
+          waitingCount={waitingCount}
+        />
+      </Suspense>
 
       {/* Live Doctor Pace & Wait-Times Banner */}
-      <DoctorPaceBanner
-        doctors={doctors.map((d) => ({
-          id: d.id,
-          name: d.name,
-          onToday: d.onToday,
-          waitingCount: d.count,
-          avgConsultMinutes: 12,
-          delayMinutes: d.count > 4 ? 10 : 0,
-        }))}
-      />
+      <Suspense fallback={<CardSkeleton />}>
+        <DoctorPaceBanner
+          doctors={doctors.map((d) => ({
+            id: d.id,
+            name: d.name,
+            onToday: d.onToday,
+            waitingCount: d.count,
+            avgConsultMinutes: 12,
+            delayMinutes: d.count > 4 ? 10 : 0,
+          }))}
+        />
+      </Suspense>
 
       {/* Primary KPI Metrics Row */}
       <DashboardWidgetError title="Primary Metrics">
@@ -324,7 +330,9 @@ export default async function DashboardHome({
                 </span>
               </div>
               <div className="h-64 my-auto">
-                <RevenueChart data={revenue.series} currency={revenue.currency} />
+                <Suspense fallback={<CardSkeleton />}>
+                  <RevenueChart data={revenue.series} currency={revenue.currency} />
+                </Suspense>
               </div>
             </section>
           </div>
@@ -343,7 +351,9 @@ export default async function DashboardHome({
               <span className="text-xs text-faint">Last 14 days</span>
             </div>
             <div className="h-64 my-auto">
-              <BarChart data={data.series} />
+              <Suspense fallback={<CardSkeleton />}>
+                <BarChart data={data.series} />
+              </Suspense>
             </div>
           </section>
         </DashboardWidgetError>
