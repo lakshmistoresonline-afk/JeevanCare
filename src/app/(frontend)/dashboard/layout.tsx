@@ -8,6 +8,7 @@ import { JeevanCareFooterCredit } from '@/components/JeevanCareFooter'
 import { OfflineSyncBanner } from '@/components/OfflineSyncBanner'
 import { NotificationDrawer } from '@/components/NotificationDrawer'
 import { QueueAutoRefresher } from '@/components/QueueAutoRefresher'
+import { WhatsAppBotWidget } from '@/components/WhatsAppBotWidget'
 
 const ReceptionQrModal = dynamic(() => import('@/components/ReceptionQrModal').then((m) => m.ReceptionQrModal))
 
@@ -68,6 +69,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </footer>
         </main>
         <QueueAutoRefresher intervalMs={4000} />
+        <WhatsAppBotWidget clinicName={tenant?.name} />
       </div>
     </div>
   )

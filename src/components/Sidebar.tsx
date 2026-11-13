@@ -15,6 +15,7 @@ import {
   IconReceipt,
 } from './icons'
 import { logoutAction } from '@/app/(frontend)/login/actions'
+import { ThemeToggle } from './ThemeToggle'
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }
 
@@ -129,8 +130,9 @@ export function Sidebar({
           )}
         </nav>
 
-        {/* User card */}
-        <div className="border-t border-sidebar-border p-3">
+        {/* User card & Theme Toggle */}
+        <div className="border-t border-sidebar-border p-3 space-y-2">
+          <ThemeToggle />
           <div className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/15 text-[11px] font-semibold text-sidebar-accent ring-1 ring-sidebar-accent/25">
               {initialsOf(userName) || '•'}
