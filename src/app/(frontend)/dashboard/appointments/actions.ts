@@ -107,7 +107,50 @@ export async function updateAppointmentStatus(
       overrideAccess: true,
       data: { status, ...(cancellationReason ? { cancellationReason } : {}) } as never,
     })
+
+    // If marking appointment completed, ensure an invoice is guaranteed to exist
+    if (status === 'completed') {
+      const patientID = relId(existingAppt.patient)
+      const doctorID = relId(existingAppt.doctor)
+
+      const invoices = await payload.find({
+        collection: 'invoices',
+        where: { tenant: { equals: tenantID }, patient: { equals: patientID } },
+        sort: '-createdAt',
+        limit: 1,
+        overrideAccess: true,
+      })
+
+      if (invoices.docs.length === 0 && patientID) {
+        const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User : null
+        const fee = typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800
+
+        await payload.create({
+          collection: 'invoices',
+          overrideAccess: true,
+          data: {
+            tenant: tenantID,
+            patient: patientID,
+            lineItems: [
+              {
+                description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
+                quantity: 1,
+                unitAmount: fee,
+                amount: fee,
+              },
+            ],
+            totalAmount: fee,
+            amountPaid: 0,
+            balanceDue: fee,
+            paymentStatus: 'unpaid',
+            voided: false,
+          } as never,
+        }).catch(() => null)
+      }
+    }
+
     try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard/invoices') } catch {}
     try { revalidatePath('/dashboard') } catch {}
     return { ok: true, data: { id } }
   } catch (err) {
@@ -204,6 +247,10 @@ export async function checkInAndCollectPayment(input: {
     const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User : null
     const fee = input.amount > 0 ? input.amount : (typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800)
 
+    const isPaid = input.amount > 0
+    const payAmount = isPaid ? input.amount : 0
+    const balanceDue = isPaid ? 0 : fee
+
     let invoiceId: string | undefined = undefined
     if (fee > 0 && apptTenantID) {
       const inv = await payload.create({
@@ -221,17 +268,19 @@ export async function checkInAndCollectPayment(input: {
             },
           ],
           totalAmount: fee,
-          amountPaid: fee,
-          balanceDue: 0,
-          paymentStatus: 'paid',
-          payments: [
-            {
-              amount: fee,
-              method: input.paymentMethod || 'cash',
-              receivedAt: new Date().toISOString(),
-              receivedBy: user.id,
-            },
-          ],
+          amountPaid: payAmount,
+          balanceDue,
+          paymentStatus: isPaid ? 'paid' : 'unpaid',
+          payments: isPaid
+            ? [
+                {
+                  amount: payAmount,
+                  method: input.paymentMethod || 'cash',
+                  receivedAt: new Date().toISOString(),
+                  receivedBy: user.id,
+                },
+              ]
+            : [],
           voided: false,
         } as never,
       })

@@ -127,26 +127,24 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
 
     let finalInvoiceId: string | undefined = undefined
 
-    const existingInvoices = await payload.find({
+    const unlinkedInvoices = await payload.find({
       collection: 'invoices',
-      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID } },
+      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID }, visit: { exists: false } },
       sort: '-createdAt',
       limit: 1,
       overrideAccess: true,
     })
 
-    if (existingInvoices.docs.length > 0) {
-      finalInvoiceId = String(existingInvoices.docs[0].id)
-      if (!existingInvoices.docs[0].visit) {
-        await payload.update({
-          collection: 'invoices',
-          id: existingInvoices.docs[0].id,
-          overrideAccess: true,
-          data: { visit: String(visit.id) } as never,
-        }).catch(() => {})
-      }
+    if (unlinkedInvoices.docs.length > 0) {
+      finalInvoiceId = String(unlinkedInvoices.docs[0].id)
+      await payload.update({
+        collection: 'invoices',
+        id: unlinkedInvoices.docs[0].id,
+        overrideAccess: true,
+        data: { visit: String(visit.id) } as never,
+      }).catch(() => {})
     } else {
-      // Auto-create unpaid invoice for the visit if patient did not pay at reception
+      // Auto-create unpaid invoice for this consultation visit
       const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User : null
       const fee = typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800
 

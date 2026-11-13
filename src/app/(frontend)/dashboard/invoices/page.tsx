@@ -28,7 +28,8 @@ export default async function InvoicesPage() {
       totalAmount: true,
       amountPaid: true,
       balanceDue: true,
-      status: true,
+      paymentStatus: true,
+      voided: true,
       currency: true,
     },
   })
@@ -97,6 +98,14 @@ export default async function InvoicesPage() {
               <tbody className="divide-y divide-border">
                 {invoices.map((inv) => {
                   const patient = inv.patient as Patient
+                  const derivedStatus = inv.voided
+                    ? 'voided'
+                    : (inv.paymentStatus === 'paid' || (inv.balanceDue ?? 0) <= 0 && (inv.amountPaid ?? 0) > 0)
+                      ? 'paid'
+                      : (inv.amountPaid ?? 0) > 0
+                        ? 'partial'
+                        : 'unpaid'
+
                   return (
                     <tr key={inv.id} className="hover:bg-canvas/50 transition-colors">
                       <Td className="font-bold text-primary font-mono text-xs">
@@ -120,7 +129,7 @@ export default async function InvoicesPage() {
                       <Td className="tabular text-end text-green-strong font-medium">{m(inv.amountPaid)}</Td>
                       <Td className="tabular text-end font-bold text-ink">{m(inv.balanceDue)}</Td>
                       <Td className="text-center">
-                        <StatusBadge status={inv.voided ? 'voided' : (inv.paymentStatus ?? 'unpaid')} />
+                        <StatusBadge status={derivedStatus as any} />
                       </Td>
                       <Td className="text-end">
                         <div className="flex items-center justify-end gap-2">
