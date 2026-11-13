@@ -63,6 +63,8 @@ export function VisitForm({
 
   // Distraction-free Focus Mode toggle
   const [focusMode, setFocusMode] = useState(false)
+  // 1-Screen Compact EMR Speed Mode toggle
+  const [speedMode, setSpeedMode] = useState(false)
 
   // 5-Step EMR Tab Navigation
   const [activeStep, setActiveStep] = useState<'vitals' | 'diagnosis' | 'prescriptions' | 'history' | 'billing'>('vitals')
@@ -223,6 +225,18 @@ export function VisitForm({
         <div className="flex items-center gap-2.5">
           <button
             type="button"
+            onClick={() => setSpeedMode(!speedMode)}
+            className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+              speedMode
+                ? 'border-emerald-500 bg-emerald-500 text-white shadow-2xs'
+                : 'border-border bg-card text-ink hover:border-emerald-500/50'
+            }`}
+            title="Toggle 1-Screen Compact EMR Speed Mode for 50% faster consultation"
+          >
+            {speedMode ? '⚡ Speed Mode: ON' : '⚡ Speed Mode (1-Screen)'}
+          </button>
+          <button
+            type="button"
             onClick={() => setFocusMode(!focusMode)}
             className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
               focusMode
@@ -231,7 +245,7 @@ export function VisitForm({
             }`}
             title="Toggle Distraction-Free Focus Mode"
           >
-            {focusMode ? '⚡ Focus Mode: ON' : '⚡ Focus Mode'}
+            {focusMode ? '🎯 Focus Mode: ON' : '🎯 Focus Mode'}
           </button>
           <button type="button" onClick={submit} className={btnGhost} disabled={pending}>
             Save Draft
@@ -284,7 +298,93 @@ export function VisitForm({
 
       {/* Active Step Workspace */}
       <Card className="p-6">
-        {activeStep === 'vitals' && (
+        {speedMode ? (
+          /* ⚡ 1-Screen Compact EMR Speed Mode Layout */
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3 bg-emerald-500/10 -mx-6 -mt-6 p-4 rounded-t-2xl">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500 text-white font-bold text-xs">⚡</span>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-ink">1-Screen EMR Speed Mode Active</h3>
+                  <p className="text-[11px] text-muted-foreground">All vitals, diagnosis, and prescription rows editable on 1 screen</p>
+                </div>
+              </div>
+              <button type="button" onClick={submit} className={btnPrimary} disabled={pending}>
+                {pending ? <Spinner /> : <IconCheck size={15} />}
+                {pending ? 'Saving…' : 'Complete & Save Consultation ✓'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Vitals, Symptoms, Diagnosis */}
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Patient Vitals</h4>
+                  <div className="grid grid-cols-5 gap-2">
+                    <Field label="BP Sys"><input className={inputClass} inputMode="numeric" value={bpS} onChange={(e) => setBpS(e.target.value)} placeholder="120" /></Field>
+                    <Field label="BP Dia"><input className={inputClass} inputMode="numeric" value={bpD} onChange={(e) => setBpD(e.target.value)} placeholder="80" /></Field>
+                    <Field label="Temp °C"><input className={inputClass} inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} placeholder="37.2" /></Field>
+                    <Field label="Wt (kg)"><input className={inputClass} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="68" /></Field>
+                    <Field label="Pulse"><input className={inputClass} inputMode="numeric" value={pulse} onChange={(e) => setPulse(e.target.value)} placeholder="76" /></Field>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Symptoms</h4>
+                    <VoiceDictationBar label="Dictate" onTranscript={(text) => setSymptoms((prev) => (prev ? `${prev} ${text}` : text))} />
+                  </div>
+                  <textarea className={textareaClass} rows={2} value={symptoms} onChange={(e) => setSymptoms(e.target.value)} placeholder="Symptoms & complaints..." />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Diagnosis &amp; Clinical Notes</h4>
+                    <VoiceDictationBar label="Dictate" onTranscript={(text) => setDiagnosis((prev) => (prev ? `${prev} ${text}` : text))} />
+                  </div>
+                  <input className={inputClass} value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Primary diagnosis e.g. Acute Bronchitis..." />
+                  <textarea className={textareaClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Clinical assessment &amp; treatment plan notes..." />
+                </div>
+              </div>
+
+              {/* Right Column: Prescriptions & Medicines */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Rx Prescription Lines ({rows.length})</h4>
+                  <button type="button" onClick={addRow} className="text-xs font-bold text-primary hover:underline">
+                    + Add Medicine
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                  {rows.map((row, i) => (
+                    <div key={i} className="space-y-2 p-3 rounded-xl border border-border bg-canvas/60">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-primary">#{i + 1}</span>
+                        <input
+                          className={inputClass}
+                          value={row.medicine}
+                          onChange={(e) => setRow(i, { medicine: e.target.value })}
+                          placeholder="Medicine name &amp; brand (e.g. Paracetamol 650mg)"
+                        />
+                        {rows.length > 1 && (
+                          <button type="button" onClick={() => removeRow(i)} className="p-1 text-muted-foreground hover:text-red">
+                            <IconX size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input className={inputClass} value={row.dosage || ''} onChange={(e) => setRow(i, { dosage: e.target.value })} placeholder="Dosage e.g. 1 tab" />
+                        <AppSelect value={row.frequency || ''} onChange={(v) => setRow(i, { frequency: v })} options={FREQ_OPTIONS} placeholder="Freq" />
+                        <input className={inputClass} inputMode="numeric" value={row.durationDays ?? ''} onChange={(e) => setRow(i, { durationDays: e.target.value ? Number(e.target.value) : undefined })} placeholder="Days" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeStep === 'vitals' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/80 pb-4">
               <div>

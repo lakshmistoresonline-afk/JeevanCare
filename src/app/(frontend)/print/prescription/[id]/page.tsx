@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { PrintButton } from '@/components/PrintButton'
-import { WhatsAppShareButton } from '@/components/WhatsAppShareButton'
+import { PrintFormatCustomizer } from '@/components/PrintFormatCustomizer'
 import { buildWhatsAppRxMessage } from '@/lib/whatsapp'
 import { formatDate, formatDateTime, ageFromDOB } from '@/lib/format'
 import { formatDoctorName, relId } from '@/lib/utils'
@@ -50,26 +49,20 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
   })
 
   return (
-    <main className="relative mx-auto w-full max-w-[150mm] bg-white px-8 py-10 text-[13px] text-ink print:max-w-none print:p-[12mm] overflow-hidden">
-      <style>{`@page { size: A5; margin: 0; } @media print { html, body { background: #fff; } }`}</style>
+    <main className="print-container relative mx-auto w-full max-w-[150mm] bg-white px-8 py-10 text-[13px] text-ink print:max-w-none print:p-[12mm] overflow-hidden">
+      <PrintFormatCustomizer
+        backHref={`/dashboard/patients/${relId(patient)}`}
+        waUrl={rxWaUrl}
+        waLabel="Send Rx via WhatsApp"
+      />
 
       {/* Professional Watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
         <span className="font-display text-7xl font-bold tracking-widest text-primary rotate-[-30deg]">JEEVANCARE VERIFIED RX</span>
       </div>
 
-      <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
-        <Link href={`/dashboard/patients/${relId(patient)}`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Back to patient
-        </Link>
-        <div className="flex items-center gap-2">
-          <WhatsAppShareButton href={rxWaUrl} label="Send Rx via WhatsApp" />
-          <PrintButton />
-        </div>
-      </div>
-
       {/* Letterhead */}
-      <header className="flex items-start justify-between border-b border-border pb-4">
+      <header className="print-header flex items-start justify-between border-b border-border pb-4">
         <div>
           <h1 className="font-display text-xl font-semibold tracking-tight">{tenant?.name}</h1>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -151,7 +144,7 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
           </div>
         </div>
 
-        <div className="text-end">
+        <div className="print-signature text-end">
           {(doctor as any)?.photoUrl ? (
             <img
               src={(doctor as any)?.photoUrl}
