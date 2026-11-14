@@ -172,10 +172,9 @@ export const usersReadAccess: Access = ({ req }) => {
   const user = req?.user
   if (user && isSuperAdmin(user)) return true
 
-  // Allow Payload's first-user check so /admin renders /admin/login instead of redirecting to /admin/create-first-user
   if (!user) {
     if ((req as any)?.overrideAccess || (req as any)?.payload?.overrideAccess) return true
-    return true
+    return false
   }
 
   const tenantID = getTenantID(user)

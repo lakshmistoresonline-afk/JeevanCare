@@ -20,9 +20,8 @@ export const Users: CollectionConfig = {
   auth: true,
   admin: { useAsTitle: 'email', defaultColumns: ['name', 'email', 'role', 'tenant'] },
   access: {
-    // Only superAdmins reach the Payload admin panel; tenant staff live entirely
-    // in the custom /dashboard (spec §6.4 — belt and suspenders with usersReadAccess).
-    admin: ({ req: { user } }) => isSuperAdmin(user),
+    // Allows unauthenticated users to see the /admin/login page; restricts authenticated admin access to superAdmins.
+    admin: ({ req: { user } }) => !user || isSuperAdmin(user),
     read: usersReadAccess,
     create: usersCreateAccess,
     update: usersUpdateAccess,
