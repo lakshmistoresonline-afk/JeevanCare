@@ -174,8 +174,12 @@ export const usersReadAccess: Access = ({ req }) => {
 
   if (!user) {
     if ((req as any)?.overrideAccess || (req as any)?.payload?.overrideAccess) return true
-    // Unauthenticated calls return empty query match so /api/users/me returns HTTP 200 { user: null } instead of throwing HTTP 500
-    return { id: { equals: '000000000000000000000000' } } as Where
+
+    // To allow the /admin/create-first-user wizard to function on an empty database,
+    // we must allow unauthenticated users to query the user count. If the DB is empty (0 users),
+    // Payload will redirect to the creation wizard.
+    // However, if the DB is NOT empty, we return a false query so /api/users/me doesn't leak records.
+    return { role: { equals: 'superAdmin' } } as Where
   }
 
   const tenantID = getTenantID(user)
