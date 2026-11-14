@@ -47,15 +47,30 @@ export default async function PatientsPage({
 }) {
   const { user } = await requireDashboardSession()
   const payload = await getPayloadClient()
-  const tenantID = getTenantID(user)!
+  const tenantID = getTenantID(user)
   const params = await searchParams
   const q = (params.q || '').trim()
   const page = Math.max(1, Number(params.page) || 1)
   const limit = PAGE_SIZES.includes(Number(params.limit)) ? Number(params.limit) : DEFAULT_PAGE_SIZE
 
-  const where: Where = { tenant: { equals: tenantID } }
+  const tenantCondition: Where = tenantID
+    ? { tenant: { equals: String(tenantID) } }
+    : { id: { equals: '000000000000000000000000' } }
+
+  let where: Where = tenantCondition
   if (q) {
-    where.or = [{ name: { like: q } }, { phone: { like: q } }, { mrn: { like: q } }]
+    where = {
+      and: [
+        tenantCondition,
+        {
+          or: [
+            { name: { like: q } },
+            { phone: { like: q } },
+            { mrn: { like: q } },
+          ],
+        },
+      ],
+    }
   }
 
   const res = await payload.find({
