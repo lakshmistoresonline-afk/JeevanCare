@@ -45,6 +45,20 @@ function getMongoDbInstance(payload: any): any {
   )
 }
 
+function toBsonId(idStr?: any): any {
+  if (!idStr) return crypto.randomBytes(12).toString('hex')
+  const str = String(idStr.id || idStr._id || idStr)
+  if (/^[0-9a-fA-F]{24}$/.test(str)) {
+    try {
+      const mongoose = require('mongoose')
+      return new mongoose.Types.ObjectId(str)
+    } catch {
+      return str
+    }
+  }
+  return str
+}
+
 async function resolveTenantID(
   payload: any,
   isSuper: boolean,
@@ -146,6 +160,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const tenantApptsCache = new Map<string, any[]>()
     const medicinesToInsert: any[] = []
     const appointmentsToInsert: any[] = []
+    const patientsToInsert: any[] = []
+    const patientUsersToInsert: any[] = []
     const walkInTokenTracker = new Map<string, number>()
 
     const cachedTenantsRes = await payload.find({
@@ -169,6 +185,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
       overrideAccess: true,
     })
     const globalDoctors = allDoctorsRes.docs
+
+    const allUsersRes = await payload.find({
+      collection: 'users',
+      limit: 1000,
+      overrideAccess: true,
+    })
+    const globalUsers = allUsersRes.docs
+
+    const existingPatientPhoneMap = new Map<string, any>()
+    for (const p of globalPatients) {
+      if (p.phone) {
+        const tid = typeof p.tenant === 'object' ? String(p.tenant.id) : String(p.tenant)
+        existingPatientPhoneMap.set(`${tid}_${p.phone}`, p)
+      }
+    }
+
+    const existingUserEmailMap = new Map<string, any>()
+    for (const u of globalUsers) {
+      if (u.email) {
+        existingUserEmailMap.set(u.email.toLowerCase(), u)
+      }
+    }
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i])
@@ -327,90 +365,72 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
           errors.push({ row: i, reason: err.message || 'Failed to create or update staff record.' })
         }
       } else if (normalizedType === 'patients') {
-        if (!row.name || !row.phone) {
-          errors.push({ row: i, reason: 'Missing required patient name or phone.' })
-          continue
-        }
-
-        const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
-        if (!targetTenantID) {
-          errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
-          continue
-        }
-
-        const ageYears = row.ageyears || row.age ? Number(row.ageyears || row.age) : 30
-        const gender = row.gender ? row.gender.toLowerCase() : 'other'
-        const rawPhone = row.phone || ''
-        const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
-        const patientPassword = row.password || 'Test@123'
-
         try {
-          let patient: any
-          if (cleanPhone) {
-            const existingPat = await payload.find({
-              collection: 'patients',
-              where: { tenant: { equals: targetTenantID }, phone: { equals: cleanPhone } },
-              limit: 1,
-              overrideAccess: true,
-            })
-            if (existingPat.docs.length > 0) {
-              patient = await payload.update({
-                collection: 'patients',
-                id: existingPat.docs[0].id,
-                overrideAccess: true,
-                data: {
-                  name: row.name,
-                  gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
-                  ageYears,
-                } as never,
-              })
-            }
+          if (!row.name || !row.phone) {
+            errors.push({ row: i, reason: 'Missing required patient name or phone.' })
+            continue
           }
 
-          if (!patient) {
-            patient = await payload.create({
-              collection: 'patients',
-              overrideAccess: true,
-              data: {
-                tenant: targetTenantID,
-                name: row.name,
-                phone: cleanPhone,
-                gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
-                ageYears,
-                mrn: row.mrn || undefined,
-              } as never,
-            })
+          const targetTenantID = await resolveTenantID(payload, isSuper, actor, row, i, cachedTenantsDocs)
+          if (!targetTenantID) {
+            errors.push({ row: i, reason: `Could not determine target clinic tenant for row ${i}. Please check clinic name.` })
+            continue
+          }
+
+          const ageYears = row.ageyears || row.age ? Number(row.ageyears || row.age) : 30
+          const gender = row.gender ? row.gender.toLowerCase() : 'other'
+          const rawPhone = row.phone || ''
+          const cleanPhone = /^\+?[0-9]{7,15}$/.test(rawPhone.replace(/[\s-]/g, '')) ? rawPhone : undefined
+          const patientPassword = row.password || 'Test@123'
+
+          const cacheKey = `${targetTenantID}_${cleanPhone}`
+          let existingPat = existingPatientPhoneMap.get(cacheKey)
+
+          let patientId: any
+          if (!existingPat) {
+            patientId = toBsonId(crypto.randomBytes(12).toString('hex'))
+            const newPatDoc = {
+              _id: patientId,
+              tenant: toBsonId(targetTenantID),
+              name: row.name,
+              phone: cleanPhone,
+              gender: ['male', 'female', 'other'].includes(gender) ? gender : 'other',
+              ageYears,
+              mrn: row.mrn || `MRN-TH-${String(i).padStart(3, '0')}`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+            patientsToInsert.push(newPatDoc)
+            existingPatientPhoneMap.set(cacheKey, newPatDoc)
+          } else {
+            patientId = toBsonId(existingPat.id || existingPat._id)
           }
 
           if (row.email) {
-            const existingUser = await payload.find({
-              collection: 'users',
-              where: { email: { equals: row.email.toLowerCase() } },
-              limit: 1,
-              overrideAccess: true,
-            })
-            if (existingUser.docs.length === 0) {
-              await payload.create({
-                collection: 'users',
-                overrideAccess: true,
-                data: {
-                  name: row.name,
-                  email: row.email.toLowerCase(),
-                  password: patientPassword,
-                  role: 'patient',
-                  tenant: targetTenantID,
-                  phone: cleanPhone,
-                  patientProfile: patient.id,
-                  active: true,
-                  emailVerified: true,
-                } as never,
-              }).catch(() => {})
+            const targetEmail = row.email.toLowerCase()
+            if (!existingUserEmailMap.has(targetEmail)) {
+              const newUserDoc = {
+                _id: toBsonId(crypto.randomBytes(12).toString('hex')),
+                name: row.name,
+                email: targetEmail,
+                password: patientPassword,
+                role: 'patient',
+                tenant: toBsonId(targetTenantID),
+                phone: cleanPhone,
+                patientProfile: patientId,
+                active: true,
+                emailVerified: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+              patientUsersToInsert.push(newUserDoc)
+              existingUserEmailMap.set(targetEmail, newUserDoc)
             }
           }
 
           importedCount++
         } catch (err: any) {
-          errors.push({ row: i, reason: err.message || 'Failed to create or update patient record.' })
+          errors.push({ row: i, reason: err.message || 'Failed to process patient record.' })
         }
       } else if (normalizedType === 'appointments') {
         try {
@@ -543,33 +563,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
       } catch {}
     }
 
-    if (normalizedType === 'appointments' && appointmentsToInsert.length > 0) {
+    if (normalizedType === 'patients' && (patientsToInsert.length > 0 || patientUsersToInsert.length > 0)) {
       try {
         const rawDb = getMongoDbInstance(payload)
         if (rawDb) {
-          const col = rawDb.collection('appointments')
-          const CHUNK_SIZE = 500
-          for (let b = 0; b < appointmentsToInsert.length; b += CHUNK_SIZE) {
-            const batch = appointmentsToInsert.slice(b, b + CHUNK_SIZE)
-            await col.insertMany(batch, { ordered: false }).catch(() => {})
+          if (patientsToInsert.length > 0) {
+            const colP = rawDb.collection('patients')
+            for (let b = 0; b < patientsToInsert.length; b += 500) {
+              const batch = patientsToInsert.slice(b, b + 500)
+              await colP.insertMany(batch, { ordered: false }).catch(() => {})
+            }
           }
-        } else {
-          const CHUNK_SIZE = 50
-          for (let b = 0; b < appointmentsToInsert.length; b += CHUNK_SIZE) {
-            const batch = appointmentsToInsert.slice(b, b + CHUNK_SIZE)
-            await Promise.all(
-              batch.map((doc) =>
-                payload.create({
-                  collection: 'appointments',
-                  overrideAccess: true,
-                  data: doc as never,
-                }).catch(() => null)
-              )
-            )
+          if (patientUsersToInsert.length > 0) {
+            const colU = rawDb.collection('users')
+            for (let b = 0; b < patientUsersToInsert.length; b += 500) {
+              const batch = patientUsersToInsert.slice(b, b + 500)
+              await colU.insertMany(batch, { ordered: false }).catch(() => {})
+            }
           }
         }
       } catch (err: any) {
-        console.error('Appointments insertion error:', err)
+        console.error('Patients insertion error:', err)
       }
     }
 
