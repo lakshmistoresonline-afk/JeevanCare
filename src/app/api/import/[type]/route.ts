@@ -569,15 +569,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         if (rawDb) {
           if (patientsToInsert.length > 0) {
             const colP = rawDb.collection('patients')
-            for (let b = 0; b < patientsToInsert.length; b += 500) {
-              const batch = patientsToInsert.slice(b, b + 500)
+            const mappedPatients = patientsToInsert.map(p => ({
+              ...p,
+              tenant: toBsonId(p.tenant)
+            }))
+            for (let b = 0; b < mappedPatients.length; b += 500) {
+              const batch = mappedPatients.slice(b, b + 500)
               await colP.insertMany(batch, { ordered: false }).catch(() => {})
             }
           }
           if (patientUsersToInsert.length > 0) {
             const colU = rawDb.collection('users')
-            for (let b = 0; b < patientUsersToInsert.length; b += 500) {
-              const batch = patientUsersToInsert.slice(b, b + 500)
+            const mappedUsers = patientUsersToInsert.map(u => ({
+              ...u,
+              tenant: toBsonId(u.tenant),
+              patientProfile: toBsonId(u.patientProfile)
+            }))
+            for (let b = 0; b < mappedUsers.length; b += 500) {
+              const batch = mappedUsers.slice(b, b + 500)
               await colU.insertMany(batch, { ordered: false }).catch(() => {})
             }
           }
