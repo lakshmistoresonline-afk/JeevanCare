@@ -40,7 +40,7 @@ export const Users: CollectionConfig = {
           )
         }
         // Self-serve owners confirm their email before anything else (BACKLOG §1.1).
-        if (user.emailVerified === false) {
+        if (user.role !== 'superAdmin' && user.emailVerified === false) {
           throw new APIError(
             'Verify your email first — check your inbox for the confirmation link.',
             403,
