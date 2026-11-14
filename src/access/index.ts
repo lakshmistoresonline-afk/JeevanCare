@@ -174,7 +174,8 @@ export const usersReadAccess: Access = ({ req }) => {
 
   if (!user) {
     if ((req as any)?.overrideAccess || (req as any)?.payload?.overrideAccess) return true
-    return false
+    // Unauthenticated calls return empty query match so /api/users/me returns HTTP 200 { user: null } instead of throwing HTTP 500
+    return { id: { equals: '000000000000000000000000' } } as Where
   }
 
   const tenantID = getTenantID(user)
