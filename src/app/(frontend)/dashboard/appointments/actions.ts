@@ -101,14 +101,7 @@ export async function updateAppointmentStatus(
       return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to update this appointment." }
     }
 
-    await payload.update({
-      collection: 'appointments',
-      id,
-      overrideAccess: true,
-      data: { status, ...(cancellationReason ? { cancellationReason } : {}) } as never,
-    })
-
-    // If marking appointment completed, ensure an invoice is guaranteed to exist
+    // Strict Discharge Payment Gate: Cannot mark appointment completed if patient has unpaid balance
     if (status === 'completed') {
       const patientID = relId(existingAppt.patient)
       const doctorID = relId(existingAppt.doctor)
@@ -121,7 +114,17 @@ export async function updateAppointmentStatus(
         overrideAccess: true,
       })
 
-      if (invoices.docs.length === 0 && patientID) {
+      if (invoices.docs.length > 0) {
+        const inv = invoices.docs[0] as any
+        if ((inv.balanceDue ?? 0) > 0 && inv.paymentStatus !== 'paid') {
+          return {
+            ok: false,
+            code: 'PAYMENT_REQUIRED',
+            message: `Cannot discharge patient: Unpaid balance of ₹${inv.balanceDue}. Please collect payment before completing consultation.`,
+          }
+        }
+      } else if (patientID) {
+        // Auto-create unpaid invoice if missing, and block completion until paid
         const doctor = doctorID ? (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true }).catch(() => null)) as User : null
         const fee = typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0 ? doctor.consultationFee : 800
 
@@ -146,8 +149,21 @@ export async function updateAppointmentStatus(
             voided: false,
           } as never,
         }).catch(() => null)
+
+        return {
+          ok: false,
+          code: 'PAYMENT_REQUIRED',
+          message: `Cannot discharge patient: Unpaid consultation fee of ₹${fee}. Please collect payment before completing consultation.`,
+        }
       }
     }
+
+    await payload.update({
+      collection: 'appointments',
+      id,
+      overrideAccess: true,
+      data: { status, ...(cancellationReason ? { cancellationReason } : {}) } as never,
+    })
 
     try { revalidatePath('/dashboard/appointments') } catch {}
     try { revalidatePath('/dashboard/invoices') } catch {}
