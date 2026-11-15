@@ -56,6 +56,7 @@ export function VisitForm({
     amountPaid: number
     paymentMethod: string
   }
+  doctorId?: string
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -380,6 +381,17 @@ export function VisitForm({
                       </div>
                     </div>
                   ))}
+
+                  {/* Medicine Directory Search with Presets enabled in Speed Mode */}
+                  <div className="pt-4 mt-4 border-t border-border/60">
+                    <MedicineDirectorySearch
+                      onSelectMedicine={(item) => {
+                        const emptyIdx = rows.findIndex((r) => !r.medicine)
+                        if (emptyIdx >= 0) setRow(emptyIdx, item)
+                        else setRows((r) => [...r, item])
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

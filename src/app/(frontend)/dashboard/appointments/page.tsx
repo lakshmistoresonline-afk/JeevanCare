@@ -84,6 +84,7 @@ export default async function AppointmentsPage({
         reasonForVisit: true,
         checkedInAt: true,
       },
+      // Narrow populated fields (if payload 3 supports population via depth: 1, it will at least shrink the main obj)
     }),
     payload.find({
       collection: 'invoices',

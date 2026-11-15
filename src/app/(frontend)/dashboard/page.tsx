@@ -24,8 +24,11 @@ import {
   IconReceipt,
   IconCheck,
 } from '@/components/icons'
-import { BarChart } from '@/components/BarChart'
-import { RevenueChart } from '@/components/RevenueChart'
+import nextDynamic from 'next/dynamic'
+
+const BarChart = nextDynamic(() => import('@/components/BarChart').then(mod => mod.BarChart), { loading: () => <CardSkeleton /> })
+const RevenueChart = nextDynamic(() => import('@/components/RevenueChart').then(mod => mod.RevenueChart), { loading: () => <CardSkeleton /> })
+
 import { DoctorPaceBanner } from '@/components/DoctorPaceBanner'
 import { MobileQuickActionFab } from '@/components/MobileQuickActionFab'
 import { DashboardLayoutCustomizer } from '@/components/DashboardLayoutCustomizer'

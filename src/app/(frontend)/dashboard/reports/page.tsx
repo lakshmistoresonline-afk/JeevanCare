@@ -7,7 +7,11 @@ import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { Card, PageTitle, EmptyState, Th, Td } from '@/components/primitives'
 import { MetricCard } from '@/components/MetricCard'
 import { DashboardWidgetError } from '@/components/DashboardWidgetError'
-import { RevenueChart } from '@/components/RevenueChart'
+import nextDynamic from 'next/dynamic'
+import { CardSkeleton } from '@/components/ui/skeleton'
+
+const RevenueChart = nextDynamic(() => import('@/components/RevenueChart').then(mod => mod.RevenueChart), { loading: () => <CardSkeleton /> })
+
 import {
   IconChevronLeft,
   IconChevronRight,

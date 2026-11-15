@@ -6,7 +6,11 @@ import { AllergyBanner, Card, StatusBadge, EmptyState, Avatar, btnPrimary, btnGh
 import { IconChevronLeft, IconPhone, IconPlus, IconPrinter } from '@/components/icons'
 import { ageFromDOB, formatDateTime, formatMoney } from '@/lib/format'
 import { getPatientTimeline } from '@/lib/timeline'
-import { VitalsChart } from '@/components/VitalsChart'
+import dynamic from 'next/dynamic'
+import { CardSkeleton } from '@/components/ui/skeleton'
+
+const VitalsChart = dynamic(() => import('@/components/VitalsChart').then(mod => mod.VitalsChart), { loading: () => <CardSkeleton /> })
+
 import type { Appointment, Invoice, Patient, User } from '@/payload-types'
 import type { AppointmentStatus } from '@/lib/constants'
 import { MedicalDocumentUpload } from '@/components/MedicalDocumentUpload'
