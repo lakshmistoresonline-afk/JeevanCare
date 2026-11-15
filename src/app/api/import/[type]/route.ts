@@ -596,6 +596,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
       }
     }
 
+    if (normalizedType === 'appointments' && appointmentsToInsert.length > 0) {
+      try {
+        const rawDb = getMongoDbInstance(payload)
+        if (rawDb) {
+          const colA = rawDb.collection('appointments')
+          const mappedAppts = appointmentsToInsert.map(a => ({
+            ...a,
+            tenant: toBsonId(a.tenant),
+            patient: toBsonId(a.patient),
+            doctor: toBsonId(a.doctor),
+          }))
+          for (let b = 0; b < mappedAppts.length; b += 500) {
+            const batch = mappedAppts.slice(b, b + 500)
+            await colA.insertMany(batch, { ordered: false }).catch(() => {})
+          }
+        }
+      } catch (err: any) {
+        console.error('Appointments insertion error:', err)
+      }
+    }
+
     const tenantForAudit = getTenantID(actor)
     if (tenantForAudit) {
       await (payload.create as any)({
