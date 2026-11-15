@@ -45,7 +45,7 @@ export default async function AppointmentsPage({
   const dayStart = startOfDayInTz(tz, 0, new Date(Date.UTC(y, m - 1, d, 12)))
   const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
 
-  const [doctorsRes, apptsRes, invoicesRes] = await Promise.all([
+  const [doctorsRes, apptsRes, invoicesRes, patientsRes] = await Promise.all([
     payload.find({
       collection: 'users',
       where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
@@ -87,7 +87,23 @@ export default async function AppointmentsPage({
         paymentStatus: true,
       },
     }),
+    payload.find({
+      collection: 'patients',
+      where: { tenant: { equals: tenantID } },
+      limit: 500,
+      overrideAccess: true,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+      },
+    }),
   ])
+
+  const patientMap = new Map<string, string>()
+  for (const p of (patientsRes?.docs || []) as Patient[]) {
+    patientMap.set(String(p.id), p.name)
+  }
 
   const paidPatientsSet = new Set<string>()
   for (const inv of (invoicesRes?.docs || []) as any[]) {
@@ -141,27 +157,33 @@ export default async function AppointmentsPage({
       availabilityNote,
       blocks: (apptsRes.docs as Appointment[])
         .filter((a) => String((a.doctor as User)?.id ?? a.doctor) === String(doc.id))
-        .map((a) => ({
-          id: String(a.id),
-          patientName: (a.patient as Patient)?.name ?? 'Patient',
-          reason: a.reason ?? '',
-          status: a.status as AppointmentStatus,
-          timeLabel: formatTime(a.start, tenant),
-          startMinutes: minutesFromMidnight(new Date(a.start), tz),
-          durationMins: a.durationMins,
-          isWalkIn: Boolean(a.isWalkIn),
-          token: (a as { tokenNumber?: string }).tokenNumber,
-          doctorName: doc.name,
-          isPaid: paidPatientsSet.has(String((a.patient as Patient)?.id ?? a.patient)),
-          waHref: waReminderLink({
-            phone: (a.patient as Patient)?.phone,
-            currency: tenant?.settings?.currency,
-            doctorName: doc.name,
-            clinicName: tenant?.name ?? 'the clinic',
-            dateLabel: prettyDate,
+        .map((a) => {
+          const patDoc = typeof a.patient === 'object' && a.patient !== null ? (a.patient as Patient) : null
+          const patId = String(patDoc?.id ?? a.patient ?? '')
+          const resolvedPatientName = patDoc?.name || patientMap.get(patId) || 'Patient'
+
+          return {
+            id: String(a.id),
+            patientName: resolvedPatientName,
+            reason: a.reason ?? '',
+            status: a.status as AppointmentStatus,
             timeLabel: formatTime(a.start, tenant),
-          }),
-        })),
+            startMinutes: minutesFromMidnight(new Date(a.start), tz),
+            durationMins: a.durationMins,
+            isWalkIn: Boolean(a.isWalkIn),
+            token: (a as { tokenNumber?: string }).tokenNumber,
+            doctorName: doc.name,
+            isPaid: paidPatientsSet.has(patId),
+            waHref: waReminderLink({
+              phone: patDoc?.phone,
+              currency: tenant?.settings?.currency,
+              doctorName: doc.name,
+              clinicName: tenant?.name ?? 'the clinic',
+              dateLabel: prettyDate,
+              timeLabel: formatTime(a.start, tenant),
+            }),
+          }
+        }),
     }
   })
 
