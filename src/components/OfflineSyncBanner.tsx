@@ -63,8 +63,18 @@ export function OfflineSyncBanner() {
         if (res.ok) {
           await clearDraftVisit(draft.appointmentId)
           syncedCount++
+        } else {
+          // Dead Letter Queue pattern: if server rejects draft, flag it but don't crash
+          toast.error(`Draft sync failed for ${draft.patientName || 'patient'}: ${res.message}`)
+
+          // Clear draft if it's a hard validation failure to prevent infinite retry loops
+          if (res.message.includes('already been recorded') || res.message.includes('not found')) {
+            await clearDraftVisit(draft.appointmentId)
+          }
         }
-      } catch {}
+      } catch (err: any) {
+        toast.error(`Network error syncing draft for ${draft.patientName}: ${err.message}`)
+      }
     }
 
     setSyncing(false)

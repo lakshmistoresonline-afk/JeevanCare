@@ -196,10 +196,10 @@ export const Invoices: CollectionConfig = {
         data.amountPaid = money(paid)
         data.balanceDue = money(data.totalAmount - data.amountPaid)
 
-        // --- overpayment guard ---
+        // Allow partial or full refunds (balanceDue > totalAmount) but block net overpayments.
         if (data.amountPaid > data.totalAmount + 1e-9) {
           throw new APIError(
-            `Payment exceeds the remaining balance (${data.totalAmount}).`,
+            `Payment total (${data.amountPaid}) exceeds the remaining balance (${data.totalAmount}).`,
             400,
             { code: ERROR_CODES.PAYMENT_EXCEEDS_BALANCE },
           )
@@ -282,9 +282,17 @@ export const Invoices: CollectionConfig = {
           name: 'amount',
           type: 'number',
           required: true,
-          min: 0,
+          // Support double-entry refunds and partial adjustments in the ledger
           validate: (value: number | null | undefined) =>
-            value != null && value > 0 ? true : 'A payment must be greater than zero.',
+            value != null && value !== 0 ? true : 'A payment entry must be non-zero (negative for refunds).',
+        },
+        {
+          name: 'refundReason',
+          type: 'text',
+          admin: {
+            condition: (data, siblingData) => typeof siblingData?.amount === 'number' && siblingData.amount < 0,
+            description: 'Required if this entry is a refund.',
+          }
         },
         {
           name: 'method',
