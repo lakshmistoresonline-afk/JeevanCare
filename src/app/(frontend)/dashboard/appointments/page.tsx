@@ -72,19 +72,6 @@ export default async function AppointmentsPage({
       depth: 1,
       overrideAccess: true,
       sort: 'start',
-      select: {
-        id: true,
-        start: true,
-        end: true,
-        status: true,
-        doctor: true,
-        patient: true,
-        isWalkIn: true,
-        tokenNumber: true,
-        reasonForVisit: true,
-        checkedInAt: true,
-      },
-      // Narrow populated fields (if payload 3 supports population via depth: 1, it will at least shrink the main obj)
     }),
     payload.find({
       collection: 'invoices',
