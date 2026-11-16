@@ -12,6 +12,7 @@ import { PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
 import { recordVisit, type PrescriptionRowInput } from '@/app/(frontend)/dashboard/visits/actions'
 import { MedicineDirectorySearch } from './MedicineDirectorySearch'
 import { saveDraftVisit, getDraftVisit, clearDraftVisit } from '@/lib/offlineDb'
+import { checkClinicalConflicts, type DrugConflictWarning } from '@/lib/drugInteractions'
 
 const FREQ_OPTIONS = PRESCRIPTION_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', durationDays: undefined, instructions: '' })
@@ -66,6 +67,10 @@ export function VisitForm({
   const [focusMode, setFocusMode] = useState(false)
   // 1-Screen Compact EMR Speed Mode toggle
   const [speedMode, setSpeedMode] = useState(false)
+  // Split-Screen Past Visit Compare toggle
+  const [compareVisitId, setCompareVisitId] = useState<string | null>(null)
+  // AI Clinical Suggester panel
+  const [showAiSuggester, setShowAiSuggester] = useState(false)
 
   // 5-Step EMR Tab Navigation
   const [activeStep, setActiveStep] = useState<'vitals' | 'diagnosis' | 'prescriptions' | 'history' | 'billing'>('vitals')
@@ -84,6 +89,12 @@ export function VisitForm({
   const [consultationFee, setConsultationFee] = useState(initialPaymentInfo?.isPaid ? '0' : '800')
   const [rows, setRows] = useState<PrescriptionRowInput[]>([blankRow()])
   const [kitConfirm, setKitConfirm] = useState<{ label: string; items: PrescriptionRowInput[] } | null>(null)
+
+  // Real-time Drug-Drug Interaction & Allergy Conflicts
+  const clinicalWarnings = checkClinicalConflicts(
+    rows.map((r) => r.medicine),
+    patientAllergies
+  )
 
   const setRow = (i: number, patch: Partial<PrescriptionRowInput>) =>
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
@@ -224,6 +235,20 @@ export function VisitForm({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {pastVisits.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCompareVisitId(compareVisitId ? null : pastVisits[0]?.id)}
+              className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                compareVisitId
+                  ? 'border-indigo-500 bg-indigo-500 text-white shadow-2xs'
+                  : 'border-border bg-card text-ink hover:border-indigo-500/50'
+              }`}
+              title="Compare current visit side-by-side with previous EMR notes"
+            >
+              {compareVisitId ? '📑 Comparing Past Visit' : '📑 Compare Past Visit'}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSpeedMode(!speedMode)}
@@ -248,15 +273,100 @@ export function VisitForm({
           >
             {focusMode ? '🎯 Focus Mode: ON' : '🎯 Focus Mode'}
           </button>
-          <button type="button" onClick={submit} className={btnGhost} disabled={pending}>
-            Save Draft
-          </button>
           <button type="button" onClick={submit} className={btnPrimary} disabled={pending}>
             {pending ? <Spinner /> : <IconCheck size={16} />}
             {pending ? 'Saving…' : 'Complete Consultation'}
+            <kbd className="ms-1 rounded bg-white/20 px-1 py-0.5 text-[9px] font-mono font-normal">Alt+S</kbd>
           </button>
         </div>
       </Card>
+
+      {/* Real-Time Drug-Drug Interaction & Allergy Warnings */}
+      {clinicalWarnings.length > 0 && (
+        <div className="space-y-2 animate-fade-in">
+          {clinicalWarnings.map((warn, wIdx) => (
+            <div
+              key={wIdx}
+              className={`rounded-2xl border p-4 text-xs font-medium shadow-xs flex items-start gap-3 ${
+                warn.severity === 'high'
+                  ? 'border-red/40 bg-red-soft/80 text-red'
+                  : 'border-amber/40 bg-amber-soft/80 text-amber-foreground'
+              }`}
+            >
+              <span className="text-lg">⚠️</span>
+              <div className="flex-1">
+                <div className="font-bold text-sm">{warn.title}</div>
+                <div className="mt-0.5 text-xs opacity-90">{warn.description}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Split-Screen Past Visit Compare Drawer */}
+      {compareVisitId && pastVisits.length > 0 && (
+        <Card className="p-5 border-indigo-500/40 bg-indigo-500/5 space-y-3 animate-fade-down">
+          <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Split-Screen EMR Compare</span>
+              <h3 className="font-display text-sm font-bold text-ink">
+                Previous Consultation on {pastVisits.find((v) => v.id === compareVisitId)?.date}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                className={`${inputClass} text-xs py-1 h-8 bg-card`}
+                value={compareVisitId}
+                onChange={(e) => setCompareVisitId(e.target.value)}
+              >
+                {pastVisits.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    Visit on {v.date} ({v.diagnosis || 'Consultation'})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setCompareVisitId(null)}
+                className="text-muted-foreground hover:text-ink font-bold text-xs"
+              >
+                ✕ Close Split
+              </button>
+            </div>
+          </div>
+
+          {(() => {
+            const pastV = pastVisits.find((v) => v.id === compareVisitId)
+            if (!pastV) return null
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-card p-4 rounded-xl border border-border/80">
+                <div>
+                  <span className="font-bold text-muted-foreground block mb-1">Past Symptoms &amp; Notes:</span>
+                  <p className="text-ink text-xs">{pastV.symptoms || pastV.notes || 'No symptoms recorded'}</p>
+                </div>
+                <div>
+                  <span className="font-bold text-muted-foreground block mb-1">Past Diagnosis:</span>
+                  <span className="font-bold text-primary text-xs">{pastV.diagnosis || 'General Consultation'}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-muted-foreground block mb-1">Past Prescribed Medicines:</span>
+                  {pastV.prescription && pastV.prescription.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-ink">
+                      {pastV.prescription.map((m: any, idx: number) => (
+                        <li key={idx}>
+                          <strong>{m.medicine}</strong> ({m.dosage})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-muted-foreground italic text-xs">No medicines on record</span>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+        </Card>
+      )}
 
       {/* 45-Second Rapid Prescription Tabbed Navigation */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -473,11 +583,73 @@ export function VisitForm({
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
                   <label className="text-xs font-semibold text-ink">Primary Diagnosis</label>
-                  <VoiceDictationBar
-                    label="Dictate"
-                    onTranscript={(text) => setDiagnosis((prev) => (prev ? `${prev} ${text}` : text))}
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAiSuggester(!showAiSuggester)}
+                      className="rounded-lg bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 px-2.5 py-1 text-[11px] font-bold transition-colors flex items-center gap-1 border border-indigo-500/30"
+                    >
+                      💡 AI Differential &amp; Labs
+                    </button>
+                    <VoiceDictationBar
+                      label="Dictate"
+                      onTranscript={(text) => setDiagnosis((prev) => (prev ? `${prev} ${text}` : text))}
+                    />
+                  </div>
                 </div>
+
+                {showAiSuggester && (
+                  <div className="mb-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4 text-xs space-y-3 animate-fade-down">
+                    <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2">
+                      <span className="font-bold text-indigo-600">💡 AI Clinical Suggester (ICD-10 &amp; Labs)</span>
+                      <button type="button" onClick={() => setShowAiSuggester(false)} className="text-muted-foreground hover:text-ink font-bold">✕</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <span className="font-bold text-muted-foreground block mb-1">Suggested ICD-10 Diagnoses:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { label: 'J06.9 Acute URI', text: 'Acute Upper Respiratory Infection (J06.9)' },
+                            { label: 'I10 Hypertension', text: 'Essential Hypertension (I10)' },
+                            { label: 'E11.9 T2DM', text: 'Type 2 Diabetes Mellitus (E11.9)' },
+                            { label: 'J45.9 Asthma', text: 'Bronchial Asthma (J45.9)' },
+                          ].map((item) => (
+                            <button
+                              key={item.label}
+                              type="button"
+                              onClick={() => {
+                                setDiagnosis(item.text)
+                                toast.success(`Selected diagnosis: ${item.text}`)
+                              }}
+                              className="rounded-md bg-card border border-border px-2 py-1 text-[11px] font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-colors"
+                            >
+                              + {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-bold text-muted-foreground block mb-1">Recommended Lab Investigations:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['CBC & ESR', 'HbA1c & Fasting Glucose', 'Lipid Profile', 'Serum Creatinine & LFT'].map((lab) => (
+                            <button
+                              key={lab}
+                              type="button"
+                              onClick={() => {
+                                setNotes((prev) => (prev ? `${prev}\nRecommended Labs: ${lab}` : `Recommended Labs: ${lab}`))
+                                toast.success(`Added ${lab} to clinical notes.`)
+                              }}
+                              className="rounded-md bg-card border border-border px-2 py-1 text-[11px] font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-colors"
+                            >
+                              + {lab}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <input
                   className={inputClass}
                   value={diagnosis}

@@ -9,6 +9,7 @@ import { MetricCard } from '@/components/MetricCard'
 import { DashboardWidgetError } from '@/components/DashboardWidgetError'
 import nextDynamic from 'next/dynamic'
 import { CardSkeleton } from '@/components/ui/skeleton'
+import { TrafficHeatmap } from '@/components/TrafficHeatmap'
 
 const RevenueChart = nextDynamic(() => import('@/components/RevenueChart').then(mod => mod.RevenueChart), { loading: () => <CardSkeleton /> })
 
@@ -192,6 +193,11 @@ export default async function ReportsPage({
                 <RevenueChart data={report.daily} currency={report.currency} />
               </div>
             </Card>
+          </DashboardWidgetError>
+
+          {/* Hourly Patient Traffic & OPD Congestion Heatmap */}
+          <DashboardWidgetError title="OPD Traffic Congestion Heatmap">
+            <TrafficHeatmap />
           </DashboardWidgetError>
 
           {/* Per-doctor table */}

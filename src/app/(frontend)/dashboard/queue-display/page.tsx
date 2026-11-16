@@ -89,33 +89,34 @@ export default async function QueueDisplayPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             {doctorGroups.map((group, gIdx) => (
-              <div key={gIdx} className="rounded-3xl border border-sidebar-accent/30 bg-sidebar-soft p-8 shadow-2xl flex flex-col justify-between space-y-6">
+              <div key={gIdx} className="rounded-3xl border border-white/20 bg-sidebar-soft/70 backdrop-blur-md p-8 shadow-2xl flex flex-col justify-between space-y-6 ring-1 ring-white/10">
                 {/* Doctor Room Header */}
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center justify-between border-b border-white/15 pb-4">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-sidebar-accent">Doctor Room</span>
-                    <h2 className="font-display text-xl font-bold text-white mt-0.5">{group.doctorName}</h2>
+                    <span className="text-xs font-bold uppercase tracking-wider text-sidebar-accent">Doctor OPD Room</span>
+                    <h2 className="font-display text-2xl font-bold text-white mt-0.5">{group.doctorName}</h2>
                   </div>
-                  <span className="rounded-full bg-sidebar-accent/20 px-3 py-1 text-xs font-bold text-sidebar-accent">
-                    {group.upcoming.length + (group.current ? 1 : 0)} in OPD
+                  <span className="rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/30 animate-pulse">
+                    🟢 {group.upcoming.length + (group.current ? 1 : 0)} Active in Queue
                   </span>
                 </div>
 
-                {/* Now Serving Card */}
-                <div className="rounded-2xl border border-sidebar-accent/40 bg-black/40 p-6 text-center shadow-inner">
+                {/* Now Serving Card with Glassmorphism & Glowing Token */}
+                <div className="rounded-2xl border border-sidebar-accent/50 bg-black/60 backdrop-blur-lg p-8 text-center shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
                   <div className="text-xs font-extrabold uppercase tracking-widest text-sidebar-accent">Now Serving</div>
                   {group.current ? (
-                    <div className="mt-3">
-                      <div className="font-display text-6xl font-extrabold tracking-tight text-sidebar-active-fg">
+                    <div className="mt-4">
+                      <div className="font-display text-7xl font-extrabold tracking-tight text-sidebar-active-fg drop-shadow-md">
                         {(group.current as any).tokenNumber || 'Walk-in'}
                       </div>
-                      <div className="mt-2 text-xl font-bold text-white truncate">
+                      <div className="mt-3 text-2xl font-extrabold text-white truncate">
                         {(group.current as any).patient?.name || 'Patient'}
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 text-base font-medium text-sidebar-foreground">
-                      No patient in room.
+                    <div className="mt-5 text-lg font-medium text-sidebar-foreground">
+                      No patient currently called into room.
                     </div>
                   )}
                 </div>
@@ -124,18 +125,20 @@ export default async function QueueDisplayPage() {
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-sidebar-foreground">Up Next in Queue</h3>
                   {group.upcoming.length === 0 ? (
-                    <p className="text-xs text-sidebar-foreground italic">No further patients waiting for this doctor.</p>
+                    <p className="text-xs text-sidebar-foreground italic">No further patients waiting in lobby for this doctor.</p>
                   ) : (
-                    <ul className="space-y-2">
+                    <ul className="space-y-2.5">
                       {group.upcoming.slice(0, 4).map((u: any, idx: number) => (
-                        <li key={u.id} className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-2.5 border border-white/5 text-xs">
-                          <div className="flex items-center gap-3">
-                            <span className="flex size-7 items-center justify-center rounded-md bg-sidebar-accent/20 font-bold text-sidebar-accent text-xs">
+                        <li key={u.id} className="flex items-center justify-between rounded-xl bg-white/10 backdrop-blur-xs px-4 py-3 border border-white/10 text-xs shadow-xs">
+                          <div className="flex items-center gap-3.5">
+                            <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-accent/20 font-extrabold text-sidebar-accent text-xs border border-sidebar-accent/30">
                               {u.tokenNumber || `#${idx + 2}`}
                             </span>
-                            <span className="font-semibold text-white">{u.patient?.name || 'Patient'}</span>
+                            <span className="font-bold text-white text-sm">{u.patient?.name || 'Patient'}</span>
                           </div>
-                          <span className="text-[11px] font-semibold text-sidebar-foreground">Waiting</span>
+                          <span className="rounded-full bg-blue-500/20 px-3 py-0.5 text-[11px] font-bold text-blue-300 border border-blue-500/30">
+                            Waiting in Lobby
+                          </span>
                         </li>
                       ))}
                     </ul>

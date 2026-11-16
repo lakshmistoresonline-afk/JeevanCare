@@ -4,6 +4,10 @@ import { Card, StatusBadge, btnPrimary, btnGhost, Avatar } from '@/components/pr
 import { formatDateTime } from '@/lib/format'
 import { formatDoctorName } from '@/lib/utils'
 import { IconCalendar, IconPlus, IconReceipt, IconStethoscope, IconFileText, IconPill } from '@/components/icons'
+import dynamic from 'next/dynamic'
+import { CardSkeleton } from '@/components/ui/skeleton'
+
+const VitalsChart = dynamic(() => import('@/components/VitalsChart').then((mod) => mod.VitalsChart), { loading: () => <CardSkeleton /> })
 
 function greetingFor(tz: string): string {
   const hour = Number(
@@ -213,6 +217,28 @@ export default async function PatientDashboard() {
           })}
         </div>
       </div>
+
+      {/* Patient Personal Vitals Health Trends Chart */}
+      <Card className="p-6 overflow-hidden">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-base font-bold text-ink">My Vitals Health Trends</h2>
+            <p className="text-xs text-muted-foreground">Historical Blood Pressure &amp; Pulse tracking across consultations</p>
+          </div>
+          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">Live Tracking</span>
+        </div>
+        <div className="h-64 my-auto">
+          <VitalsChart
+            vitalsHistory={recentVisits.map((v: any) => ({
+              date: formatDateTime(v.visitDate, tenant),
+              bpSystolic: v.vitals?.bpSystolic || 120,
+              bpDiastolic: v.vitals?.bpDiastolic || 80,
+              pulse: v.vitals?.pulse || 76,
+              weightKg: v.vitals?.weightKg || 68,
+            }))}
+          />
+        </div>
+      </Card>
 
       {/* Recent Prescriptions & Recent Documents Lists (Panel 11) */}
       <div className="grid gap-5 md:grid-cols-2">

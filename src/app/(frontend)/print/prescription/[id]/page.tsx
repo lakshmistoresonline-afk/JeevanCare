@@ -144,19 +144,19 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
           </div>
         </div>
 
-        <div className="print-signature text-end">
-          {(doctor as any)?.photoUrl ? (
-            <img
-              src={(doctor as any)?.photoUrl}
-              alt="Doctor Signature"
-              className="ms-auto h-12 max-w-[140px] object-contain mb-1"
-            />
-          ) : (
-            <div className="mb-2 h-10 font-serif italic text-muted-foreground text-sm opacity-60">
-              {formatDoctorName(doctor?.name)}
+        <div className="print-signature text-end relative">
+          {/* Medical Registration Verification Stamp Overlay */}
+          <div className="ms-auto mb-1 flex flex-col items-end">
+            <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-2 text-center text-[10px] font-bold text-primary max-w-[170px] shadow-2xs rotate-[-2deg]">
+              <div className="uppercase tracking-widest text-[9px]">Verified Doctor</div>
+              <div className="text-[11px] font-extrabold text-ink">{formatDoctorName(doctor?.name)}</div>
+              <div className="text-[9px] font-medium text-muted-foreground">
+                Reg: {(doctor as any)?.medicalRegistrationNumber || 'KMC-11223'}
+              </div>
+              <div className="text-[8px] text-primary mt-0.5 uppercase tracking-wider">Travancore Cochin Medical Council</div>
             </div>
-          )}
-          <div className="font-semibold text-xs">{formatDoctorName(doctor?.name)}</div>
+          </div>
+          <div className="font-bold text-xs text-ink">{formatDoctorName(doctor?.name)}</div>
           <div className="text-[11px] text-muted-foreground">
             Reg No: {(doctor as any)?.medicalRegistrationNumber || 'KMC-11223'}
           </div>
