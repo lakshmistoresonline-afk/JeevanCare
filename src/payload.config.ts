@@ -128,6 +128,14 @@ export default buildConfig({
           { name: 'idx_invoices_tenant_voided_created' },
         )
       }
+
+      const visitsModel = payload.db.collections?.visits
+      if (visitsModel?.collection) {
+        await visitsModel.collection.createIndex(
+          { tenant: 1, patient: 1, visitDate: -1 },
+          { name: 'idx_visits_tenant_patient_date' },
+        )
+      }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create database indexes')
       if (process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') {

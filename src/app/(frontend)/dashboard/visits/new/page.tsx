@@ -51,24 +51,61 @@ export default async function NewVisitPage({
     )
   }
 
-  // One visit per appointment — if it already exists, point there.
-  const existing = await payload.find({
-    collection: 'visits',
-    where: { appointment: { equals: appointmentId } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
   const patient = appt.patient as Patient
+  const patientID = relId(patient)
 
-  // Fetch patient's past visits for EMR split-pane view
-  const pastVisitsRes = await payload.find({
-    collection: 'visits',
-    where: { tenant: { equals: tenantID }, patient: { equals: relId(patient) } },
-    sort: '-visitDate',
-    limit: 10,
-    overrideAccess: true,
-  })
+  // Execute child queries in parallel with strict field projection for maximum performance
+  const [existingRes, pastVisitsRes, existingInvoiceRes] = await Promise.all([
+    payload.find({
+      collection: 'visits',
+      where: { appointment: { equals: appointmentId } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      select: {
+        id: true,
+        vitals: true,
+        diagnosis: true,
+        symptoms: true,
+        notes: true,
+        prescription: true,
+        followUpDate: true,
+      },
+    }),
+    payload.find({
+      collection: 'visits',
+      where: { tenant: { equals: tenantID }, patient: { equals: patientID } },
+      sort: '-visitDate',
+      limit: 10,
+      overrideAccess: true,
+      select: {
+        id: true,
+        visitDate: true,
+        diagnosis: true,
+        symptoms: true,
+        notes: true,
+        prescription: true,
+        vitals: true,
+      },
+    }),
+    payload.find({
+      collection: 'invoices',
+      where: { tenant: { equals: tenantID }, patient: { equals: patientID } },
+      sort: '-createdAt',
+      limit: 1,
+      overrideAccess: true,
+      select: {
+        id: true,
+        paymentStatus: true,
+        amountPaid: true,
+        payments: true,
+      },
+    }),
+  ])
+
+  const existingVisit = existingRes.docs[0] as any
+  const isCompletedVisit = Boolean(existingVisit?.diagnosis || (existingVisit?.prescription && existingVisit.prescription.length > 0))
+
   const pastVisits = pastVisitsRes.docs.map((v: any) => ({
     id: String(v.id),
     date: new Date(v.visitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -79,17 +116,6 @@ export default async function NewVisitPage({
     vitals: v.vitals,
   }))
 
-  const existingVisit = existing.docs[0] as any
-  const isCompletedVisit = Boolean(existingVisit?.diagnosis || (existingVisit?.prescription && existingVisit.prescription.length > 0))
-
-  // Check if consultation fee was already collected at front-desk check-in
-  const existingInvoiceRes = await payload.find({
-    collection: 'invoices',
-    where: { tenant: { equals: tenantID }, patient: { equals: relId(patient) } },
-    sort: '-createdAt',
-    limit: 1,
-    overrideAccess: true,
-  })
   const existingInv = existingInvoiceRes.docs[0] as any
   const isPaidAtReception = existingInv?.paymentStatus === 'paid' && Number(existingInv?.amountPaid) > 0
   const initialPaymentInfo = {
