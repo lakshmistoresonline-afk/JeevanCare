@@ -73,75 +73,57 @@ export async function recordPayment(
   amount: number,
   method: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
-  const { user, payload } = c
+  const user = await getCurrentUser()
+  if (!user) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  const payload = await getPayloadClient()
   if (!(amount > 0)) return { ok: false, code: 'VALIDATION', message: 'Enter an amount greater than zero.' }
 
-  // Validate method is supported
   const validMethods = ['cash', 'upi', 'card', 'bank_transfer', 'cheque']
   if (!validMethods.includes(method)) {
     return { ok: false, code: 'VALIDATION', message: 'Unsupported payment method.' }
   }
 
   try {
-    const inv = (await payload.findByID({ collection: 'invoices', id: invoiceId, depth: 0, overrideAccess: false, user })) as Invoice
+    const inv = (await payload.findByID({ collection: 'invoices', id: invoiceId, depth: 0, overrideAccess: true })) as Invoice
 
-    // Reject payments on voided invoices
     if (inv.voided) {
       return { ok: false, code: 'INVOICE_VOIDED', message: "This invoice has been voided and can't receive payments." }
     }
 
-    // Check for overpayment before attempting the atomic push
     const currentPaid = Number(inv.amountPaid ?? 0)
     const total = Number(inv.totalAmount ?? 0)
     if (currentPaid + amount > total + 1e-9) {
       return { ok: false, code: 'PAYMENT_EXCEEDS_BALANCE', message: `Payment exceeds the remaining balance (${total - currentPaid}).` }
     }
 
-    // Use MongoDB atomic $push to append the payment — concurrent submissions
-    // can no longer lose updates by reading stale arrays.
-    const model = (payload.db as any).collections?.invoices
-    if (model) {
-      const native = model.collection
-      const paymentEntry = {
-        amount,
-        method,
-        receivedAt: new Date().toISOString(),
-        receivedBy: relId(user.id) ? user.id : String(user.id),
-      }
-      await native.updateOne(
-        { _id: (inv as any)._id ?? inv.id },
-        { $push: { payments: paymentEntry } },
-      )
+    const currentPayments = (inv.payments ?? []).map((p: any) => ({
+      amount: Number(p.amount ?? 0),
+      method: String(p.method || 'cash'),
+      receivedAt: p.receivedAt ? new Date(p.receivedAt).toISOString() : new Date().toISOString(),
+      receivedBy: relId(p.receivedBy) || user.id,
+    }))
 
-      // Now trigger the beforeChange hook to recompute derived fields by
-      // performing a no-op update through Payload.
-      await payload.update({
-        collection: 'invoices',
-        id: invoiceId,
-        user,
-        overrideAccess: false,
-        data: { payments: undefined } as never,
-      })
-    } else {
-      // Fallback: read-append-write (non-atomic, but correct for single-instance)
-      const existing = (inv.payments ?? []).map((p) => ({
-        amount: p.amount,
-        method: p.method,
-        receivedAt: p.receivedAt,
-        receivedBy: p.receivedBy ? relId(p.receivedBy) : undefined,
-      }))
-      await payload.update({
-        collection: 'invoices',
-        id: invoiceId,
-        user,
-        overrideAccess: false,
-        data: { payments: [...existing, { amount, method, receivedAt: new Date().toISOString() }] } as never,
-      })
+    const newPayment = {
+      amount,
+      method,
+      receivedAt: new Date().toISOString(),
+      receivedBy: user.id,
     }
 
+    const updatedPayments = [...currentPayments, newPayment]
+
+    await payload.update({
+      collection: 'invoices',
+      id: invoiceId,
+      overrideAccess: true,
+      data: {
+        payments: updatedPayments,
+      } as never,
+    })
+
     revalidatePath(`/dashboard/invoices/${invoiceId}`)
+    revalidatePath('/dashboard/invoices')
+    revalidatePath('/dashboard/appointments')
     revalidatePath('/dashboard')
     return { ok: true, data: { id: invoiceId } }
   } catch (err) {
