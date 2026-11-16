@@ -13,6 +13,7 @@ import { recordVisit, type PrescriptionRowInput } from '@/app/(frontend)/dashboa
 import { MedicineDirectorySearch } from './MedicineDirectorySearch'
 import { saveDraftVisit, getDraftVisit, clearDraftVisit } from '@/lib/offlineDb'
 import { checkClinicalConflicts, type DrugConflictWarning } from '@/lib/drugInteractions'
+import { evalBpSystolic, evalBpDiastolic, evalTemp, evalPulse } from '@/lib/vitalsThresholds'
 
 const FREQ_OPTIONS = PRESCRIPTION_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', durationDays: undefined, instructions: '' })
@@ -538,11 +539,35 @@ export function VisitForm({
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Patient Vitals</h4>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <Field label="BP Systolic"><input className={inputClass} inputMode="numeric" value={bpS} onChange={(e) => setBpS(e.target.value)} placeholder="120" /></Field>
-                <Field label="BP Diastolic"><input className={inputClass} inputMode="numeric" value={bpD} onChange={(e) => setBpD(e.target.value)} placeholder="80" /></Field>
-                <Field label="Temp (°C)"><input className={inputClass} inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} placeholder="37.2" /></Field>
-                <Field label="Weight (kg)"><input className={inputClass} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="68" /></Field>
-                <Field label="Pulse (bpm)"><input className={inputClass} inputMode="numeric" value={pulse} onChange={(e) => setPulse(e.target.value)} placeholder="76" /></Field>
+                <div>
+                  <Field label="BP Systolic (mmHg)">
+                    <input className={`${inputClass} transition-all ${evalBpSystolic(bpS).inputClass}`} inputMode="numeric" value={bpS} onChange={(e) => setBpS(e.target.value)} placeholder="120" />
+                  </Field>
+                  {evalBpSystolic(bpS).label && <span className="mt-1 text-[10px] font-bold block truncate">{evalBpSystolic(bpS).label}</span>}
+                </div>
+                <div>
+                  <Field label="BP Diastolic (mmHg)">
+                    <input className={`${inputClass} transition-all ${evalBpDiastolic(bpD).inputClass}`} inputMode="numeric" value={bpD} onChange={(e) => setBpD(e.target.value)} placeholder="80" />
+                  </Field>
+                  {evalBpDiastolic(bpD).label && <span className="mt-1 text-[10px] font-bold block truncate">{evalBpDiastolic(bpD).label}</span>}
+                </div>
+                <div>
+                  <Field label="Temp (°C)">
+                    <input className={`${inputClass} transition-all ${evalTemp(temp).inputClass}`} inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} placeholder="37.2" />
+                  </Field>
+                  {evalTemp(temp).label && <span className="mt-1 text-[10px] font-bold block truncate">{evalTemp(temp).label}</span>}
+                </div>
+                <div>
+                  <Field label="Weight (kg)">
+                    <input className={inputClass} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="68" />
+                  </Field>
+                </div>
+                <div>
+                  <Field label="Pulse (bpm)">
+                    <input className={`${inputClass} transition-all ${evalPulse(pulse).inputClass}`} inputMode="numeric" value={pulse} onChange={(e) => setPulse(e.target.value)} placeholder="76" />
+                  </Field>
+                  {evalPulse(pulse).label && <span className="mt-1 text-[10px] font-bold block truncate">{evalPulse(pulse).label}</span>}
+                </div>
               </div>
             </div>
 

@@ -10,6 +10,7 @@ import { AppointmentDateSelector } from '@/components/AppointmentDateSelector'
 import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availability'
 import { waReminderLink } from '@/lib/whatsapp'
 import { DEFAULT_TIMEZONE, WEEKDAYS, type AppointmentStatus } from '@/lib/constants'
+import { getVitalsSummary } from '@/lib/vitalsThresholds'
 import type { Appointment, Patient, User } from '@/payload-types'
 
 function minutesFromMidnight(date: Date, tz: string): number {
