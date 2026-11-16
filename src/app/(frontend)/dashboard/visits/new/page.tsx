@@ -98,20 +98,31 @@ export default async function NewVisitPage({
     paymentMethod: isPaidAtReception ? (existingInv.payments?.[0]?.method || 'cash') : 'cash',
   }
 
-  // If a fully completed consultation visit already exists, show "Visit recorded"
-  if (existingVisit && isCompletedVisit) {
+  const sp = await searchParams
+  const allowEdit = sp.appointment ? (sp as any).edit === '1' : false
+
+  // If a fully completed consultation visit already exists and edit mode isn't requested, show "Visit recorded"
+  if (existingVisit && isCompletedVisit && !allowEdit) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl animate-fade-up">
         {back}
-        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Record visit</h1>
-        <Card className="p-8 text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
+        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold font-display text-ink">Record visit</h1>
+        <Card className="p-8 text-center space-y-4">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary font-bold text-xl">
             <IconCheck size={22} />
           </span>
-          <h2 className="mt-4 text-lg font-semibold">Visit recorded</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The consultation for {patient?.name ?? 'the patient'} is saved.
+          <h2 className="text-xl font-bold font-display text-ink">Visit recorded</h2>
+          <p className="text-sm text-muted-foreground">
+            The consultation for <strong className="text-ink">{patient?.name ?? 'the patient'}</strong> is saved.
           </p>
+          <div className="pt-2">
+            <Link
+              href={`/dashboard/visits/new?appointment=${appointmentId}&edit=1`}
+              className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary-soft/50 px-4 py-2.5 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+            >
+              ✏️ View / Edit Consultation Form &amp; Prescriptions
+            </Link>
+          </div>
           <PostVisitActions visitId={String(existingVisit.id)} patientId={relId(patient)} />
         </Card>
       </div>
@@ -147,6 +158,12 @@ export default async function NewVisitPage({
         pastVisits={pastVisits}
         initialVitals={existingVisit?.vitals}
         initialPaymentInfo={initialPaymentInfo}
+        initialSymptoms={existingVisit?.symptoms}
+        initialDiagnosis={existingVisit?.diagnosis}
+        initialNotes={existingVisit?.notes}
+        initialPrescription={existingVisit?.prescription}
+        initialFollowUpDate={existingVisit?.followUpDate}
+        doctorId={typeof appt.doctor === 'object' ? String(appt.doctor.id) : String(appt.doctor)}
       />
     </div>
   )

@@ -28,6 +28,12 @@ export function VisitForm({
   pastVisits = [],
   initialVitals,
   initialPaymentInfo,
+  initialSymptoms = '',
+  initialDiagnosis = '',
+  initialNotes = '',
+  initialPrescription = [],
+  initialFollowUpDate = '',
+  doctorId,
 }: {
   appointmentId: string
   patientName: string
@@ -57,6 +63,11 @@ export function VisitForm({
     amountPaid: number
     paymentMethod: string
   }
+  initialSymptoms?: string
+  initialDiagnosis?: string
+  initialNotes?: string
+  initialPrescription?: PrescriptionRowInput[]
+  initialFollowUpDate?: string
   doctorId?: string
 }) {
   const router = useRouter()
@@ -82,12 +93,14 @@ export function VisitForm({
   const [weight, setWeight] = useState(initialVitals?.weightKg != null ? String(initialVitals.weightKg) : '')
   const [pulse, setPulse] = useState(initialVitals?.pulse != null ? String(initialVitals.pulse) : '')
 
-  const [symptoms, setSymptoms] = useState('')
-  const [diagnosis, setDiagnosis] = useState('')
-  const [notes, setNotes] = useState('')
-  const [followUp, setFollowUp] = useState('')
+  const [symptoms, setSymptoms] = useState(initialSymptoms || '')
+  const [diagnosis, setDiagnosis] = useState(initialDiagnosis || '')
+  const [notes, setNotes] = useState(initialNotes || '')
+  const [followUp, setFollowUp] = useState(initialFollowUpDate || '')
   const [consultationFee, setConsultationFee] = useState(initialPaymentInfo?.isPaid ? '0' : '800')
-  const [rows, setRows] = useState<PrescriptionRowInput[]>([blankRow()])
+  const [rows, setRows] = useState<PrescriptionRowInput[]>(
+    initialPrescription && initialPrescription.length > 0 ? initialPrescription : [blankRow()]
+  )
   const [kitConfirm, setKitConfirm] = useState<{ label: string; items: PrescriptionRowInput[] } | null>(null)
 
   // Real-time Drug-Drug Interaction & Allergy Conflicts
