@@ -15,19 +15,22 @@ JeevanCare is a next-generation, multi-tenant healthcare SaaS workspace specific
 ### Live Application Link
 - **Web App URL:** [https://jeevan-care-sooty.vercel.app](https://jeevan-care-sooty.vercel.app)
 
-### Key Recent Platform Innovations (v4.0 Release)
+### Key Recent Platform Innovations (v5.0 Release)
+- **⚠️ Real-Time Drug-Drug Interaction & Allergy Matrix (`src/lib/drugInteractions.ts`):** Real-time warnings for contraindications (e.g., Aspirin + Warfarin, Penicillin allergies) during EMR prescription writing.
+- **📲 Self-Service Express OPD Kiosk (`/checkin`):** Interactive self-check-in portal allowing patients to scan entrance QR codes, select clinic, and generate walk-in OPD tokens instantly.
+- **💡 AI-Powered Differential Diagnosis & Lab Suggester:** 1-click clinical suggestions for ICD-10 diagnoses (e.g. *J06.9 Acute URI*, *I10 Hypertension*) and lab orders (*CBC, HbA1c, LFT*).
+- **📑 Split-Screen EMR Past Visit Compare:** Side-by-side comparison view allowing doctors to review previous consultation symptoms, vitals, and prescribed medicines while filling current EMR notes.
+- **📈 Patient Portal Interactive Health Vitals Graphs (`/patient/dashboard`):** Real-time Recharts line graphs tracking patient BP, pulse, and weight progression across past visits.
+- **📊 Hourly OPD Traffic & Congestion Heatmap (`/dashboard/reports`):** 7-day vs. 13-hour congestion intensity matrix enabling clinic owners to optimize doctor shifts and triage staff.
+- **🎖️ Medical Council Verification Stamp Overlay (`/print/prescription/[id]`):** Official Travancore Cochin Medical Council verification stamp overlay on printable A4/A5 prescriptions.
 - **⚡ React 19 `useOptimistic` OPD Queue Steppers:** `0ms` perceived latency for real-time status transitions (`Checked-In` ➔ `In Lobby` ➔ `In Consult` ➔ `Completed`).
-- **⌨️ Doctor Keyboard Hotkeys Rail:** `Alt+N` (Add Medicine), `Alt+S` (Complete Consult), `Alt+V` (Vitals), `Alt+D` (Diagnosis), `Alt+P` (Rx Tab).
+- **⌨️ Doctor Keyboard Hotkeys Rail (`<kbd>` badges):** `Alt+N` (Add Medicine), `Alt+S` (Complete Consult), `Alt+V` (Vitals), `Alt+D` (Diagnosis), `Alt+P` (Rx Tab).
 - **📹 Native WebRTC Telehealth Video Suite:** End-to-end encrypted video consultation room (`/dashboard/telehealth/[appointmentId]`) with picture-in-picture local camera and live consult notepad.
 - **🎨 Global Command Palette (`Ctrl + K` / `Cmd + K`):** Universal search and action launcher across patients, appointments, invoices, and settings.
-- **⚡ Next.js React 19 Server Component Suspense Streaming:** Sub-50ms TTFB page load speed globally with partial prerendering (PPR).
 - **💾 Offline-First IndexedDB Buffer (`src/lib/offlineDb.ts`):** 100% consultation uptime during network drops, with auto-restoration and background server sync.
 - **⚡ 1-Screen Compact EMR Speed Mode:** Single-screen consultation workspace mode for high-volume shifts (50+ patients/day), reducing consultation entry time by 50%.
-- **📄 A4 / A5 Print Format & Letterhead Switcher:** Dynamic switcher between A4 full-sheet and A5 compact pad formats with letterhead and signature toggles.
 - **🗣️ Multi-Lingual OPD Waiting Room Voice Callouts:** Web Speech API synthesized audio announcements in English 🇬🇧, Hindi 🇮🇳, and Malayalam 🇮🇳.
-- **📺 Per-Doctor Room Callout Cards on Waiting Room TV (`/dashboard/queue-display`):** Grouped per-doctor active room callouts (`NOW SERVING`) and lobby waiting queues (`UP NEXT`).
-- **💳 Guaranteed Invoice Creation on Unpaid Check-In:** Automatic unpaid invoice generation at check-in so no consultation is left un-billed.
-- **👋 Personalized Role Greetings:** Role-aware greetings (`Good morning, Dr. Sabitha Krishnamoorthy`, `GOOD MORNING, ASWATHY MENON`) across all dashboards.
+- **📺 Glassmorphism Per-Doctor Room Callout Cards on Waiting Room TV (`/dashboard/queue-display`):** Grouped per-doctor active room callouts (`NOW SERVING`) and lobby waiting queues (`UP NEXT`).
 
 ![Figure 1.1: JeevanCare Brand Value Proposition & Landing Page Overview](.artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_01_landing.png)
 
