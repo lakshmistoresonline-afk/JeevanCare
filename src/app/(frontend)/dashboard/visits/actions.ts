@@ -127,21 +127,30 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
 
     let finalInvoiceId: string | undefined = undefined
 
-    const unlinkedInvoices = await payload.find({
+    const apptInvoices = await payload.find({
       collection: 'invoices',
-      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID }, visit: { exists: false } },
+      where: {
+        tenant: { equals: apptTenantID },
+        or: [
+          { appointment: { equals: input.appointmentId } },
+          { patient: { equals: patientID }, visit: { exists: false }, appointment: { exists: false } },
+        ],
+      },
       sort: '-createdAt',
       limit: 1,
       overrideAccess: true,
     })
 
-    if (unlinkedInvoices.docs.length > 0) {
-      finalInvoiceId = String(unlinkedInvoices.docs[0].id)
+    if (apptInvoices.docs.length > 0) {
+      finalInvoiceId = String(apptInvoices.docs[0].id)
       await payload.update({
         collection: 'invoices',
-        id: unlinkedInvoices.docs[0].id,
+        id: apptInvoices.docs[0].id,
         overrideAccess: true,
-        data: { visit: String(visit.id) } as never,
+        data: {
+          appointment: input.appointmentId,
+          visit: String(visit.id),
+        } as never,
       }).catch(() => {})
     } else {
       // Auto-create unpaid invoice for this consultation visit
@@ -154,6 +163,7 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
         data: {
           tenant: apptTenantID,
           patient: patientID,
+          appointment: input.appointmentId,
           visit: String(visit.id),
           lineItems: [
             {

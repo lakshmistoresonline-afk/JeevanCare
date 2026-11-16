@@ -242,6 +242,14 @@ export const Invoices: CollectionConfig = {
         return tenantID ? ({ tenant: { equals: tenantID } } as never) : true
       },
     },
+    {
+      name: 'appointment',
+      type: 'relationship',
+      relationTo: 'appointments',
+      index: true,
+      access: { update: () => false },
+      admin: { description: 'The specific appointment this invoice belongs to.' },
+    },
     { name: 'patient', type: 'relationship', relationTo: 'patients', required: true },
     {
       name: 'currency',

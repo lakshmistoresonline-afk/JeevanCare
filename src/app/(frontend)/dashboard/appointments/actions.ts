@@ -286,7 +286,13 @@ export async function checkInAndCollectPayment(input: {
 
     const existingInvoices = await payload.find({
       collection: 'invoices',
-      where: { tenant: { equals: apptTenantID }, patient: { equals: patientID } },
+      where: {
+        tenant: { equals: apptTenantID },
+        or: [
+          { appointment: { equals: input.appointmentId } },
+          { patient: { equals: patientID }, appointment: { exists: false }, visit: { exists: false } },
+        ],
+      },
       sort: '-createdAt',
       limit: 1,
       overrideAccess: true,
@@ -333,6 +339,7 @@ export async function checkInAndCollectPayment(input: {
           data: {
             tenant: apptTenantID,
             patient: patientID,
+            appointment: input.appointmentId,
             lineItems: currentLines,
             totalAmount: currentTotal,
             payments: updatedPayments,
@@ -350,6 +357,7 @@ export async function checkInAndCollectPayment(input: {
           data: {
             tenant: apptTenantID,
             patient: patientID,
+            appointment: input.appointmentId,
             lineItems: [
               {
                 description: `Consultation — ${doctor?.name ?? 'Doctor'}`,
