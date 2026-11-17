@@ -415,7 +415,7 @@ export function DayRail({
                     <span>✓ Consultation Fee Paid</span>
                     <span>Receipt Generated</span>
                   </div>
-                ) : (
+                ) : selected.status !== 'completed' ? (
                   <button
                     type="button"
                     onClick={() => setCheckInOpen(true)}
@@ -423,7 +423,7 @@ export function DayRail({
                   >
                     💳 Collect Fee &amp; Generate Paid Receipt
                   </button>
-                )}
+                ) : null}
 
                 {(selected.status === 'checked-in' || selected.status === 'scheduled') && (
                   <button
@@ -446,31 +446,33 @@ export function DayRail({
                 )}
 
                 <div className="mt-6 flex flex-col gap-2">
-                  {STATUS_TRANSITIONS[selected.status].map((next) =>
-                    next === 'cancelled' ? (
-                      <CancelButton key={next} pending={pending} onConfirm={(r) => act('cancelled', r)} />
-                    ) : (
-                      <button
-                        key={next}
-                        className={NEXT_ACTION[next]?.style ?? btnGhost}
-                        disabled={pending}
-                        onClick={() => {
-                          if (next === 'checked-in') {
-                            setCheckInOpen(true)
-                          } else if (next === 'in-consultation' && canRecordVisit) {
-                            handleStartConsult(selected.id)
-                          } else {
-                            act(next)
-                          }
-                        }}
-                      >
-                        {pending && <Spinner />}
-                        {next === 'in-consultation'
-                          ? (!canRecordVisit ? '📢 Call Patient to Doctor’s Room' : '🩺 Start Consult')
-                          : (NEXT_ACTION[next]?.label ?? next)}
-                      </button>
-                    ),
-                  )}
+                  {STATUS_TRANSITIONS[selected.status]
+                    .filter((next) => next !== 'completed' && !(next === 'checked-in' && selected.status !== 'scheduled'))
+                    .map((next) =>
+                      next === 'cancelled' ? (
+                        <CancelButton key={next} pending={pending} onConfirm={(r) => act('cancelled', r)} />
+                      ) : (
+                        <button
+                          key={next}
+                          className={NEXT_ACTION[next]?.style ?? btnGhost}
+                          disabled={pending}
+                          onClick={() => {
+                            if (next === 'checked-in') {
+                              setCheckInOpen(true)
+                            } else if (next === 'in-consultation' && canRecordVisit) {
+                              handleStartConsult(selected.id)
+                            } else {
+                              act(next)
+                            }
+                          }}
+                        >
+                          {pending && <Spinner />}
+                          {next === 'in-consultation'
+                            ? (!canRecordVisit ? '📢 Call Patient to Doctor’s Room' : '🩺 Start Consult')
+                            : (NEXT_ACTION[next]?.label ?? next)}
+                        </button>
+                      ),
+                    )}
                   {STATUS_TRANSITIONS[selected.status].length === 0 && (
                     <p className="rounded-lg bg-muted px-3 py-2.5 text-center text-sm text-muted-foreground">
                       This appointment is closed.

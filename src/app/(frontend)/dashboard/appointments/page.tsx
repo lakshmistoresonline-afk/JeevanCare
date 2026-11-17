@@ -79,14 +79,6 @@ export default async function AppointmentsPage({
       where: { tenant: { equals: tenantID } },
       limit: 500,
       overrideAccess: true,
-      select: {
-        id: true,
-        patient: true,
-        visit: true,
-        amountPaid: true,
-        balanceDue: true,
-        paymentStatus: true,
-      },
     }),
     payload.find({
       collection: 'patients',
