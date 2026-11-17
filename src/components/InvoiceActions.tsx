@@ -6,6 +6,7 @@ import { btnPrimary, btnGhost, btnDanger, inputClass, Spinner } from './primitiv
 import { AppSelect } from './AppSelect'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import { recordPayment, voidInvoice } from '@/app/(frontend)/dashboard/invoices/actions'
+import { broadcastAppSync } from '@/lib/broadcast'
 
 const METHOD_OPTIONS = PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label }))
 
@@ -38,7 +39,9 @@ export function InvoiceActions({
     start(async () => {
       const res = await recordPayment(invoiceId, Number(amount), method)
       if (res.ok) {
+        broadcastAppSync()
         setPayOpen(false)
+        router.push('/dashboard/appointments')
         router.refresh()
       } else setError(res.message)
     })

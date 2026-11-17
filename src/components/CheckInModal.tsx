@@ -6,6 +6,7 @@ import { btnPrimary, btnGhost, inputClass, Spinner } from './primitives'
 import { AppSelect } from './AppSelect'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import { checkInAndCollectPayment } from '@/app/(frontend)/dashboard/appointments/actions'
+import { broadcastAppSync } from '@/lib/broadcast'
 import { toast } from 'sonner'
 
 const METHOD_OPTIONS = PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label }))
@@ -46,6 +47,7 @@ export function CheckInModal({
         paymentMethod: method,
       })
       if (res.ok) {
+        broadcastAppSync()
         toast.success(
           collectFee
             ? `Checked in ${patientName}! Token ${res.data.token || 'assigned'} & Paid Receipt Generated.`
@@ -53,6 +55,7 @@ export function CheckInModal({
         )
         onSuccess?.(res.data.token)
         onClose()
+        router.push('/dashboard/appointments')
         router.refresh()
       } else {
         toast.error(res.message || 'Failed to check in patient. Please check the details.')

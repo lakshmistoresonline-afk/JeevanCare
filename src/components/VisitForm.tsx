@@ -14,6 +14,7 @@ import { MedicineDirectorySearch } from './MedicineDirectorySearch'
 import { saveDraftVisit, getDraftVisit, clearDraftVisit } from '@/lib/offlineDb'
 import { checkClinicalConflicts, type DrugConflictWarning } from '@/lib/drugInteractions'
 import { evalBpSystolic, evalBpDiastolic, evalTemp, evalPulse } from '@/lib/vitalsThresholds'
+import { broadcastAppSync } from '@/lib/broadcast'
 
 const FREQ_OPTIONS = PRESCRIPTION_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', durationDays: undefined, instructions: '' })
@@ -148,10 +149,13 @@ export function VisitForm({
         followUpDate: followUp || undefined,
       })
       if (res.ok) {
+        broadcastAppSync()
         await clearDraftVisit(appointmentId)
         toast.success('Consultation record saved successfully!')
-        if ((res.data as any)?.invoiceId) {
-          router.push(`/dashboard/invoices/${(res.data as any).invoiceId}`)
+
+        const invoiceId = (res.data as any)?.invoiceId
+        if (invoiceId && !initialPaymentInfo?.isPaid) {
+          router.push(`/dashboard/invoices/${invoiceId}`)
         } else {
           router.push('/dashboard/appointments')
         }

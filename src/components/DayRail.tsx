@@ -21,6 +21,7 @@ import { VitalsModal } from './VitalsModal'
 import { CheckInModal } from './CheckInModal'
 import { RescheduleModal } from './RescheduleModal'
 import { QueueAutoRefresher } from './QueueAutoRefresher'
+import { broadcastAppSync } from '@/lib/broadcast'
 
 export type Block = {
   id: string
@@ -193,6 +194,7 @@ export function DayRail({
     startTransition(async () => {
       const res = await updateAppointmentStatus(targetId, status, reason)
       if (res.ok) {
+        broadcastAppSync()
         setSelected(null)
         router.refresh()
       } else {
@@ -207,6 +209,7 @@ export function DayRail({
     startTransition(async () => {
       const res = await updateAppointmentStatus(appointmentId, 'in-consultation')
       if (res.ok) {
+        broadcastAppSync()
         setSelected(null)
         router.push(`/dashboard/visits/new?appointment=${appointmentId}`)
       } else {
@@ -220,6 +223,7 @@ export function DayRail({
     setOptimisticColumns({ id: b.id, status: to })
     startTransition(async () => {
       await updateAppointmentStatus(b.id, to)
+      broadcastAppSync()
       setQuickId(null)
       router.refresh()
     })
