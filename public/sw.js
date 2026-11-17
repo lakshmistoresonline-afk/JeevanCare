@@ -1,47 +1,55 @@
-const CACHE_NAME = 'jeevancare-cache-v1';
-const urlsToCache = [
+// JeevanCare PWA Offline App Shell Caching Service Worker (v5.0)
+
+const CACHE_NAME = 'jeevancare-pwa-v1'
+const ASSETS_TO_CACHE = [
   '/',
-  '/clinics',
-  '/features',
-  '/pricing',
-  '/security',
-  '/faq',
+  '/dashboard',
+  '/dashboard/appointments',
+  '/checkin',
   '/login',
-  '/patient/register'
-];
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
+      return cache.addAll(ASSETS_TO_CACHE).catch(() => {})
     })
-  );
-  self.skipWaiting();
-});
+  )
+  self.skipWaiting()
+})
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key)
+          }
+        })
+      )
+    })
+  )
+  self.clients.claim()
+})
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET') return
 
-  // Never cache API requests, dashboard pages, or admin requests — always go straight to network with safe fallback
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/admin')) {
+  // Network first with fallback to cache for HTML routes
+  if (event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: 'Network error or database offline' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      })
-    );
-    return;
+      fetch(event.request)
+        .then((response) => {
+          const resClone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone))
+          return response
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cachedResponse) => {
+            return cachedResponse || caches.match('/dashboard')
+          })
+        })
+    )
   }
-
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => caches.match('/'));
-    })
-  );
-});
+})

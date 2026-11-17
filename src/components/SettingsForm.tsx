@@ -21,6 +21,8 @@ export type SettingsInitial = {
   currency: string
   timezone: string
   upiId: string
+  letterheadLogoUrl?: string
+  prescriptionDisclaimer?: string
 }
 
 /** Stripe-style settings row: description rail on the left, fields card on the right. */
@@ -79,6 +81,8 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         currency: form.currency,
         timezone: form.timezone,
         upiId: form.upiId,
+        letterheadLogoUrl: form.letterheadLogoUrl,
+        prescriptionDisclaimer: form.prescriptionDisclaimer,
       })
       if (res.ok) {
         setSaved(true)
@@ -163,13 +167,21 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
 
       <Section
         icon={<IconBuilding size={15} strokeWidth={1.75} />}
-        title="Payments"
-        description="UPI ID used in printed receipts and payment QR codes. Leave empty to hide UPI QR from receipts."
+        title="Payments &amp; Rx Branding"
+        description="Configure custom clinic logo, payment UPI ID, and legal disclaimers printed on A4/A5 prescriptions."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="UPI ID" hint="e.g. clinicname@upi">
             <input className={inputClass} value={form.upiId} onChange={(e) => set('upiId', e.target.value)} placeholder="clinicname@upi" />
           </Field>
+          <Field label="Letterhead Logo URL" hint="Public image URL for A4/A5 prescription header">
+            <input className={inputClass} value={form.letterheadLogoUrl || ''} onChange={(e) => set('letterheadLogoUrl', e.target.value)} placeholder="https://..." />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Prescription Legal Disclaimer" hint="Printed at bottom footer of A4/A5 prescriptions">
+              <input className={inputClass} value={form.prescriptionDisclaimer || ''} onChange={(e) => set('prescriptionDisclaimer', e.target.value)} placeholder="Valid for 7 days. Not valid for medico-legal purposes." />
+            </Field>
+          </div>
         </div>
       </Section>
 

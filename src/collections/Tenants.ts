@@ -187,6 +187,23 @@ export const Tenants: CollectionConfig = {
             description: 'Clinic UPI ID (e.g. clinicname@upi). Used in printed receipts and payment QR codes. Leave empty to disable UPI QR.',
           },
         },
+        {
+          name: 'letterheadLogoUrl',
+          type: 'text',
+          label: 'Letterhead Logo URL',
+          admin: {
+            description: 'Public image URL for custom clinic logo printed at top of A4/A5 prescriptions.',
+          },
+        },
+        {
+          name: 'prescriptionDisclaimer',
+          type: 'text',
+          label: 'Prescription Legal Disclaimer',
+          defaultValue: 'Valid for 7 days. Not valid for medico-legal purposes.',
+          admin: {
+            description: 'Legal disclaimer text printed at footer of A4/A5 prescriptions.',
+          },
+        },
       ],
     },
   ],

@@ -32,6 +32,8 @@ export default async function SettingsPage() {
           currency: t?.settings?.currency ?? DEFAULT_CURRENCY,
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
           upiId: (t?.settings as any)?.upiId ?? '',
+          letterheadLogoUrl: (t?.settings as any)?.letterheadLogoUrl ?? '',
+          prescriptionDisclaimer: (t?.settings as any)?.prescriptionDisclaimer ?? '',
         }}
       />
     </div>

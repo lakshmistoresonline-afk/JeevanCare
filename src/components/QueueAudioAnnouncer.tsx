@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { playHospitalChime } from '@/lib/audioChime'
 
 export function QueueAudioAnnouncer({
   tokenNumber,
@@ -17,7 +18,10 @@ export function QueueAudioAnnouncer({
   useEffect(() => {
     if (!enabled || !tokenNumber || typeof window === 'undefined' || !('speechSynthesis' in window)) return
 
-    const speak = () => {
+    const speak = async () => {
+      // 1. Play offline 2-tone hospital reception bell chime first
+      await playHospitalChime().catch(() => {})
+
       let text = ''
       let langCode = 'en-IN'
 
