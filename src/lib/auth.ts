@@ -9,6 +9,21 @@ import { relId } from '@/lib/utils'
 
 declare global {
   var _payloadPromise: Promise<any> | undefined
+  var _tenantCache: Map<string, { tenant: Tenant; exp: number }> | undefined
+}
+
+function getCachedTenant(tenantID: string): Tenant | null {
+  if (!global._tenantCache) global._tenantCache = new Map()
+  const cached = global._tenantCache.get(tenantID)
+  if (cached && cached.exp > Date.now()) {
+    return cached.tenant
+  }
+  return null
+}
+
+function setCachedTenant(tenantID: string, tenant: Tenant) {
+  if (!global._tenantCache) global._tenantCache = new Map()
+  global._tenantCache.set(tenantID, { tenant, exp: Date.now() + 60000 }) // 60s memory cache
 }
 
 export async function getPayloadClient() {
@@ -70,12 +85,16 @@ export const requireDashboardSession = cache(async (): Promise<{ user: User; ten
   const tenantID = getTenantID(user)
   let tenant: Tenant | null = null
   if (tenantID) {
-    tenant = await payload.findByID({
-      collection: 'tenants',
-      id: tenantID,
-      depth: 0,
-      overrideAccess: true,
-    }).catch(() => null)
+    tenant = getCachedTenant(tenantID)
+    if (!tenant) {
+      tenant = await payload.findByID({
+        collection: 'tenants',
+        id: tenantID,
+        depth: 0,
+        overrideAccess: true,
+      }).catch(() => null)
+      if (tenant) setCachedTenant(tenantID, tenant)
+    }
   }
 
   if (tenant && tenant.status !== 'active') {

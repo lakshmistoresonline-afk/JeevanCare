@@ -136,6 +136,23 @@ export default buildConfig({
           { name: 'idx_visits_tenant_patient_date' },
         )
       }
+
+      // High-speed compound indexes for appointments Day Rail queries and doctor lookup
+      const apptsModel = payload.db.collections?.appointments
+      if (apptsModel?.collection) {
+        await apptsModel.collection.createIndex(
+          { tenant: 1, start: 1, status: 1 },
+          { name: 'idx_appts_tenant_start_status' },
+        )
+      }
+
+      const usersColModel = payload.db.collections?.users
+      if (usersColModel?.collection) {
+        await usersColModel.collection.createIndex(
+          { tenant: 1, role: 1, active: 1 },
+          { name: 'idx_users_tenant_role_active' },
+        )
+      }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create database indexes')
       if (process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') {
