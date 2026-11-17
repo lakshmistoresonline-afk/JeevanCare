@@ -13,14 +13,14 @@ export function InvoicePeriodFilter() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const currentRange = searchParams.get('range') || 'all'
+  const currentRange = searchParams.get('range') || 'today'
   const currentDate = searchParams.get('date') || ''
   const currentMonth = searchParams.get('m') || ''
   const currentYear = searchParams.get('y') || ''
 
   const setFilter = (range: string, extraParams?: Record<string, string>) => {
     const params = new URLSearchParams()
-    if (range !== 'all') params.set('range', range)
+    if (range !== 'today') params.set('range', range)
     if (extraParams) {
       Object.entries(extraParams).forEach(([k, v]) => {
         if (v) params.set(k, v)

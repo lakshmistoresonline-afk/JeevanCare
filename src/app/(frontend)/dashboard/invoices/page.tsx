@@ -23,7 +23,7 @@ export default async function InvoicesPage({
   const sp = await searchParams
 
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
-  const range = sp.range || 'all'
+  const range = sp.range || 'today'
 
   const where: Where = { tenant: { equals: tenantID } }
 

@@ -80,8 +80,7 @@ const STATUS_DOTS: Record<AppointmentStatus, string> = {
 const NEXT_ACTION: Partial<Record<AppointmentStatus, { label: string; style: string }>> = {
   'checked-in': { label: 'Check in', style: btnPrimary },
   'in-consultation': { label: 'Start consult', style: btnPrimary },
-  'post-consultation': { label: 'Pharmacy & Billing', style: btnPrimary },
-  completed: { label: 'Complete & Discharge', style: btnPrimary },
+  completed: { label: 'Complete', style: btnPrimary },
   'no-show': { label: 'Mark no-show', style: btnGhost },
 }
 
