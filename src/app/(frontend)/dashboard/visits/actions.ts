@@ -117,15 +117,8 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
       })
     }
 
-    // Transition appointment status to 'post-consultation' (Pharmacy / Checkout stage)
-    await payload.update({
-      collection: 'appointments',
-      id: input.appointmentId,
-      overrideAccess: true,
-      data: { status: 'post-consultation' } as never,
-    }).catch(() => {})
-
     let finalInvoiceId: string | undefined = undefined
+    let isFullyPaid = false
 
     const apptInvoices = await payload.find({
       collection: 'invoices',
@@ -142,10 +135,13 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
     })
 
     if (apptInvoices.docs.length > 0) {
-      finalInvoiceId = String(apptInvoices.docs[0].id)
+      const inv = apptInvoices.docs[0] as any
+      finalInvoiceId = String(inv.id)
+      isFullyPaid = (inv.balanceDue ?? 0) <= 0 || inv.paymentStatus === 'paid'
+
       await payload.update({
         collection: 'invoices',
-        id: apptInvoices.docs[0].id,
+        id: inv.id,
         overrideAccess: true,
         data: {
           appointment: input.appointmentId,
@@ -181,12 +177,26 @@ export async function recordVisit(input: VisitInput): Promise<ActionResult<{ id:
         } as never,
       }).catch(() => null)
 
-      if (newInv) finalInvoiceId = String(newInv.id)
+      if (newInv) {
+        finalInvoiceId = String(newInv.id)
+        isFullyPaid = fee === 0
+      }
     }
+
+    // STRICT PAYMENT GATE: Transition appointment status directly to 'completed' ONLY IF fee is 100% paid
+    const targetStatus = isFullyPaid ? 'completed' : 'checked-in'
+    await payload.update({
+      collection: 'appointments',
+      id: input.appointmentId,
+      overrideAccess: true,
+      data: { status: targetStatus } as never,
+    }).catch(() => {})
 
     revalidatePath('/dashboard/appointments')
     revalidatePath('/dashboard/invoices')
     revalidatePath('/dashboard')
+
+    return { ok: true, data: { id: String(visit.id), invoiceId: finalInvoiceId } }
 
     return { ok: true, data: { id: String(visit.id), invoiceId: finalInvoiceId } }
   } catch (err) {

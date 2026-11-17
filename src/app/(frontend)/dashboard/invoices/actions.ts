@@ -112,14 +112,25 @@ export async function recordPayment(
 
     const updatedPayments = [...currentPayments, newPayment]
 
-    await payload.update({
+    const updatedInv = (await payload.update({
       collection: 'invoices',
       id: invoiceId,
       overrideAccess: true,
       data: {
         payments: updatedPayments,
       } as never,
-    })
+    })) as any
+
+    // If invoice is 100% paid, automatically complete and discharge the linked appointment
+    const linkedApptId = relId(updatedInv?.appointment)
+    if (linkedApptId && ((updatedInv?.balanceDue ?? 0) <= 0 || updatedInv?.paymentStatus === 'paid')) {
+      await payload.update({
+        collection: 'appointments',
+        id: linkedApptId,
+        overrideAccess: true,
+        data: { status: 'completed' } as never,
+      }).catch(() => {})
+    }
 
     revalidatePath(`/dashboard/invoices/${invoiceId}`)
     revalidatePath('/dashboard/invoices')

@@ -17,12 +17,12 @@ export const APPOINTMENT_STATUSES = [
 ] as const
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 
-// Legal status transitions (spec §8.4). Allows staff/doctors to reopen or adjust statuses.
+// Legal status transitions (spec §8.4). Direct 3-stage flow: scheduled -> checked-in -> completed.
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   scheduled: ['checked-in', 'in-consultation', 'completed', 'cancelled', 'no-show'],
-  'checked-in': ['in-consultation', 'post-consultation', 'completed', 'cancelled'],
-  'in-consultation': ['post-consultation', 'completed', 'checked-in', 'cancelled'],
-  'post-consultation': ['completed', 'checked-in', 'in-consultation', 'cancelled'],
+  'checked-in': ['in-consultation', 'completed', 'cancelled'],
+  'in-consultation': ['completed', 'checked-in', 'cancelled'],
+  'post-consultation': ['completed', 'checked-in', 'cancelled'],
   completed: ['checked-in', 'in-consultation'],
   cancelled: ['scheduled'],
   'no-show': ['scheduled', 'checked-in'],
