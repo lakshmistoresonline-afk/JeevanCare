@@ -4,20 +4,57 @@ import { getTenantID } from '@/access'
 import { Card, StatusBadge, Th, Td, Avatar } from '@/components/primitives'
 import { formatMoney, formatDateTime } from '@/lib/format'
 import { IconReceipt, IconPrinter, IconChevronRight } from '@/components/icons'
+import { InvoicePeriodFilter } from '@/components/InvoicePeriodFilter'
+import { startOfDayInTz, startOfMonthInTz } from '@/lib/reports'
+import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Invoice, Patient } from '@/payload-types'
+import type { Where } from 'payload'
 
 export const dynamic = 'force-dynamic'
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; date?: string; m?: string; y?: string }>
+}) {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
+  const sp = await searchParams
+
+  const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+  const range = sp.range || 'all'
+
+  const where: Where = { tenant: { equals: tenantID } }
+
+  if (range === 'today') {
+    const dayStart = startOfDayInTz(tz, 0)
+    const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
+    where.createdAt = { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() }
+  } else if (range === 'month') {
+    const monthStart = startOfMonthInTz(tz)
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1)
+    where.createdAt = { greater_than_equal: monthStart.toISOString(), less_than: monthEnd.toISOString() }
+  } else if (range === 'custom') {
+    if (sp.date) {
+      const [y, m, d] = sp.date.split('-').map(Number)
+      const dayStart = startOfDayInTz(tz, 0, new Date(Date.UTC(y, m - 1, d, 12)))
+      const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
+      where.createdAt = { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() }
+    } else if (sp.m && sp.y) {
+      const mNum = Number(sp.m) - 1
+      const yNum = Number(sp.y)
+      const mStart = new Date(Date.UTC(yNum, mNum, 1, 0, 0, 0))
+      const mEnd = new Date(Date.UTC(yNum, mNum + 1, 1, 0, 0, 0))
+      where.createdAt = { greater_than_equal: mStart.toISOString(), less_than: mEnd.toISOString() }
+    }
+  }
 
   const res = await payload.find({
     collection: 'invoices',
-    where: { tenant: { equals: tenantID } },
+    where,
     sort: '-createdAt',
-    limit: 100,
+    limit: 200,
     depth: 1,
     overrideAccess: true,
     select: {
@@ -41,6 +78,8 @@ export default async function InvoicesPage() {
   const totalCollected = invoices.reduce((s, inv) => s + (inv.amountPaid ?? 0), 0)
   const totalPending = invoices.reduce((s, inv) => s + (inv.balanceDue ?? 0), 0)
 
+  const periodLabel = range === 'today' ? 'Today' : range === 'month' ? 'This Month' : range === 'custom' ? (sp.date || `${sp.m}/${sp.y}`) : 'All Time'
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -52,18 +91,21 @@ export default async function InvoicesPage() {
         </div>
       </div>
 
+      {/* Timeframe & Period Selector Filter */}
+      <InvoicePeriodFilter />
+
       {/* Financial Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="p-4 bg-card border-border/80 shadow-2xs">
-          <span className="text-xs font-bold uppercase text-muted-foreground">Total Invoices</span>
+          <span className="text-xs font-bold uppercase text-muted-foreground">Invoices ({periodLabel})</span>
           <div className="mt-1 text-2xl font-extrabold font-display text-ink">{invoices.length}</div>
         </Card>
         <Card className="p-4 bg-card border-border/80 shadow-2xs">
-          <span className="text-xs font-bold uppercase text-muted-foreground">Total Collected</span>
+          <span className="text-xs font-bold uppercase text-muted-foreground">Collected ({periodLabel})</span>
           <div className="mt-1 text-2xl font-extrabold font-display text-green-strong">{m(totalCollected)}</div>
         </Card>
         <Card className="p-4 bg-card border-border/80 shadow-2xs">
-          <span className="text-xs font-bold uppercase text-muted-foreground">Pending Balance Due</span>
+          <span className="text-xs font-bold uppercase text-muted-foreground">Balance Due ({periodLabel})</span>
           <div className="mt-1 text-2xl font-extrabold font-display text-primary">{m(totalPending)}</div>
         </Card>
       </div>
