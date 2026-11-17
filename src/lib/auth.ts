@@ -7,8 +7,15 @@ import type { Tenant, User } from '@/payload-types'
 import { getTenantID } from '@/access'
 import { relId } from '@/lib/utils'
 
+declare global {
+  var _payloadPromise: Promise<any> | undefined
+}
+
 export async function getPayloadClient() {
-  return getPayload({ config: await config })
+  if (!global._payloadPromise) {
+    global._payloadPromise = getPayload({ config: await config })
+  }
+  return global._payloadPromise
 }
 
 function parseCookie(cookieHeader: string, name: string): string | null {

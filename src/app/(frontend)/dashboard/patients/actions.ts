@@ -35,7 +35,7 @@ export async function searchPatients(query: string): Promise<PatientHit[]> {
     limit: 8,
     depth: 0,
   })
-  return res.docs.map((p) => ({
+  return res.docs.map((p: any) => ({
     id: String(p.id),
     name: p.name,
     phone: p.phone,
@@ -55,7 +55,7 @@ export async function findByPhone(phone: string): Promise<PatientHit[]> {
     limit: 5,
     depth: 0,
   })
-  return res.docs.map((p) => ({ id: String(p.id), name: p.name, phone: p.phone, mrn: p.mrn ?? '' }))
+  return res.docs.map((p: any) => ({ id: String(p.id), name: p.name, phone: p.phone, mrn: p.mrn ?? '' }))
 }
 
 type PatientInput = {

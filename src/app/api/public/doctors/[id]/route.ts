@@ -32,22 +32,29 @@ export async function GET(
     }
 
     // Expose ONLY safe public fields (no email, phone, passwords, or tenant internals)
-    return NextResponse.json({
-      id: String(doc.id),
-      name: formatDoctorName(doc.name),
-      qualification: doc.qualification || null,
-      specialty: doc.specialty || 'General Practitioner',
-      consultationFee: doc.consultationFee ?? null,
-      photoUrl: doc.photoUrl || null,
-      tenant: tenantObj
-        ? {
-            id: String(tenantObj.id),
-            name: tenantObj.name,
-            city: tenantObj.city || null,
-            state: tenantObj.state || null,
-          }
-        : null,
-    })
+    return NextResponse.json(
+      {
+        id: String(doc.id),
+        name: formatDoctorName(doc.name),
+        qualification: doc.qualification || null,
+        specialty: doc.specialty || 'General Practitioner',
+        consultationFee: doc.consultationFee ?? null,
+        photoUrl: doc.photoUrl || null,
+        tenant: tenantObj
+          ? {
+              id: String(tenantObj.id),
+              name: tenantObj.name,
+              city: tenantObj.city || null,
+              state: tenantObj.state || null,
+            }
+          : null,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+        },
+      },
+    )
   } catch (_err) {
     return NextResponse.json({ error: 'Doctor not found' }, { status: 404 })
   }
