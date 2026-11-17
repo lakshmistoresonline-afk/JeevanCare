@@ -106,12 +106,12 @@ export default async function AppointmentsPage({
     patientMap.set(String(p.id), p.name)
   }
 
-  const paidPatientsSet = new Set<string>()
+  const paidAppointmentsSet = new Set<string>()
   for (const inv of (invoicesRes?.docs || []) as any[]) {
     const isPaid = inv.paymentStatus === 'paid' || ((inv.amountPaid ?? 0) > 0 && (inv.balanceDue ?? 0) <= 0)
     if (isPaid) {
-      const pId = String((inv.patient as Patient)?.id ?? inv.patient ?? '')
-      if (pId) paidPatientsSet.add(pId)
+      const apptId = String((inv.appointment as Appointment)?.id ?? inv.appointment ?? '')
+      if (apptId) paidAppointmentsSet.add(apptId)
     }
   }
 
@@ -174,7 +174,7 @@ export default async function AppointmentsPage({
             isWalkIn: Boolean(a.isWalkIn),
             token: (a as { tokenNumber?: string }).tokenNumber,
             doctorName: doc.name,
-            isPaid: paidPatientsSet.has(patId),
+            isPaid: paidAppointmentsSet.has(String(a.id)),
             waHref: waReminderLink({
               phone: patDoc?.phone,
               currency: tenant?.settings?.currency,
