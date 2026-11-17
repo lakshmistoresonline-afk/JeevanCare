@@ -60,6 +60,8 @@ export default buildConfig({
       maxPoolSize: 10,
       minPoolSize: 2,
       maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 30000,
     },
   }),
   sharp,

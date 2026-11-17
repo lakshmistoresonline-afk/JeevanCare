@@ -44,6 +44,13 @@ export default async function ActivityPage({
     limit: 100,
     depth: 1, // populate `user` for the name
     overrideAccess: true,
+    select: {
+      id: true,
+      action: true,
+      summary: true,
+      createdAt: true,
+      user: true,
+    },
   })
   const logs = res.docs as AuditLog[]
 
