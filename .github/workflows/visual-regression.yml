@@ -13,9 +13,13 @@ jobs:
     services:
       mongodb:
         image: mongo:7.0
-        options: --replSet rs0
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -29,14 +33,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Initialize MongoDB Replica Set
-        run: |
-          npx wait-on tcp:27017
-          mongosh --eval "try { rs.status(); } catch (err) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }); }"
-
       - name: Seed Test Dataset
         env:
-          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
+          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?directConnection=true
           FORCE_SEED: '1'
         run: npx tsx src/seedTest.ts
 
@@ -45,7 +44,7 @@ jobs:
 
       - name: Run Playwright Visual Regression Snapshot Tests
         env:
-          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
+          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?directConnection=true
         run: npx playwright test tests/e2e/visualRegression.spec.ts --project=chromium
 
       - name: Upload Visual Diff Artifacts on Failure
