@@ -155,9 +155,10 @@ export default buildConfig({
           { name: 'idx_users_tenant_role_active' },
         )
       }
-    } catch (err) {
+    } catch (err: any) {
       payload.logger.error({ err }, 'Failed to create database indexes')
-      if (process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') {
+      // Ignore NamespaceNotFound (code 26) on freshly created empty databases
+      if ((process.env.NODE_ENV === 'production' || process.env.STAGING === 'true') && err?.code !== 26) {
         throw err
       }
     }
