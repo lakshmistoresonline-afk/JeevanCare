@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
-import { validateE2EDatabaseUrl } from './tests/int/fixtures'
+import { validateE2EDatabaseUrl } from './src/lib/databaseSafety'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
 
