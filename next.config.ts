@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
       'react-day-picker',
       'clsx',
       'tailwind-merge',
+      '@payloadcms/ui',
+      '@payloadcms/next',
     ],
   },
   images: {
