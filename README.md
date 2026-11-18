@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/Repository-JeevanCare-0d6e60.svg)](https://github.com/lakshmistoresonline-afk/JeevanCare)
+<!-- Deployment Trigger: Verified Production Commit 2026 -->
 
 A multi-tenant **healthcare and OPD clinic management platform** built for **Indian clinics, practitioners, and patients** with **Next.js 16 (App Router + Turbopack)**, **Payload CMS 3**, and **MongoDB**.
 
