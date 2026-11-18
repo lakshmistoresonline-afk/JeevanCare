@@ -3,8 +3,7 @@
 // itself decides which tenants are at 07:00 locally. `?force=1` (still behind
 // the secret) skips the hour gate for manual runs and demos.
 
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPayloadClient } from '@/lib/auth'
 import { runDailyDigest } from '@/lib/digest'
 import { purgeExpiredUnverifiedSignups } from '@/lib/verification'
 import { ERROR_CODES } from '@/lib/constants'
@@ -19,7 +18,7 @@ export async function GET(req: Request) {
       return Response.json({ error: ERROR_CODES.CRON_UNAUTHORIZED }, { status: 401 })
     }
 
-    const payload = await getPayload({ config: await config })
+    const payload = await getPayloadClient()
     const force = new URL(req.url).searchParams.get('force') === '1'
     const summary = await runDailyDigest({ payload, force })
 

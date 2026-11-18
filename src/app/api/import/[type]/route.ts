@@ -1,5 +1,4 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPayloadClient } from '@/lib/auth'
 import { isSuperAdmin, getTenantID } from '@/access'
 import type { User } from '@/payload-types'
 import { relId } from '@/lib/utils'
@@ -109,7 +108,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     return Response.json({ error: 'Unknown or unsupported import type.' }, { status: 404 })
   }
 
-  const payload = await getPayload({ config: await config })
+  const authHeader = req.headers.get('authorization')
+  const cookieHeader = req.headers.get('cookie')
+  if (!authHeader && !cookieHeader) {
+    return Response.json({ error: 'Sign in to import data.' }, { status: 401 })
+  }
+
+  const payload = await getPayloadClient()
   const { user } = await payload.auth({ headers: req.headers as never })
   if (!user) return Response.json({ error: 'Sign in to import data.' }, { status: 401 })
 
