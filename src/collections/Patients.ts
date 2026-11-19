@@ -49,11 +49,12 @@ export const Patients: CollectionConfig = {
         }
         const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.patients?.collection?.db
         if (db) {
+          const sessionOpt = req.transactionID ? { session: req.transactionID as any } : {}
           const counterColl = db.collection('tenant_sequence_counters')
           const counterDoc = await counterColl.findOneAndUpdate(
             { tenant: tenantID, seq: 'patient_mrn' },
             { $inc: { value: 1 } },
-            { upsert: true, returnDocument: 'after' },
+            { upsert: true, returnDocument: 'after', ...sessionOpt },
           )
           const next = counterDoc?.value ?? 1
           data.mrn = `P-${String(next).padStart(4, '0')}`

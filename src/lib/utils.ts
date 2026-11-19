@@ -26,8 +26,15 @@ export function formatGreetingName(user?: { name?: string | null; role?: string 
 export function relId(value: unknown): string {
   if (!value) return ''
   if (typeof value === 'string') return value
-  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
-    return String((value as { id: string | number }).id)
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    if ('id' in obj && obj.id != null) return String(obj.id)
+    if ('_id' in obj && obj._id != null) return String(obj._id)
+    if (typeof (value as any).toString === 'function') {
+      const str = (value as any).toString()
+      if (str !== '[object Object]') return str
+    }
   }
   return String(value)
 }

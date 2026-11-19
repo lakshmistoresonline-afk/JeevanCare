@@ -119,15 +119,16 @@ export const Appointments: CollectionConfig = {
 
         const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.appointments?.collection?.db
         if (db) {
+          const sessionOpt = req.transactionID ? { session: req.transactionID as any } : {}
           const counterColl = db.collection('walkin_token_counters')
           try {
-            await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true })
+            await counterColl.createIndex({ tenant: 1, day: 1 }, { unique: true, ...sessionOpt })
           } catch {}
 
           const counterDoc = await counterColl.findOneAndUpdate(
             { tenant: tenantID, day: dayKey },
             { $inc: { seq: 1 } },
-            { upsert: true, returnDocument: 'after' },
+            { upsert: true, returnDocument: 'after', ...sessionOpt },
           )
 
           const doc = (counterDoc as any)?.value ?? counterDoc
