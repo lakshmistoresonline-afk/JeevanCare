@@ -49,7 +49,16 @@ export const Patients: CollectionConfig = {
         }
         const db = (req.payload.db as any)?.connection?.db || (req.payload.db as any)?.collections?.patients?.collection?.db
         if (db) {
-          const sessionOpt = req.transactionID ? { session: req.transactionID as any } : {}
+          let mongoSession: any = undefined
+          try {
+            const txId = req.transactionID instanceof Promise ? await req.transactionID : req.transactionID
+            const session = txId ? (req.payload.db as any)?.sessions?.[txId] : undefined
+            if (session && typeof session.inTransaction === 'function' && session.inTransaction()) {
+              mongoSession = session
+            }
+          } catch {}
+          const sessionOpt = mongoSession ? { session: mongoSession } : {}
+
           const counterColl = db.collection('tenant_sequence_counters')
           const counterDoc = await counterColl.findOneAndUpdate(
             { tenant: tenantID, seq: 'patient_mrn' },
