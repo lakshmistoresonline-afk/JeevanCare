@@ -109,6 +109,20 @@ export const MedicalDocuments: CollectionConfig = {
           }
         }
 
+        // Infer tenant from linked visit, appointment, or patient if omitted
+        if (!data.tenant) {
+          if (data.visit) {
+            const v = await req.payload.findByID({ collection: 'visits', id: relId(data.visit), depth: 0, overrideAccess: true }).catch(() => null)
+            if (v) data.tenant = relId(v.tenant)
+          } else if (data.appointment) {
+            const a = await req.payload.findByID({ collection: 'appointments', id: relId(data.appointment), depth: 0, overrideAccess: true }).catch(() => null)
+            if (a) data.tenant = relId(a.tenant)
+          } else if (data.patient) {
+            const p = await req.payload.findByID({ collection: 'patients', id: relId(data.patient), depth: 0, overrideAccess: true }).catch(() => null)
+            if (p) data.tenant = relId(p.tenant)
+          }
+        }
+
         const tenantID = data.tenant ? String(relId(data.tenant)) : String(getTenantID(req.user) || '')
         if (!tenantID) {
           throw new APIError('Tenant is required.', 400, { code: ERROR_CODES.VALIDATION })

@@ -71,7 +71,7 @@ describe('Indian Prescription & Doctor Credentials Standardization Suite', () =>
     // 3. Fetch visit with populated relationships
     const fetchedVisit = await payload.findByID({
       collection: 'visits',
-      id: visit.id,
+      id: String(visit.id),
       depth: 1,
       overrideAccess: true,
     })
