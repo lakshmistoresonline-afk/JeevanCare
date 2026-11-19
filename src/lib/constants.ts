@@ -214,11 +214,16 @@ export const COUNTRY_DEFAULTS = [
 ] as const
 export const DEFAULT_COUNTRY = 'India'
 
+// Token & Appointment Priority Levels for Queue Escalation
+export const PRIORITY_LEVELS = ['normal', 'urgent', 'emergency'] as const
+export type PriorityLevel = (typeof PRIORITY_LEVELS)[number]
+
 // v3 — audit log actions (spec §2.2). Append-only record of sensitive actions.
 export const AUDIT_ACTIONS = [
   { value: 'appointment.created', label: 'Appointment booked' },
   { value: 'appointment.cancelled', label: 'Appointment cancelled' },
   { value: 'appointment.status-changed', label: 'Appointment status changed' },
+  { value: 'token.escalated', label: 'Token priority escalated' },
   { value: 'invoice.voided', label: 'Invoice voided' },
   { value: 'payment.recorded', label: 'Payment recorded' },
   { value: 'user.created', label: 'Staff added' },

@@ -220,6 +220,17 @@ export const Appointments: CollectionConfig = {
     },
     { name: 'isWalkIn', type: 'checkbox', defaultValue: false, label: 'Walk-in' },
     {
+      name: 'priority',
+      type: 'select',
+      defaultValue: 'normal',
+      options: [
+        { label: 'Normal', value: 'normal' },
+        { label: 'Urgent', value: 'urgent' },
+        { label: 'Emergency', value: 'emergency' },
+      ],
+      admin: { description: 'Urgent / Emergency tokens jump to the top of the waiting queue.' },
+    },
+    {
       name: 'tokenNumber',
       type: 'text',
       label: 'Walk-in token',

@@ -7,10 +7,12 @@ export function QueueAudioAnnouncer({
   tokenNumber,
   patientName,
   doctorName,
+  priority,
 }: {
   tokenNumber?: string | null
   patientName?: string | null
   doctorName?: string | null
+  priority?: 'normal' | 'urgent' | 'emergency' | null
 }) {
   const [enabled, setEnabled] = useState(false)
   const [lang, setLang] = useState<'en' | 'hi' | 'ml'>('en')
@@ -25,21 +27,27 @@ export function QueueAudioAnnouncer({
       let text = ''
       let langCode = 'en-IN'
 
+      const isEmergency = priority === 'emergency'
+      const isUrgent = priority === 'urgent'
+
       if (lang === 'hi') {
         langCode = 'hi-IN'
-        text = `टोकन नंबर ${tokenNumber}, ${patientName || 'मरीज़'}, कृपया ${doctorName || 'डॉक्टर कक्ष'} में जाएं।`
+        const prefix = isEmergency ? 'ध्यान दें! आपातकालीन ध्यान दें! ' : isUrgent ? 'प्राथमिकता टोकन! ' : ''
+        text = `${prefix}टोकन नंबर ${tokenNumber}, ${patientName || 'मरीज़'}, कृपया ${doctorName || 'डॉक्टर कक्ष'} में जाएं।`
       } else if (lang === 'ml') {
         langCode = 'ml-IN'
-        text = `ടോക്കൺ നമ്പർ ${tokenNumber}, ${patientName || 'രോഗി'}, ${doctorName || 'ഡോക്ടറുടെ മുറിയിലേക്ക്'} പോകുക.`
+        const prefix = isEmergency ? 'അടിയന്തര ശ്രദ്ധ! ' : isUrgent ? 'മുൻഗണന ടോക്കൺ! ' : ''
+        text = `${prefix}ടോക്കൺ നമ്പർ ${tokenNumber}, ${patientName || 'രോഗി'}, ${doctorName || 'ഡോക്ടറുടെ മുറിയിലേക്ക്'} പോകുക.`
       } else {
         langCode = 'en-IN'
-        text = `Token ${tokenNumber}, ${patientName || 'Patient'}, please proceed to ${doctorName || 'Doctor room'}.`
+        const prefix = isEmergency ? 'Emergency Priority! ' : isUrgent ? 'Urgent Priority! ' : ''
+        text = `${prefix}Token ${tokenNumber}, ${patientName || 'Patient'}, please proceed to ${doctorName || 'Doctor room'}.`
       }
 
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = langCode
-      utterance.rate = 0.9
-      utterance.pitch = 1
+      utterance.rate = isEmergency ? 1.0 : 0.9
+      utterance.pitch = isEmergency ? 1.2 : 1
 
       // Select matching accent voice if available
       const voices = window.speechSynthesis.getVoices()
@@ -51,7 +59,7 @@ export function QueueAudioAnnouncer({
     }
 
     speak()
-  }, [enabled, lang, tokenNumber, patientName, doctorName])
+  }, [enabled, lang, tokenNumber, patientName, doctorName, priority])
 
   return (
     <div className="flex flex-wrap items-center gap-2">

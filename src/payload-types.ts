@@ -341,6 +341,7 @@ export interface Appointment {
   reason?: string | null;
   status: 'scheduled' | 'checked-in' | 'in-consultation' | 'post-consultation' | 'completed' | 'cancelled' | 'no-show';
   isWalkIn?: boolean | null;
+  priority?: 'normal' | 'urgent' | 'emergency' | null;
   /**
    * Auto-assigned per clinic per day for walk-ins.
    */

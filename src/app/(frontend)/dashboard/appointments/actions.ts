@@ -174,6 +174,63 @@ export async function updateAppointmentStatus(
   }
 }
 
+export async function escalateAppointmentPriority(
+  id: string,
+  priority: 'normal' | 'urgent' | 'emergency',
+  reason?: string,
+): Promise<ActionResult<{ id: string; priority: string }>> {
+  const ctx = await resolveActorTenantInternal()
+  if (!ctx || (ctx as any).isPatient) {
+    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to escalate appointment priority." }
+  }
+  const { user, payload, tenantID } = ctx
+
+  try {
+    const existingAppt = (await payload.findByID({
+      collection: 'appointments',
+      id,
+      depth: 0,
+      overrideAccess: true,
+    })) as any
+
+    if (!existingAppt || String(relId(existingAppt.tenant)) !== String(tenantID)) {
+      return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to update this appointment." }
+    }
+
+    await payload.update({
+      collection: 'appointments',
+      id,
+      overrideAccess: true,
+      data: { priority } as never,
+    })
+
+    if (priority === 'emergency' || priority === 'urgent') {
+      const patientName = existingAppt.patient ? (typeof existingAppt.patient === 'object' ? existingAppt.patient.name : 'Patient') : 'Patient'
+      const token = existingAppt.tokenNumber || `#${id.slice(-4)}`
+      await payload.create({
+        collection: 'auditLogs',
+        overrideAccess: true,
+        data: {
+          tenant: tenantID,
+          user: user.id,
+          action: 'token.escalated',
+          targetCollection: 'appointments',
+          targetId: String(id),
+          summary: `Escalated token ${token} for ${patientName} to ${priority.toUpperCase()} priority${reason ? `: ${reason}` : ''}`,
+          meta: { priority, reason },
+        } as never,
+      }).catch(() => null)
+    }
+
+    try { revalidatePath('/dashboard/appointments') } catch {}
+    try { revalidatePath('/dashboard/queue-display') } catch {}
+    try { revalidatePath('/dashboard') } catch {}
+    return { ok: true, data: { id, priority } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
 export async function recordPatientVitals(
   appointmentId: string,
   vitals: {
