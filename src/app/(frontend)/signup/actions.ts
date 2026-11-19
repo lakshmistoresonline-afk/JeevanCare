@@ -8,12 +8,9 @@ import { sendVerificationEmail } from '@/lib/verification'
 import { rateLimit } from '@/lib/rateLimit'
 import { ERROR_CODES } from '@/lib/constants'
 
-// Abuse guards (spec §3.2): paranoid-but-cheap. Same IP capped per hour; a honeypot
-// field + minimum fill time silently rejects naive bots. When email is configured
-// the owner also confirms their address before the clinic queues for approval
-// (BACKLOG §1.1); without RESEND_API_KEY the step degrades away gracefully.
-const MAX_SIGNUPS_PER_HOUR = 3
-const MIN_FILL_MS = 2000
+// Abuse guards (spec §3.2): paranoid-but-cheap. Configurable rate limit (defaults to 20/hr).
+const MAX_SIGNUPS_PER_HOUR = Number(process.env.MAX_SIGNUPS_PER_HOUR || 20)
+const MIN_FILL_MS = 1500
 
 type SignupFormInput = SignupInput & {
   /** Honeypot — real users never fill this hidden field. */
@@ -24,9 +21,12 @@ type SignupFormInput = SignupInput & {
 
 async function clientIp(): Promise<string> {
   const h = await headers()
-  const fwd = h.get('x-forwarded-for')
+  const fwd = h.get('x-forwarded-for') || h.get('x-vercel-forwarded-for')
   if (fwd) return fwd.split(',')[0]!.trim()
-  return h.get('x-real-ip') ?? 'unknown'
+  const realIp = h.get('x-real-ip') || h.get('cf-connecting-ip')
+  if (realIp) return realIp.trim()
+  // Unique fallback per request if IP header is absent, preventing global rate-limit collapse
+  return `anon_${Math.random().toString(36).substring(2, 9)}`
 }
 
 export async function signupAction(

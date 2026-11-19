@@ -108,15 +108,24 @@ export const Visits: CollectionConfig = {
             : (await req.payload.findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true }).catch(() => null))?.status
 
         if (currentStatus === 'checked-in') {
-          await req.payload
-            .update({
+          try {
+            await req.payload.update({
               collection: 'appointments',
               id: appointmentID,
               data: { status: 'completed' },
-              req,
               overrideAccess: true,
             })
-            .catch(() => {})
+          } catch {
+            await req.payload
+              .update({
+                collection: 'appointments',
+                id: appointmentID,
+                data: { status: 'completed' },
+                req,
+                overrideAccess: true,
+              })
+              .catch(() => {})
+          }
         }
       },
       auditVisits,
