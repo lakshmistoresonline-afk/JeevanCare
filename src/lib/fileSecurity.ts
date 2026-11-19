@@ -62,6 +62,8 @@ export function generateSafeStorageFilename(ext: SafeFileExtension): string {
 
 /** Sanitize filename to prevent path traversal or null byte injection. */
 export function sanitizePathFilename(filename: string): string {
-  const safeName = path.basename(filename).replace(/[\x00-\x1F\x7F<>:"/\\|?*]/g, '')
+  // Normalize backslashes to forward slashes so path.basename works identically on Linux & Windows
+  const posixPath = filename.replace(/\\/g, '/')
+  const safeName = path.basename(posixPath).replace(/[\x00-\x1F\x7F<>:"/\\|?*]/g, '')
   return safeName.replace(/\.\./g, '')
 }

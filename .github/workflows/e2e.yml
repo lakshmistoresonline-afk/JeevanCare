@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  PAYLOAD_SECRET: 'jeevancare_ci_test_secret_key_minimum_32_chars_2026'
+  DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
+  NEXTAUTH_SECRET: 'jeevancare_ci_test_secret_key_minimum_32_chars_2026'
+
 jobs:
   test:
     runs-on: ubuntu-22.04
@@ -30,7 +35,6 @@ jobs:
 
       - name: Seed Test Dataset
         env:
-          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
           FORCE_SEED: '1'
         run: npx tsx src/seedTest.ts
 
@@ -38,8 +42,6 @@ jobs:
         run: npx vitest run tests/unit/
 
       - name: Run Integration Tests
-        env:
-          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
         run: npx vitest run tests/int/ --fileParallelism=false
 
       - name: Production Build
@@ -49,8 +51,6 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright E2E & Visual Regression Tests
-        env:
-          DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
         run: npx playwright test --project=chromium
 
       - name: TypeScript Check

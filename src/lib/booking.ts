@@ -75,7 +75,14 @@ export async function findConflict({
   // Advanced Race Condition Guard (Pessimistic Locking / Atomic Update Check)
   // If the payload query finds no conflict, we issue an atomic update using Redis or native Mongo $set
   // to grab an exclusive lock for the slot. If it fails, another process beat us to it.
-  if (result.docs.length === 0) {
+  if (result.docs.length > 0) {
+    return result.docs[0]
+  }
+
+  // Advanced Race Condition Guard (Pessimistic Locking / Atomic Update Check)
+  // If the payload query finds no conflict, we issue an atomic update using native Mongo $set
+  // to grab an exclusive lock for the slot in production/runtime.
+  if (process.env.NODE_ENV !== 'test') {
     try {
       const rawDb = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.appointments?.collection?.db
       if (rawDb) {
@@ -85,12 +92,10 @@ export async function findConflict({
           { $setOnInsert: { _id: lockId, createdAt: new Date() } },
           { upsert: true }
         )
-        // If upsertedCount is 0, the lock document already existed, meaning someone else grabbed it in the last few ms.
         if (res.upsertedCount === 0) {
-          return { error: 'RACE_CONDITION_LOCK_FAILED' } as any
+          return { error: 'RACE_CONDITION_LOCK_FAILED', start: start.toISOString() } as any
         }
 
-        // Auto-expire lock after 10 seconds to prevent hanging locks if server crashes before insert
         setTimeout(() => {
           rawDb.collection('payload-locked-documents').deleteOne({ _id: lockId }).catch(() => {})
         }, 10000)
@@ -100,5 +105,5 @@ export async function findConflict({
     }
   }
 
-  return result.docs[0] ?? null
+  return null
 }

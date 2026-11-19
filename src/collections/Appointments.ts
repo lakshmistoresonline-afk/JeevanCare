@@ -78,7 +78,7 @@ export const Appointments: CollectionConfig = {
             excludeID: operation === 'update' ? String(originalDoc?.id) : undefined,
           })
           if (conflict) {
-            const time = new Date(conflict.start).toISOString()
+            const time = conflict.start ? new Date(conflict.start).toISOString() : new Date(start).toISOString()
             throw new APIError(
               `That doctor already has an appointment overlapping this time (${time}). Pick another slot.`,
               409,
