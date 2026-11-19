@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  PAYLOAD_SECRET: 'jeevancare_ci_test_secret_key_minimum_32_chars_2026'
+  PAYLOAD_SECRET: 'a3f89e2b4c7d6e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f'
   DATABASE_URL: mongodb://127.0.0.1:27017/jeevancare_test?replicaSet=rs0
   NEXTAUTH_SECRET: 'jeevancare_ci_test_secret_key_minimum_32_chars_2026'
 
