@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * Seeds the comprehensive catalog of 50,000+ Indian essential and branded medicines into MongoDB.
+ * Seeds the comprehensive catalog of 49,000+ unique Indian essential and branded medicines into MongoDB.
  */
 export async function seedFullIndianMedicineCatalog(): Promise<{ ok: boolean; totalSeeded: number; error?: string }> {
   try {
@@ -18,17 +18,21 @@ export async function seedFullIndianMedicineCatalog(): Promise<{ ok: boolean; to
     const text = fs.readFileSync(csvPath, 'utf8')
     const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0)
 
+    const seenBrands = new Set<string>()
     const bulkOps: any[] = []
+
     for (let i = 1; i < lines.length; i++) {
       const parts = lines[i].split(',').map((p) => p.trim().replace(/^"|"$/g, ''))
-      if (parts.length >= 2 && parts[0]) {
+      const brandName = parts[0]
+      if (brandName && !seenBrands.has(brandName)) {
+        seenBrands.add(brandName)
         bulkOps.push({
           updateOne: {
-            filter: { brandName: parts[0] },
+            filter: { brandName },
             update: {
               $set: {
-                brandName: parts[0],
-                genericName: parts[1] || parts[0],
+                brandName,
+                genericName: parts[1] || brandName,
                 category: parts[2] || 'Essential Medicine',
                 formulation: parts[3] || 'Tablet',
                 strength: parts[4] || 'Standard',
@@ -46,6 +50,26 @@ export async function seedFullIndianMedicineCatalog(): Promise<{ ok: boolean; to
 
     const db = (payload.db as any)?.connection?.db || (payload.db as any)?.collections?.medicines?.collection?.db
     if (db && bulkOps.length > 0) {
+      // Deduplicate existing records in MongoDB if multiple duplicates exist
+      const duplicates = await db
+        .collection('medicines')
+        .aggregate([
+          { $group: { _id: { brandName: '$brandName' }, ids: { $push: '$_id' }, count: { $sum: 1 } } },
+          { $match: { count: { $gt: 1 } } },
+        ])
+        .toArray()
+        .catch(() => [])
+
+      for (const d of duplicates) {
+        const idsToDelete = d.ids.slice(1)
+        if (idsToDelete.length > 0) {
+          await db
+            .collection('medicines')
+            .deleteMany({ _id: { $in: idsToDelete } })
+            .catch(() => {})
+        }
+      }
+
       for (let b = 0; b < bulkOps.length; b += 2000) {
         const batch = bulkOps.slice(b, b + 2000)
         await db.collection('medicines').bulkWrite(batch, { ordered: false }).catch(() => {})

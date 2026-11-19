@@ -28,21 +28,30 @@ export async function GET(request: Request) {
       const res = await payload.find({
         collection: 'medicines' as any,
         where,
-        limit: 30,
+        limit: 50,
         overrideAccess: true,
       })
 
       if (res.docs.length > 0) {
-        const meds = res.docs.map((m: any) => ({
-          id: String(m.id),
-          genericName: m.genericName,
-          brandName: m.brandName,
-          category: m.category || 'General',
-          formulation: m.formulation || 'Tablet',
-          strength: m.strength || '',
-          defaultFrequency: m.defaultFrequency || 'bd',
-          defaultDurationDays: m.defaultDurationDays || 5,
-        }))
+        const seen = new Set<string>()
+        const meds: any[] = []
+
+        for (const m of res.docs as any[]) {
+          const key = `${(m.brandName || '').toLowerCase().trim()}|${(m.strength || '').toLowerCase().trim()}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            meds.push({
+              id: String(m.id),
+              genericName: m.genericName,
+              brandName: m.brandName,
+              category: m.category || 'General',
+              formulation: m.formulation || 'Tablet',
+              strength: m.strength || '',
+              defaultFrequency: m.defaultFrequency || 'bd',
+              defaultDurationDays: m.defaultDurationDays || 5,
+            })
+          }
+        }
         return NextResponse.json({ ok: true, medicines: meds }, { headers: CACHE_HEADERS })
       }
     } catch (_) {
