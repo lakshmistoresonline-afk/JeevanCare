@@ -20,7 +20,7 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 // Legal status transitions (spec §8.4). Direct 3-stage flow: scheduled -> checked-in -> completed.
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   scheduled: ['checked-in', 'cancelled', 'no-show'],
-  'checked-in': ['in-consultation', 'cancelled'],
+  'checked-in': ['in-consultation', 'completed', 'cancelled'],
   'in-consultation': ['completed', 'cancelled'],
   'post-consultation': ['completed', 'cancelled'],
   completed: [],
