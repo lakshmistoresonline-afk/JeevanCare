@@ -71,6 +71,7 @@ export const Visits: CollectionConfig = {
             where: { appointment: { equals: String(appointmentID) } },
             limit: 1,
             depth: 0,
+            req,
             overrideAccess: true,
           })
           if (existing.docs.length > 0) {
@@ -102,30 +103,19 @@ export const Visits: CollectionConfig = {
         if (operation !== 'create') return
         const appointmentID = relId(doc.appointment)
         if (!appointmentID) return
-        const currentStatus =
-          typeof doc.appointment === 'object' && (doc.appointment as any)?.status
-            ? (doc.appointment as any).status
-            : (await req.payload.findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true }).catch(() => null))?.status
-
-        if (currentStatus === 'checked-in') {
-          try {
-            await req.payload.update({
+        const appt = await req.payload
+          .findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true })
+          .catch(() => null)
+        if (appt?.status === 'checked-in') {
+          await req.payload
+            .update({
               collection: 'appointments',
               id: appointmentID,
               data: { status: 'completed' },
+              req,
               overrideAccess: true,
             })
-          } catch {
-            await req.payload
-              .update({
-                collection: 'appointments',
-                id: appointmentID,
-                data: { status: 'completed' },
-                req,
-                overrideAccess: true,
-              })
-              .catch(() => {})
-          }
+            .catch(() => {})
         }
       },
       auditVisits,
