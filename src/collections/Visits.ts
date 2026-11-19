@@ -71,7 +71,6 @@ export const Visits: CollectionConfig = {
             where: { appointment: { equals: String(appointmentID) } },
             limit: 1,
             depth: 0,
-            req,
             overrideAccess: true,
           })
           if (existing.docs.length > 0) {
@@ -104,7 +103,7 @@ export const Visits: CollectionConfig = {
         const appointmentID = relId(doc.appointment)
         if (!appointmentID) return
         const appt = await req.payload
-          .findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true })
+          .findByID({ collection: 'appointments', id: appointmentID, depth: 0, overrideAccess: true })
           .catch(() => null)
         if (appt?.status === 'checked-in') {
           await req.payload
@@ -112,7 +111,6 @@ export const Visits: CollectionConfig = {
               collection: 'appointments',
               id: appointmentID,
               data: { status: 'completed' },
-              req,
               overrideAccess: true,
             })
             .catch(() => {})
