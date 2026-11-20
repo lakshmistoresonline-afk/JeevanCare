@@ -62,6 +62,41 @@
   --radius: 0.75rem; /* 12px cards/dialogs; md = 8px for buttons/inputs */
 }
 
+/* ---------- 1b. Dark Mode Variables ---------- */
+.dark {
+  --background: #091312;
+  --foreground: #e4ebe8;
+  --card: #0e1e1b;
+  --card-foreground: #e4ebe8;
+  --popover: #0e1e1b;
+  --popover-foreground: #e4ebe8;
+
+  --primary: #29b39b;
+  --primary-foreground: #091312;
+  --secondary: #122c27;
+  --secondary-foreground: #29b39b;
+  --accent: #122c27;
+  --accent-foreground: #29b39b;
+
+  --muted: #132421;
+  --muted-foreground: #8aa098;
+  --border: #1a332e;
+  --input: #1a332e;
+  --ring: #29b39b;
+
+  --amber-soft: #2d1e05;
+  --red-soft: #331110;
+  --blue-soft: #0d1e33;
+  --green-soft: #0d281a;
+
+  --sidebar: #060e0d;
+  --sidebar-soft: #0b1916;
+  --sidebar-foreground: #7d968f;
+  --sidebar-active-fg: #ffffff;
+  --sidebar-accent: #29b39b;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+}
+
 /* ---------- 2. Expose to Tailwind v4 utilities ---------- */
 @theme inline {
   --color-background: var(--background);
