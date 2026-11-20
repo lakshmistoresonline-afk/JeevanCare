@@ -140,9 +140,8 @@ export async function signupClinic(
         phone: input.phone.trim(),
         city: input.city?.trim() || undefined,
         country: input.country?.trim() || undefined,
-        // Self-serve clinics start pending — a super admin must approve before the
-        // owner can sign in (v3 §3.2, admin-approval onboarding).
-        status: 'pending',
+        // Self-serve clinics start active upon registration.
+        status: 'active',
         plan: 'free',
         onboardingSource: 'self-serve',
         settings: {

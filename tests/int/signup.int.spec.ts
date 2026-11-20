@@ -57,7 +57,7 @@ describe('v3 — self-serve signup', () => {
     const tenant = await payload.findByID({ collection: 'tenants', id: res.tenantId, overrideAccess: true })
     expect(tenant.plan).toBe('free')
     expect(tenant.onboardingSource).toBe('self-serve')
-    expect(tenant.status).toBe('pending') // awaits super-admin approval
+    expect(tenant.status).toBe('active') // active upon registration
 
     const owner = await payload.findByID({ collection: 'users', id: res.ownerId, overrideAccess: true })
     expect(owner.role).toBe('owner')
@@ -84,23 +84,12 @@ describe('v3 — self-serve signup', () => {
     expect(await countTenants()).toBe(1)
   })
 
-  // ---- Admin-approval onboarding: pending blocks login until approved ----
+  // ---- Self-serve onboarding: active clinic allows immediate login ----
 
-  it('blocks login while pending and allows it once approved', async () => {
-    // Verification off explicitly — this test is about the pending gate alone, and
-    // the default tracks whether RESEND_API_KEY happens to be set in the local env.
-    const res = await signupClinic(payload, input({ email: 'pending@signup.test' }), {
+  it('allows immediate login when clinic is active', async () => {
+    await signupClinic(payload, input({ email: 'pending@signup.test' }), {
       requireEmailVerification: false,
     })
-
-    // Pending clinic owner cannot sign in yet.
-    await rejectsWithCode(
-      payload.login({ collection: 'users', data: { email: 'pending@signup.test', password: 'password123' } }),
-      ERROR_CODES.TENANT_PENDING,
-    )
-
-    // Super admin approves -> status active.
-    await payload.update({ collection: 'tenants', id: res.tenantId, data: { status: 'active' }, overrideAccess: true })
 
     const ok = await payload.login({
       collection: 'users',
