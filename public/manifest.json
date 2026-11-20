@@ -1,16 +1,17 @@
 {
-  "name": "JeevanCare Clinic & Healthcare Platform",
+  "name": "JeevanCare — Modern Healthcare & Clinic Management System",
   "short_name": "JeevanCare",
-  "description": "Simple, connected healthcare for patients, doctors, and clinics.",
-  "start_url": "/",
+  "description": "Smart, fast, and secure OPD queue management, prescriptions & clinic EMR.",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0d6e60",
+  "background_color": "#0d1b18",
+  "theme_color": "#0d1b18",
+  "orientation": "any",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩺</text></svg>",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml"
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
     }
   ]
 }

@@ -260,5 +260,9 @@ export const Appointments: CollectionConfig = {
   // The (tenant, doctor, start) lookup is served by the partial UNIQUE index
   // `uniq_active_slot` created in payload.config onInit (it also backstops the
   // booking race), so we don't declare a duplicate plain index here.
-  indexes: [{ fields: ['tenant', 'start'] }],
+  indexes: [
+    { fields: ['tenant', 'start'] },
+    { fields: ['tenant', 'status', 'start'] },
+    { fields: ['tenant', 'doctor', 'start'] },
+  ],
 }

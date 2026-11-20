@@ -1,17 +1,24 @@
 import { NextResponse } from 'next/server'
 import { getPayloadClient } from '@/lib/auth'
 import { searchMedicines } from '@/lib/medicineDirectory'
+import { getCachedMedicineQuery, setCachedMedicineQuery } from '@/lib/medicineCache'
 
 export const dynamic = 'force-dynamic'
 
 const CACHE_HEADERS = {
-  'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+  'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200',
 }
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const q = (searchParams.get('q') || '').trim()
+
+    // 1. Check in-memory fast cache first (<5ms)
+    const cached = getCachedMedicineQuery(q)
+    if (cached) {
+      return NextResponse.json({ ok: true, medicines: cached, fromCache: true }, { headers: CACHE_HEADERS })
+    }
 
     try {
       const payload = await getPayloadClient()
@@ -25,10 +32,20 @@ export async function GET(request: Request) {
           }
         : {}
 
+      // 2. Select projection to minimize network & memory overhead
       const res = await payload.find({
         collection: 'medicines' as any,
         where,
         limit: 50,
+        select: {
+          brandName: true,
+          genericName: true,
+          category: true,
+          formulation: true,
+          strength: true,
+          defaultFrequency: true,
+          defaultDurationDays: true,
+        },
         overrideAccess: true,
       })
 
@@ -52,6 +69,7 @@ export async function GET(request: Request) {
             })
           }
         }
+        setCachedMedicineQuery(q, meds)
         return NextResponse.json({ ok: true, medicines: meds }, { headers: CACHE_HEADERS })
       }
     } catch (_) {
@@ -59,6 +77,7 @@ export async function GET(request: Request) {
     }
 
     const fallbackMeds = searchMedicines(q)
+    setCachedMedicineQuery(q, fallbackMeds)
     return NextResponse.json({ ok: true, medicines: fallbackMeds }, { headers: CACHE_HEADERS })
   } catch (err) {
     return NextResponse.json({ ok: false, medicines: [] }, { status: 500 })

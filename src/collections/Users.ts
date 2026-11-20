@@ -208,6 +208,13 @@ export const Users: CollectionConfig = {
       admin: { condition: (data) => data?.role === 'doctor' },
     },
     {
+      name: 'roomNumber',
+      type: 'text',
+      label: 'OPD Room / Consultation Room No (e.g. Room 1, OPD 102)',
+      defaultValue: 'OPD Room 1',
+      admin: { condition: (data) => data?.role === 'doctor' },
+    },
+    {
       name: 'medicalRegistrationNumber',
       type: 'text',
       label: 'Medical Council Reg No',

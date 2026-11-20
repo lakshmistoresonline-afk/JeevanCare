@@ -35,15 +35,16 @@ export default async function QueueDisplayPage() {
   })
 
   // Group appointments by doctor
-  const doctorMap = new Map<string, { doctorName: string; current: any; upcoming: any[] }>()
+  const doctorMap = new Map<string, { doctorName: string; roomNumber?: string; current: any; upcoming: any[] }>()
 
   for (const appt of res.docs as any[]) {
     const docObj = typeof appt.doctor === 'object' ? appt.doctor : null
     const docId = docObj?.id ? String(docObj.id) : String(appt.doctor || 'default')
     const docName = formatDoctorName(docObj?.name)
+    const roomNumber = docObj?.roomNumber || 'OPD Room 1'
 
     if (!doctorMap.has(docId)) {
-      doctorMap.set(docId, { doctorName: docName, current: null, upcoming: [] })
+      doctorMap.set(docId, { doctorName: docName, roomNumber, current: null, upcoming: [] })
     }
 
     const entry = doctorMap.get(docId)!
@@ -104,7 +105,9 @@ export default async function QueueDisplayPage() {
                 {/* Doctor Room Header */}
                 <div className="flex items-center justify-between border-b border-white/15 pb-4">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-sidebar-accent">Doctor OPD Room</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-sidebar-accent">
+                      {group.roomNumber || 'OPD Room 1'}
+                    </span>
                     <h2 className="font-display text-2xl font-bold text-white mt-0.5">{group.doctorName}</h2>
                   </div>
                   <span className="rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/30 animate-pulse">

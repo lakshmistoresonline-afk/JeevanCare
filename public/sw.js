@@ -1,18 +1,16 @@
-// JeevanCare PWA Offline App Shell Caching Service Worker (v5.0)
-
-const CACHE_NAME = 'jeevancare-pwa-v1'
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'jeevancare-v1'
+const STATIC_ASSETS = [
   '/',
-  '/dashboard',
-  '/dashboard/appointments',
-  '/checkin',
   '/login',
+  '/dashboard',
+  '/manifest.json',
+  '/favicon.ico'
 ]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE).catch(() => {})
+      return cache.addAll(STATIC_ASSETS).catch(() => {})
     })
   )
   self.skipWaiting()
@@ -35,21 +33,24 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
-
-  // Network first with fallback to cache for HTML routes
-  if (event.request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const resClone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone))
-          return response
-        })
-        .catch(() => {
-          return caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/dashboard')
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone()
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache).catch(() => {})
           })
+        }
+        return response
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse
+          if (event.request.headers.get('accept')?.includes('text/html')) {
+            return caches.match('/dashboard')
+          }
         })
-    )
-  }
+      })
+  )
 })

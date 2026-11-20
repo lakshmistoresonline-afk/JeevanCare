@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayloadClient } from '@/lib/auth'
 import { sendSms } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
+import { sendWhatsAppNotification } from '@/lib/whatsapp'
 import { validateProductionSecret } from '@/lib/secretValidation'
 import { escapeHtml } from '@/lib/utils'
 
@@ -38,10 +39,19 @@ export async function GET(request: Request) {
     for (const appt of upcomingRes.docs as any[]) {
       const patient = appt.patient
       if (patient?.phone) {
+        const timeFormatted = new Date(appt.start).toLocaleString('en-IN')
+        // Dispatch SMS
         await sendSms({
           to: patient.phone,
-          message: `Reminder: You have an upcoming appointment at JeevanCare on ${new Date(appt.start).toLocaleString('en-IN')}.`,
+          message: `Reminder: You have an upcoming appointment at JeevanCare on ${timeFormatted}.`,
         })
+
+        // Dispatch Automated WhatsApp Reminder
+        await sendWhatsAppNotification({
+          to: patient.phone,
+          message: `🏥 *JeevanCare Appointment Reminder*\nDear ${patient.name || 'Patient'},\nYour appointment is scheduled for *${timeFormatted}*.\nToken: *${appt.tokenNumber || 'Scheduled'}*\nReply 1 to Confirm or 2 to Reschedule.`,
+        })
+
         dispatchedCount++
       }
       if (patient?.email) {
