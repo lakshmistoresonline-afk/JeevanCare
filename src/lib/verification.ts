@@ -144,7 +144,7 @@ export async function purgeExpiredUnverifiedSignups(
   const stale = await payload.find({
     collection: 'tenants',
     where: {
-      status: { equals: 'pending' },
+      status: { in: ['pending', 'active'] },
       onboardingSource: { equals: 'self-serve' },
       createdAt: { less_than: cutoff.toISOString() },
     },

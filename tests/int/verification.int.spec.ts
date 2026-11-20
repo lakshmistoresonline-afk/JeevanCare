@@ -73,7 +73,7 @@ describe('backlog — email verification at signup', () => {
     expect(owner2.emailVerified).toBe(true)
   })
 
-  it('blocks login with EMAIL_NOT_VERIFIED before the pending-tenant gate', async () => {
+  it('blocks login with EMAIL_NOT_VERIFIED before allowing access', async () => {
     const res = await signup({ email: 'blocked@verify.test' })
 
     await rejectsWithCode(
@@ -81,12 +81,13 @@ describe('backlog — email verification at signup', () => {
       ERROR_CODES.EMAIL_NOT_VERIFIED,
     )
 
-    // Verifying moves the block to the next gate: the clinic is still pending.
+    // Verifying allows sign in for active clinics.
     await verifyEmailToken(payload, res.verificationToken!)
-    await rejectsWithCode(
-      payload.login({ collection: 'users', data: { email: 'blocked@verify.test', password: 'password123' } }),
-      ERROR_CODES.TENANT_PENDING,
-    )
+    const ok = await payload.login({
+      collection: 'users',
+      data: { email: 'blocked@verify.test', password: 'password123' },
+    })
+    expect(ok.token).toBeTruthy()
   })
 
   it('verifies exactly once — the used token dies', async () => {
