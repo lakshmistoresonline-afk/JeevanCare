@@ -263,6 +263,5 @@ export const Appointments: CollectionConfig = {
   indexes: [
     { fields: ['tenant', 'start'] },
     { fields: ['tenant', 'status', 'start'] },
-    { fields: ['tenant', 'doctor', 'start'] },
   ],
 }
