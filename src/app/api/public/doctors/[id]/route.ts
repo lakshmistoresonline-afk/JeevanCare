@@ -17,6 +17,16 @@ export async function GET(
       collection: 'users',
       id,
       depth: 1,
+      select: {
+        name: true,
+        role: true,
+        active: true,
+        qualification: true,
+        specialty: true,
+        consultationFee: true,
+        photoUrl: true,
+        tenant: true,
+      },
       overrideAccess: true,
     })) as any
 
@@ -51,7 +61,7 @@ export async function GET(
       },
       {
         headers: {
-          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+          'Cache-Control': 'public, max-age=300, s-maxage=1200, stale-while-revalidate=3600',
         },
       },
     )
