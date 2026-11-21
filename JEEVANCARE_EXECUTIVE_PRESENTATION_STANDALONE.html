@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JeevanCare — Master Product Architecture, Security Audit & Operational Presentation Report</title>
+  <style>
+    :root {
+      --primary: #0d6e60;
+      --primary-dark: #094d43;
+      --primary-soft: #e6f4f1;
+      --bg: #f8faf9;
+      --card-bg: #ffffff;
+      --text: #182320;
+      --muted: #5f716c;
+      --border: #e2e8f0;
+      --accent: #2dd4bf;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+    .cover-banner {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      padding: 4rem 2rem;
+      text-align: center;
+      border-bottom: 4px solid var(--accent);
+    }
+    .cover-banner h1 {
+      font-size: 2.8rem;
+      margin: 0 0 1rem 0;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .cover-banner .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.95;
+      max-width: 900px;
+      margin: 0 auto 1.5rem auto;
+    }
+    .badge-link {
+      display: inline-block;
+      background: rgba(45, 212, 191, 0.25);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 0.6rem 1.5rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #ffffff;
+      text-decoration: none;
+      margin-bottom: 1rem;
+    }
+    .badge-credit {
+      display: block;
+      margin-top: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .wrapper {
+      max-width: 1100px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    h2 {
+      color: var(--primary);
+      font-size: 1.8rem;
+      margin-top: 0;
+      border-bottom: 2px solid var(--primary-soft);
+      padding-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    h3 {
+      font-size: 1.3rem;
+      color: var(--primary-dark);
+      margin-top: 2rem;
+      border-left: 4px solid var(--primary);
+      padding-left: 0.75rem;
+    }
+    .explain-box {
+      background: var(--primary-soft);
+      border-left: 4px solid var(--primary);
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+    .explain-box ul {
+      margin: 0.5rem 0 0 1.25rem;
+      padding: 0;
+    }
+    .explain-box li {
+      margin-bottom: 0.4rem;
+    }
+    .screen-container {
+      margin: 1.8rem 0 2.5rem 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .screen-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    }
+    .screen-caption {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .workflow-pill {
+      background: var(--primary-soft);
+      border: 1px solid rgba(13, 110, 96, 0.25);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .workflow-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    .workflow-title {
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+    .workflow-desc {
+      font-size: 0.825rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.85rem 1.2rem;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 800;
+    }
+    footer {
+      background: var(--primary-dark);
+      color: white;
+      text-align: center;
+      padding: 2.5rem;
+      margin-top: 4rem;
+    }
+    footer p {
+      margin: 0.5rem 0;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+    footer a {
+      color: var(--accent);
+      font-weight: bold;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cover Header -->
+  <div class="cover-banner">
+    <h1>JeevanCare Platform</h1>
+    <div class="subtitle">
+      Master Product Architecture, Security Audit &amp; Operational Presentation Report — End-to-End Workflows, Database Schemas, API Directory &amp; Live Visual Proof
+    </div>
+    <a href="https://jeevan-care-sooty.vercel.app" target="_blank" rel="noopener noreferrer" class="badge-link">
+      🌐 Live Web Application: https://jeevan-care-sooty.vercel.app
+    </a>
+    <div class="badge-credit">
+      Designed &amp; Developed by Subramanian T S, WebCraft Digital Solutions
+    </div>
+  </div>
+
+  <div class="wrapper">
+
+    <!-- 1. Executive Summary & Architecture -->
+    <div class="section-card">
+      <h2><span>🏥</span> 1. Executive Summary &amp; Platform Architecture</h2>
+      <p>JeevanCare is an enterprise-grade, multi-tenant healthcare SaaS workspace specifically engineered for Indian clinics, nursing homes, and outpatient departments (OPD). The platform connects <strong>Clinic Owners</strong>, <strong>Attending Doctors</strong>, <strong>Receptionists / Front-Desk Staff</strong>, <strong>Patients</strong>, and <strong>Super Administrators</strong> into a single synchronized ecosystem.</p>
+
+      <div class="explain-box">
+        <strong>Live Production Web Application:</strong>
+        <p>Access the live platform online at <a href="https://jeevan-care-sooty.vercel.app" target="_blank" rel="noopener noreferrer"><strong>https://jeevan-care-sooty.vercel.app</strong></a></p>
+      </div>
+
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Platform Landing Page:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Serves as the primary public entry point establishing brand value, compliance standards (₹ INR, +91 Mobile, ABDM/UPI), and product feature highlights.</li>
+          <li><strong>User Actions:</strong> Unauthenticated visitors can browse public clinic directories, explore pricing tiers, review data security guarantees, or navigate to login/signup wizards.</li>
+          <li><strong>Key Features:</strong> Features an interactive 5-step care workflow preview card and illustrative live clinic dashboard mockup.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_01_landing.png" alt="JeevanCare Landing Page Overview">
+        <div class="screen-caption"><span>📷 Figure 1.1:</span> JeevanCare Brand Value Proposition &amp; Landing Page Overview (`/`)</div>
+      </div>
+    </div>
+
+    <!-- 2. Database Schema & Multi-Tenant Model -->
+    <div class="section-card">
+      <h2><span>🗄️</span> 2. Database Schema &amp; Payload CMS Collections</h2>
+      <p>The platform data layer is built on Payload CMS 3.85 over MongoDB, enforcing clinic-level tenant isolation across 9 core collections:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Collection</th>
+            <th>Primary Entity Role</th>
+            <th>Key Field Attributes</th>
+            <th>Isolation &amp; Index Safety</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tenants</strong></td>
+            <td>Clinic Workspaces</td>
+            <td><code>name</code>, <code>slug</code>, <code>city</code>, <code>phone</code>, <code>settings</code> (timezone, currency, openTime, closeTime)</td>
+            <td>Root multi-tenant scope boundary (`tenantID`).</td>
+          </tr>
+          <tr>
+            <td><strong>Users</strong></td>
+            <td>Accounts &amp; Roster</td>
+            <td><code>email</code>, <code>name</code>, <code>role</code> (owner, doctor, receptionist, patient, superAdmin), <code>specialty</code>, <code>active</code></td>
+            <td>Partial index: <code>uniq_patient_profile_portal</code> (role='patient').</td>
+          </tr>
+          <tr>
+            <td><strong>Patients</strong></td>
+            <td>Medical Roster</td>
+            <td><code>mrn</code>, <code>name</code>, <code>phone</code>, <code>gender</code>, <code>allergies</code>, <code>city</code>, <code>bloodGroup</code></td>
+            <td>Compound index: <code>idx_patients_tenant_created</code> (`{ tenant: 1, createdAt: -1 }`).</td>
+          </tr>
+          <tr>
+            <td><strong>Appointments</strong></td>
+            <td>OPD Slot Rail</td>
+            <td><code>tenant</code>, <code>doctor</code>, <code>patient</code>, <code>start</code>, <code>end</code>, <code>status</code>, <code>isWalkIn</code>, <code>tokenNumber</code>, <code>tokenDay</code></td>
+            <td>Partial unique index: <code>uniq_active_slot</code> &amp; <code>uniq_walkin_token</code> (`{ tenant: 1, tokenDay: 1, tokenNumber: 1 }`).</td>
+          </tr>
+          <tr>
+            <td><strong>Visits</strong></td>
+            <td>EMR Consultations</td>
+            <td><code>appointment</code>, <code>visitDate</code>, <code>vitals</code> (BP, Pulse, Weight, SpO2, RBS), <code>symptoms</code>, <code>diagnosis</code>, <code>prescription</code></td>
+            <td>1 visit per checked-in appointment with past EMR history lookup.</td>
+          </tr>
+          <tr>
+            <td><strong>Invoices</strong></td>
+            <td>Billing &amp; Receipts</td>
+            <td><code>invoiceNumber</code>, <code>patient</code>, <code>totalAmount</code>, <code>amountPaid</code>, <code>balanceDue</code>, <code>payments</code> (amount, method, receivedAt)</td>
+            <td>Compound index: <code>idx_invoices_tenant_voided_created</code> (`{ tenant: 1, voided: 1, createdAt: -1 }`).</td>
+          </tr>
+          <tr>
+            <td><strong>MedicalDocuments</strong></td>
+            <td>Document Vault</td>
+            <td><code>patient</code>, <code>filename</code>, <code>fileCategory</code>, <code>checksumSha256</code>, <code>fileUrl</code></td>
+            <td>Fail-closed direct HTTP access rules with SHA-256 integrity verification.</td>
+          </tr>
+          <tr>
+            <td><strong>Medicines</strong></td>
+            <td>Directory Search</td>
+            <td><code>brandName</code>, <code>genericName</code>, <code>strength</code>, <code>category</code>, <code>defaultFrequency</code>, <code>defaultDurationDays</code></td>
+            <td>Indian essential medicines catalog with 200ms debounced search API.</td>
+          </tr>
+          <tr>
+            <td><strong>AuditLogs</strong></td>
+            <td>Security Compliance</td>
+            <td><code>action</code>, <code>user</code>, <code>tenant</code>, <code>ipAddress</code>, <code>timestamp</code></td>
+            <td>Immutable audit log tracking all patient data access and export events.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. Authentication & Onboarding -->
+    <div class="section-card">
+      <h2><span>🔐</span> 3. Authentication &amp; Configurable Quick Login</h2>
+
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — 1-Click Quick Login Toolbar:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Enables rapid role switching during demonstration, testing, and daily clinic operation without manual password re-entry.</li>
+          <li><strong>User Actions:</strong> Clicking any quick login badge (e.g., <code>Doctor</code>, <code>Receptionist</code>, <code>Clinic Owner</code>, <code>Super Admin</code>, <code>Patient</code>) instantly populates both Email and Password fields. Clicking <code>+ Add Account</code> allows custom account badges to be configured and saved locally in browser storage.</li>
+          <li><strong>Security Rule:</strong> Credentials submit via server actions (`loginAction`), establishing HTTP-only session cookies and enforcing role-based authorization.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_02_login.png" alt="Authentication &amp; Quick Login Screen">
+        <div class="screen-caption"><span>📷 Figure 2.1:</span> Authentication Screen featuring Configurable 1-Click Quick Login Toolbar (`/login`)</div>
+      </div>
+
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Self-Serve Clinic Onboarding Wizard:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Allows new clinic owners to register a dedicated multi-tenant clinic workspace in minutes.</li>
+          <li><strong>User Actions:</strong> Captures Clinic Name, Owner Name, +91 Mobile Number, City, State, and Password. Creates an isolated multi-tenant database boundary (`tenantID`) on submission.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_03_signup.png" alt="Self-Serve Clinic Registration Wizard">
+        <div class="screen-caption"><span>📷 Figure 2.2:</span> Self-Serve Clinic Registration Signup Wizard (`/signup`)</div>
+      </div>
+    </div>
+
+    <!-- 4. Complete Care 5-Stage Operational Workflow -->
+    <div class="section-card">
+      <h2><span>⚡</span> 4. Complete Care 5-Stage Operational Workflow</h2>
+
+      <div class="workflow-grid">
+        <div class="workflow-pill">
+          <span class="workflow-num">1</span>
+          <div class="workflow-title">1. Book</div>
+          <div class="workflow-desc">Doctor Finder, Real Slot Booking &amp; Walk-In Tokens</div>
+        </div>
+        <div class="workflow-pill">
+          <span class="workflow-num">2</span>
+          <div class="workflow-title">2. Check-In</div>
+          <div class="workflow-desc">Front-Desk OPD Token Queue &amp; Lobby TV</div>
+        </div>
+        <div class="workflow-pill">
+          <span class="workflow-num">3</span>
+          <div class="workflow-title">3. Consult</div>
+          <div class="workflow-desc">Vitals Analytics, Voice EMR &amp; ICD-10 Search</div>
+        </div>
+        <div class="workflow-pill">
+          <span class="workflow-num">4</span>
+          <div class="workflow-title">4. Prescribe</div>
+          <div class="workflow-desc">1-Tap Dosage Treatment Kits &amp; WhatsApp Rx</div>
+        </div>
+        <div class="workflow-pill">
+          <span class="workflow-num">5</span>
+          <div class="workflow-title">5. Bill</div>
+          <div class="workflow-desc">Dynamic UPI QR Code Payments (upi://pay)</div>
+        </div>
+      </div>
+
+      <h3>Stage 1: Public Doctor Directory &amp; Appointment Booking</h3>
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Doctor Directory &amp; Booking:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Public doctor discovery and online slot reservation for patients.</li>
+          <li><strong>User Actions:</strong> Search doctors by name, specialty, city, or available day. Selecting a doctor opens available IST time slots for instant booking.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_04_clinics.png" alt="Public Doctor Directory &amp; Clinic Search">
+        <div class="screen-caption"><span>📷 Figure 3.1:</span> Public Doctor Directory &amp; Clinic Search Interface (`/clinics`)</div>
+      </div>
+
+      <h3>Stage 2: Primary Dashboard &amp; OPD Live Queue Management</h3>
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Primary Workspace Dashboard:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Real-time operational overview for clinic staff and owners.</li>
+          <li><strong>Workflow Elements:</strong>
+            <ul>
+              <li><strong>Live OPD Queue Stepper:</strong> Tracks queue progression through 4 stages (<em>Checked-In ➔ Waiting in Lobby ➔ In Consultation ➔ Completed</em>).</li>
+              <li><strong>Doctor Schedule Pace Banner:</strong> Displays real-time estimated wait times and schedule pace per active doctor (e.g. <code>~24 mins est. wait (2 in queue)</code>).</li>
+              <li><strong>Shift Progress Ring:</strong> Circular SVG progress ring tracking completed visits against today's target capacity.</li>
+              <li><strong>Triage Risk Badges:</strong> Displays red allergy badges (🔴 <em>Penicillin Allergy</em>) directly on OPD queue cards.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_05_dashboard.png" alt="Primary Dashboard Overview">
+        <div class="screen-caption"><span>📷 Figure 3.2:</span> Primary Dashboard Overview featuring OPD Queue Stepper Rail, Doctor Schedule Pace Banner &amp; Shift Progress Ring (`/dashboard`)</div>
+      </div>
+
+      <h3>Stage 3: Multi-Doctor Day Rail Schedule &amp; Walk-In Tokens</h3>
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Day Rail Timeline &amp; Walk-In Tokens:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Visual schedule management across all clinic doctors for a chosen date.</li>
+          <li><strong>User Actions:</strong> Front-desk staff view time-block columns per doctor, check in arriving patients, or generate walk-in tokens (e.g. <code>#T-01</code>) that automatically restart each day safely.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_06_appointments.png" alt="Multi-Doctor Day Rail Schedule View">
+        <div class="screen-caption"><span>📷 Figure 3.3:</span> Multi-Doctor Day Rail Schedule Timeline View (`/dashboard/appointments`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_07_new_appointment.png" alt="New Appointment &amp; Walk-In Token Allocation Form">
+        <div class="screen-caption"><span>📷 Figure 3.4:</span> Front-Desk Appointment Slot Booking &amp; Walk-In Token Generator (`/dashboard/appointments/new`)</div>
+      </div>
+
+      <h3>Stage 4: Patient Roster, EMR &amp; Prescription Writing</h3>
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Patient Directory &amp; Clinical EMR Workspace:</strong>
+        <ul>
+          <li><strong>Purpose:</strong> Comprehensive patient profile management and clinical consultation note authoring.</li>
+          <li><strong>Workflow Elements:</strong>
+            <ul>
+              <li><strong>Patient Roster with Slide-Over Drawer:</strong> Search by MRN, name, or phone. Clicking a patient opens a side slide-over drawer showing patient demographics, allergies, and quick actions.</li>
+              <li><strong>Clinical EMR Workspace:</strong> Records vital signs (BP, Pulse, Weight, SpO2, RBS), vital trends, chief complaints, ICD-10 diagnosis search, and speech-to-text voice dictation.</li>
+              <li><strong>1-Tap Treatment Kits:</strong> Applies pre-saved prescription kits (e.g., <em>Fever Kit</em>, <em>Hypertension Kit</em>) with 1-click dosage chips (<code>1-0-1 BD</code>, <code>1-0-0 OD</code>).</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_08_patients.png" alt="Searchable Patient Roster Directory">
+        <div class="screen-caption"><span>📷 Figure 3.5:</span> Searchable Patient Directory Roster featuring Slide-Over Quick-View Drawer (`/dashboard/patients`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_09_new_patient.png" alt="Register New Patient Form">
+        <div class="screen-caption"><span>📷 Figure 3.6:</span> Quick Patient Registration Form (`/dashboard/patients/new`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_06_appointments.png" alt="Clinical OPD Appointments Queue &amp; Visit Creator">
+        <div class="screen-caption"><span>📷 Figure 3.7:</span> Clinical OPD Appointments Queue &amp; Consultation Visit Creator (`/dashboard/appointments`)</div>
+      </div>
+
+      <h3>Stage 5: Invoices, Dynamic UPI QR Payments &amp; Lobby TV Display</h3>
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Billing &amp; Lobby TV Display:</strong>
+        <ul>
+          <li><strong>Invoices &amp; UPI QR:</strong> Invoices generate automatically upon check-in or visit completion. Renders dynamic <code>upi://pay</code> payment QR codes on invoices for zero-fee instant UPI payments.</li>
+          <li><strong>Waiting Room Lobby TV Display:</strong> High-contrast display view (`/dashboard/queue-display`) showing current token numbers, room allocations, and patient callout audio chimes.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_11_invoices.png" alt="Invoices &amp; Financial Summary Dashboard">
+        <div class="screen-caption"><span>📷 Figure 3.8:</span> Invoices &amp; Financial Summary Dashboard with Dynamic `upi://pay` Payment QR Codes (`/dashboard/invoices`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_12_queue_display.png" alt="Waiting Room Lobby TV Queue Display Screen">
+        <div class="screen-caption"><span>📷 Figure 3.9:</span> Waiting Room Lobby TV Queue Display Screen with Token Callout Chimes (`/dashboard/queue-display`)</div>
+      </div>
+    </div>
+
+    <!-- 5. Clinic Owner Administration, Reports & Settings -->
+    <div class="section-card">
+      <h2><span>📊</span> 5. Clinic Owner Administration, Reports &amp; Settings</h2>
+
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Owner Reports &amp; Staff Management:</strong>
+        <ul>
+          <li><strong>Monthly Financial Reports:</strong> Breaks down monthly revenue collections (₹ INR), completion rates, and per-doctor financial summaries.</li>
+          <li><strong>Staff &amp; Doctor Directory:</strong> Configures doctor specialties, working hours, and staff access roles.</li>
+          <li><strong>Workspace Settings:</strong> Sets clinic name, address, timezone (Asia/Kolkata), currency (₹ INR), and subscription plans.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_13_reports.png" alt="Owner Monthly Financial Reports">
+        <div class="screen-caption"><span>📷 Figure 4.1:</span> Owner Monthly Financial Reports &amp; Per-Doctor Revenue Breakdown (`/dashboard/reports`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_14_staff.png" alt="Staff Directory &amp; Doctor Timings">
+        <div class="screen-caption"><span>📷 Figure 4.2:</span> Staff Directory &amp; Doctor Working Hours Configuration (`/dashboard/staff`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_15_settings.png" alt="Clinic Workspace Settings &amp; Plan Panel">
+        <div class="screen-caption"><span>📷 Figure 4.3:</span> Clinic Workspace Settings, Timezone (Asia/Kolkata) &amp; Subscription Plans (`/dashboard/settings`)</div>
+      </div>
+    </div>
+
+    <!-- 6. Patient Portal & Super Admin Workflows -->
+    <div class="section-card">
+      <h2><span>👤</span> 6. Patient Portal &amp; Super Admin Console Workflows</h2>
+
+      <div class="explain-box">
+        <strong>Detailed Workflow Explanation — Patient Portal &amp; Super Admin:</strong>
+        <ul>
+          <li><strong>Patient Portal:</strong> Self-service dashboard for patients to view past prescriptions, medical documents, lab reports, and book appointments online.</li>
+          <li><strong>Super Admin Console:</strong> Global system governance, multi-tenant database isolation audits (`uniq_active_slot`), and clinic workspace provisioning.</li>
+        </ul>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_16_patient_dashboard.png" alt="Patient Portal Personal Dashboard">
+        <div class="screen-caption"><span>📷 Figure 5.1:</span> Patient Portal Personal Dashboard Overview (`/patient/dashboard`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_17_patient_book.png" alt="Patient Online Slot Booking Interface">
+        <div class="screen-caption"><span>📷 Figure 5.2:</span> Patient Online Appointment Slot Booking Interface (`/patient/appointments/book`)</div>
+      </div>
+
+      <div class="screen-container">
+        <img src=".artifacts/303e3f1a-f56c-4a6f-b7aa-ada6002db45a/flow_05_dashboard.png" alt="Multi-Tenant Workspace Administration Console">
+        <div class="screen-caption"><span>📷 Figure 5.3:</span> Multi-Tenant Clinic Workspace Administration Console (`/dashboard`)</div>
+      </div>
+    </div>
+
+    <!-- 7. API Directory & System Endpoints -->
+    <div class="section-card">
+      <h2><span>🔌</span> 7. API Architecture &amp; System Endpoint Directory</h2>
+      <p>JeevanCare exposes clean RESTful and GraphQL endpoints for data import/export, cron automation, and document security:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>HTTP Method</th>
+            <th>API Endpoint Route</th>
+            <th>Functional Purpose &amp; Security Controls</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>POST</code></td>
+            <td><code>/api/import/[type]</code></td>
+            <td>Bulk CSV import for Patients, Appointments, Invoices, and Medicines with schema validation.</td>
+          </tr>
+          <tr>
+            <td><code>GET</code></td>
+            <td><code>/api/export/[type]</code></td>
+            <td>Audit-logged CSV export for clinic reports, patients, and financial records.</td>
+          </tr>
+          <tr>
+            <td><code>GET</code></td>
+            <td><code>/api/medicines/search?q=...</code></td>
+            <td>200ms debounced search over Indian essential medicines catalog.</td>
+          </tr>
+          <tr>
+            <td><code>GET</code></td>
+            <td><code>/api/medical-documents/[id]</code></td>
+            <td>Fail-closed medical file access with SHA-256 integrity verification.</td>
+          </tr>
+          <tr>
+            <td><code>GET</code></td>
+            <td><code>/api/cron/appointment-reminders</code></td>
+            <td>Automated WhatsApp and SMS reminder dispatch cron job.</td>
+          </tr>
+          <tr>
+            <td><code>GET</code></td>
+            <td><code>/api/cron/daily-digest</code></td>
+            <td>End-of-day revenue and consultation summary digest for clinic owners.</td>
+          </tr>
+          <tr>
+            <td><code>POST / GET</code></td>
+            <td><code>/api/graphql</code></td>
+            <td>Payload GraphQL query and mutation endpoint.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 8. Technical Specifications & Benchmarks -->
+    <div class="section-card">
+      <h2><span>🛠️</span> 8. Technical Specifications &amp; Architectural Security</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Subsystem</th>
+            <th>Specification &amp; Technology Stack</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Framework</td>
+            <td>Next.js 16 (App Router) + React 19 + TypeScript 5.7</td>
+          </tr>
+          <tr>
+            <td>Database &amp; CMS</td>
+            <td>Payload CMS 3.85 + MongoDB (Mongoose Adapter with connection pooling)</td>
+          </tr>
+          <tr>
+            <td>Styling &amp; UI System</td>
+            <td>Tailwind CSS v4 + Base UI + Lucide React + Recharts</td>
+          </tr>
+          <tr>
+            <td>Performance Optimizations</td>
+            <td>Selective `select` field projections, package tree-shaking, compound indexes (`idx_patients_tenant_created`, `idx_invoices_tenant_voided_created`), sticky headers</td>
+          </tr>
+          <tr>
+            <td>Data Security &amp; Isolation</td>
+            <td>Multi-tenant query isolation (`tenant: { equals: tenantID }`), partial unique indexes (`uniq_active_slot`), SHA-256 document checksums</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <footer>
+    <p><strong>JeevanCare Platform — Your Trusted Healthcare Companion</strong></p>
+    <p>Live Application URL: <a href="https://jeevan-care-sooty.vercel.app" target="_blank" rel="noopener noreferrer">https://jeevan-care-sooty.vercel.app</a></p>
+    <p>Designed &amp; Developed by <strong>Subramanian T S</strong>, <strong>WebCraft Digital Solutions</strong>.</p>
+  </footer>
+
+</body>
+</html>
